@@ -1,0 +1,23 @@
+<resources>
+  <string name="lite_bing_title">Обои Bing</string>
+  <string name="lite_bing_source">Изображения Bing · архив YanGN · права принадлежат их владельцам</string>
+  <string name="lite_retry">Повторить</string>
+  <string name="lite_previous">Назад</string>
+  <string name="lite_next">Далее</string>
+  <string name="lite_back_to_list">К списку обоев</string>
+  <string name="lite_bing_apply">Установить обои</string>
+  <string name="lite_bing_save">Установить и сохранить</string>
+  <string name="lite_bing_write_failed">Не удалось сохранить обои</string>
+  <string name="lite_wallpaper_saver">Обои и заставка</string>
+  <string name="lite_family_modes">Детский и упрощённый режимы</string>
+  <string name="lite_greeting">Приветствие</string>
+  <string name="lite_time">Время</string>
+  <string name="lite_date">Дата</string>
+  <string name="lite_seconds">Секунды</string>
+  <string name="lite_home_default">Домашний экран</string>
+  <string name="lite_update">Обновление ПО</string>
+  <string name="lite_update_help">Сканируйте QR-код настроек. Загрузите новый APK Halo TV Lite через телефон, затем вернитесь сюда и подтвердите установку. Принимается только более новая версия с той же подписью.</string>
+  <string name="lite_update_install">Установить обновление</string>
+  <string name="lite_update_failed">Не удалось открыть установщик. Проверьте разрешения.</string>
+  <string name="lite_update_empty">Проверенный новый APK пока не получен.</string>
+</resources>

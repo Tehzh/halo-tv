@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:tools="http://schemas.android.com/tools">
+    <!-- Host-only Robolectric tests run on API 28; this never enters the release APK. -->
+    <uses-sdk tools:overrideLibrary="androidx.test.espresso.idling.resource,androidx.test.monitor" />
+</manifest>

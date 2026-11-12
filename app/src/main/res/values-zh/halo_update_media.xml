@@ -1,0 +1,14 @@
+<resources>
+    <string name="halo_auto_update">自动下载更新</string>
+    <string name="halo_auto_update_hint">默认关闭。开启后自动下载 Halo TV 新版，安装仍需在电视上确认。</string>
+    <string name="halo_auto_update_ready">新版已下载，请打开软件更新确认安装。</string>
+    <string name="halo_update_downloaded_install">安装已下载的更新</string>
+    <string name="halo_saver_playback">播放方式</string>
+    <string name="halo_saver_all">全部轮播</string>
+    <string name="halo_saver_single">指定单个</string>
+    <string name="halo_saver_pick">选择照片或视频</string>
+    <string name="halo_saver_empty">暂无本地素材，请通过手机设置页上传。</string>
+    <string name="halo_saver_photo_number">照片 %1$d</string>
+    <string name="halo_saver_missing_hint">所选文件已删除时，将使用其他可用素材。</string>
+    <string name="halo_online_wallpaper_entry">在线壁纸</string>
+</resources>

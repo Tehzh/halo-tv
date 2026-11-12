@@ -1,0 +1,20 @@
+<resources>
+    <string name="lite_clean_protected">Playback or a protected network connection is active. Cleanup was skipped.</string>
+    <string name="lite_clean_failed">The system did not allow background cleanup.</string>
+    <string name="lite_power_service_title">Halo TV Lite power menu</string>
+    <string name="lite_power_service_description">Only opens the TV system power menu after you choose it. Does not read screen content or intercept Home.</string>
+    <string name="lite_power_help">Opens the TV system power menu. Available standby, shutdown or restart actions depend on the TV. Some TVs start a shutdown countdown immediately. Android 5.0+ requires enabling the optional power-menu accessibility service once.</string>
+    <string name="lite_power_old">This older Android system does not expose a power menu to ordinary apps. Use the power key on your remote.</string>
+    <string name="lite_power_enable_hint">Enable the Halo TV Lite power-menu service first, then return here.</string>
+    <string name="lite_power_enable">Enable power-menu helper</string>
+    <string name="lite_online_wallpaper">Online wallpapers</string>
+    <string name="lite_local_wallpaper">Local wallpapers</string>
+    <string name="lite_category_appearance">Appearance</string>
+    <string name="lite_category_apps">Apps &amp; Dock</string>
+    <string name="lite_category_remote">Remote &amp; sound</string>
+    <string name="lite_contact_wechat">WeChat</string>
+    <string name="lite_contact_douyin">Douyin</string>
+    <string name="lite_contact_xhs">Xiaohongshu</string>
+    <string name="lite_contact_enlarge">Select a code and press OK to enlarge.</string>
+    <string name="lite_contact_scan">Scan to contact</string>
+</resources>

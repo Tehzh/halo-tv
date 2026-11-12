@@ -1,0 +1,20 @@
+<resources>
+    <string name="lite_clean_protected">正在播放音频或存在需要保护的网络连接，已跳过清理。</string>
+    <string name="lite_clean_failed">系统未允许此次后台清理，请稍后重试。</string>
+    <string name="lite_power_service_title">Halo TV Lite 电源菜单</string>
+    <string name="lite_power_service_description">仅在你主动选择时打开电视系统电源菜单，不读取屏幕内容，不接管 Home 键。</string>
+    <string name="lite_power_help">打开电视系统电源菜单，待机、关机、重启等选项由电视系统提供。部分电视会立即开始关机倒计时，请准备好用遥控器取消。Android 5.0 及以上首次使用需手动开启电源辅助服务。</string>
+    <string name="lite_power_old">此旧版安卓系统没有向普通应用开放系统电源菜单，请使用电视遥控器上的电源键。</string>
+    <string name="lite_power_enable_hint">请先手动开启 Halo TV Lite 电源菜单辅助服务，再返回此页使用。</string>
+    <string name="lite_power_enable">开启电源菜单辅助服务</string>
+    <string name="lite_online_wallpaper">在线壁纸</string>
+    <string name="lite_local_wallpaper">本地壁纸</string>
+    <string name="lite_category_appearance">桌面外观</string>
+    <string name="lite_category_apps">应用与 Dock</string>
+    <string name="lite_category_remote">遥控与声音</string>
+    <string name="lite_contact_wechat">微信</string>
+    <string name="lite_contact_douyin">抖音</string>
+    <string name="lite_contact_xhs">小红书</string>
+    <string name="lite_contact_enlarge">选择二维码后按确认键可放大查看。</string>
+    <string name="lite_contact_scan">扫码联系</string>
+</resources>

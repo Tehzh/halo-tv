@@ -1,0 +1,20 @@
+<resources>
+    <string name="lite_clean_protected">Ойнату немесе қорғалған желі белсенді. Тазалау өткізілді.</string>
+    <string name="lite_clean_failed">Жүйе тазалауға рұқсат бермеді.</string>
+    <string name="lite_power_service_title">Halo TV Lite қуат мәзірі</string>
+    <string name="lite_power_service_description">Тек жүйенің қуат мәзірін ашады. Экранды оқымайды және Home пернесін ұстамайды.</string>
+    <string name="lite_power_help">ТВ қуат мәзірін ашады. Күту, өшіру және қайта іске қосу жүйеге байланысты. Кейбір ТВ бірден өшіруді бастайды. Android 5.0+ жүйесінде алдымен қуат мәзірі қызметін қосыңыз.</string>
+    <string name="lite_power_old">Ескі жүйе қолданбаларға қуат мәзірін ашпайды. Қашықтан басқару пультінің қуат пернесін пайдаланыңыз.</string>
+    <string name="lite_power_enable_hint">Алдымен Halo TV Lite қуат мәзірі қызметін қосып, осында оралыңыз.</string>
+    <string name="lite_power_enable">Қуат қызметін қосу</string>
+    <string name="lite_online_wallpaper">Онлайн тұсқағаз</string>
+    <string name="lite_local_wallpaper">Жергілікті тұсқағаз</string>
+    <string name="lite_category_appearance">Сыртқы көрініс</string>
+    <string name="lite_category_apps">Қолданбалар және Dock</string>
+    <string name="lite_category_remote">Пульт және дыбыс</string>
+    <string name="lite_contact_wechat">WeChat</string>
+    <string name="lite_contact_douyin">Douyin</string>
+    <string name="lite_contact_xhs">Xiaohongshu</string>
+    <string name="lite_contact_enlarge">QR кодын таңдап, үлкейту үшін OK басыңыз.</string>
+    <string name="lite_contact_scan">Кодты сканерлеу</string>
+</resources>

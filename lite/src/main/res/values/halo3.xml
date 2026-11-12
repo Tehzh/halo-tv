@@ -1,0 +1,23 @@
+<resources>
+  <string name="lite_bing_title">Bing wallpapers</string>
+  <string name="lite_bing_source">Images by Bing · archive by YanGN · rights remain with their owners</string>
+  <string name="lite_retry">Retry</string>
+  <string name="lite_previous">Previous</string>
+  <string name="lite_next">Next</string>
+  <string name="lite_back_to_list">Back to wallpapers</string>
+  <string name="lite_bing_apply">Set wallpaper</string>
+  <string name="lite_bing_save">Set and save locally</string>
+  <string name="lite_bing_write_failed">Could not save wallpaper</string>
+  <string name="lite_wallpaper_saver">Wallpaper &amp; Screen Saver</string>
+  <string name="lite_family_modes">Kids &amp; Elders</string>
+  <string name="lite_greeting">Show greeting</string>
+  <string name="lite_time">Show time</string>
+  <string name="lite_date">Show date</string>
+  <string name="lite_seconds">Show seconds</string>
+  <string name="lite_home_default">Set as Home</string>
+  <string name="lite_update">Software update</string>
+  <string name="lite_update_help">Scan the settings QR code from a phone on the same network. Choose Push APK update and upload a newer Halo TV Lite package. Then return here, refresh and confirm installation on the TV. The package name and release signature must match.</string>
+  <string name="lite_update_install">Install uploaded update</string>
+  <string name="lite_update_failed">Could not open the installer. Check the system installation permission.</string>
+  <string name="lite_update_empty">No verified newer package received yet.</string>
+</resources>

@@ -1,0 +1,14 @@
+<resources>
+    <string name="halo_auto_update">Automatically download updates</string>
+    <string name="halo_auto_update_hint">Off by default. Download new Halo TV versions automatically; confirm installation on the TV.</string>
+    <string name="halo_auto_update_ready">Update downloaded. Open Software Update to install.</string>
+    <string name="halo_update_downloaded_install">Install downloaded update</string>
+    <string name="halo_saver_playback">Playback</string>
+    <string name="halo_saver_all">Rotate all</string>
+    <string name="halo_saver_single">Single item</string>
+    <string name="halo_saver_pick">Choose a photo or video</string>
+    <string name="halo_saver_empty">No local media. Upload from the phone settings page.</string>
+    <string name="halo_saver_photo_number">Photo %1$d</string>
+    <string name="halo_saver_missing_hint">If the selected file is deleted, use another available file.</string>
+    <string name="halo_online_wallpaper_entry">Online wallpapers</string>
+</resources>

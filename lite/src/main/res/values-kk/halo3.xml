@@ -1,0 +1,23 @@
+<resources>
+  <string name="lite_bing_title">Bing тұсқағаздары</string>
+  <string name="lite_bing_source">Bing суреттері · YanGN мұрағаты · құқықтары иелеріне тиесілі</string>
+  <string name="lite_retry">Қайталау</string>
+  <string name="lite_previous">Артқа</string>
+  <string name="lite_next">Әрі қарай</string>
+  <string name="lite_back_to_list">Тұсқағаз тізіміне оралу</string>
+  <string name="lite_bing_apply">Тұсқағаз ету</string>
+  <string name="lite_bing_save">Орнату және сақтау</string>
+  <string name="lite_bing_write_failed">Тұсқағазды сақтау мүмкін болмады</string>
+  <string name="lite_wallpaper_saver">Тұсқағаз және экран сақтағыш</string>
+  <string name="lite_family_modes">Балалар мен қарттар режимі</string>
+  <string name="lite_greeting">Сәлемдесуді көрсету</string>
+  <string name="lite_time">Уақытты көрсету</string>
+  <string name="lite_date">Күнді көрсету</string>
+  <string name="lite_seconds">Секундтарды көрсету</string>
+  <string name="lite_home_default">Басты экран ету</string>
+  <string name="lite_update">Бағдарламаны жаңарту</string>
+  <string name="lite_update_help">Параметрлердің QR кодын сканерлеңіз. Телефоннан жаңа Halo TV Lite APK жүктеңіз, содан кейін осында оралып орнатуды растаңыз. Тек қолтаңбасы сәйкес жаңа нұсқа қабылданады.</string>
+  <string name="lite_update_install">Жаңартуды орнату</string>
+  <string name="lite_update_failed">Орнатушы ашылмады. Рұқсаттарды тексеріңіз.</string>
+  <string name="lite_update_empty">Тексерілген жаңа APK әлі алынбады.</string>
+</resources>

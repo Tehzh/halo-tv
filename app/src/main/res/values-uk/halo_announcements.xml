@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="halo_ann_entry">Оголошення</string>
+    <string name="halo_ann_new">Нове оголошення</string>
+    <string name="halo_ann_none">Оголошень немає. Перевіряємо нові повідомлення.</string>
+    <string name="halo_ann_details">Докладніше</string>
+    <string name="halo_ann_later">Нагадати завтра</string>
+    <string name="halo_ann_stop">Більше не нагадувати</string>
+    <string name="halo_ann_ack">Зрозуміло</string>
+</resources>

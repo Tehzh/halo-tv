@@ -1,0 +1,23 @@
+<resources>
+  <string name="lite_bing_title">必应壁纸</string>
+  <string name="lite_bing_source">图片来自 Bing · 归档由 YanGN 提供 · 版权归各权利人所有</string>
+  <string name="lite_retry">重试</string>
+  <string name="lite_previous">上一页</string>
+  <string name="lite_next">下一页</string>
+  <string name="lite_back_to_list">返回壁纸列表</string>
+  <string name="lite_bing_apply">设为壁纸</string>
+  <string name="lite_bing_save">设为壁纸并保存到本地</string>
+  <string name="lite_bing_write_failed">无法保存壁纸</string>
+  <string name="lite_wallpaper_saver">壁纸与屏保</string>
+  <string name="lite_family_modes">儿童与长辈</string>
+  <string name="lite_greeting">显示问候语</string>
+  <string name="lite_time">显示时间</string>
+  <string name="lite_date">显示日期</string>
+  <string name="lite_seconds">显示秒钟</string>
+  <string name="lite_home_default">设为主屏幕</string>
+  <string name="lite_update">软件更新</string>
+  <string name="lite_update_help">手机与电视连接同一网络，扫描设置页面的二维码，选择「推送安装包更新」并上传新版 Halo TV Lite 安装包。上传成功后，请回到此处刷新，确认并安装。仅接受同包名、同签名的更高版本 Lite 安装包。</string>
+  <string name="lite_update_install">安装已上传的更新</string>
+  <string name="lite_update_failed">无法打开安装页面，请检查系统的安装权限</string>
+  <string name="lite_update_empty">尚未收到通过校验的新版安装包</string>
+</resources>

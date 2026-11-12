@@ -1,0 +1,14 @@
+<resources>
+    <string name="halo_auto_update">Автозагрузка обновлений</string>
+    <string name="halo_auto_update_hint">По умолчанию выключено. Загрузка Halo TV автоматическая, установка — с подтверждением на ТВ.</string>
+    <string name="halo_auto_update_ready">Обновление загружено. Откройте обновления для установки.</string>
+    <string name="halo_update_downloaded_install">Установить загруженное обновление</string>
+    <string name="halo_saver_playback">Воспроизведение</string>
+    <string name="halo_saver_all">Все по очереди</string>
+    <string name="halo_saver_single">Один файл</string>
+    <string name="halo_saver_pick">Выбрать фото или видео</string>
+    <string name="halo_saver_empty">Нет файлов. Загрузите их через настройки на телефоне.</string>
+    <string name="halo_saver_photo_number">Фото %1$d</string>
+    <string name="halo_saver_missing_hint">Если файл удалён, используется другой доступный файл.</string>
+    <string name="halo_online_wallpaper_entry">Онлайн-обои</string>
+</resources>

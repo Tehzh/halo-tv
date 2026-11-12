@@ -1,0 +1,639 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="st_device_capacity">Память и хранилище</string>
+    <string name="st_device_capacity_hint">Показывать доступную оперативную память и внутреннее хранилище под часами.</string>
+    <string name="home_device_capacity">ОЗУ свободно %1$s · Хранилище свободно %2$s</string>
+
+    <string name="guard_name">Halo TV Home Guard</string>
+    <string name="guard_description">Оставляет Halo TV главным экраном на телевизорах, где его нельзя сменить. Не читает содержимое экрана.</string>
+    <string name="greeting_morning">Доброе утро</string>
+    <string name="greeting_afternoon">Добрый день</string>
+    <string name="greeting_evening">Добрый вечер</string>
+    <string name="cc_title">Центр управления</string>
+    <string name="cc_inputs">Источники</string>
+    <string name="cc_network">Сеть</string>
+    <string name="cc_settings">Настройки</string>
+    <string name="cc_volume">Громкость</string>
+    <string name="cc_muted">Звук выключен</string>
+    <string name="cc_home_default">Halo TV — ваш главный экран</string>
+    <string name="cc_home_guarded">Home Guard включён</string>
+    <string name="cc_home_not_default">Не главный экран по умолчанию</string>
+    <string name="cc_setup_title">Сделайте Halo TV главным экраном</string>
+    <string name="cc_setup_body">Если Halo TV установлен только из APK, он открывается, но кнопка «Домой», включение и выход из ожидания по-прежнему ведут в прежний лаунчер.</string>
+    <string name="cc_setup_guard">Включить Home Guard</string>
+    <string name="cc_setup_guard_where">Специальные возможности</string>
+    <string name="cc_setup_home">Выбрать приложение главного экрана по умолчанию</string>
+    <string name="cc_setup_revival">Возврат после ожидания</string>
+    <string name="cc_setup_revival_where">Доступ к уведомлениям</string>
+    <string name="cc_setup_scan">Руководство по установке Halo TV</string>
+    <string name="cc_setup_scan_hint">Отсканируйте код для просмотра руководства по установке и настройке Halo TV.</string>
+    <string name="cc_back">Назад</string>
+    <string name="cc_no_inputs">На этом телевизоре нет источников сигнала</string>
+    <string name="cc_native_inputs">Меню источников телевизора</string>
+    <string name="net_ethernet">Ethernet</string>
+    <string name="net_wifi">Wi-Fi</string>
+    <string name="net_offline">Нет подключения</string>
+    <string name="net_vpn">VPN</string>
+    <string name="input_connected">Подключено</string>
+    <string name="input_live_tv">Эфирное ТВ</string>
+    <string name="input_antenna">Антенна</string>
+    <string name="input_digital">Цифровое ТВ</string>
+    <string name="input_av">AV</string>
+    <string name="menu_move">Переместить</string>
+    <string name="menu_to_folder">Переместить в папку</string>
+    <string name="menu_new_folder">Новая папка</string>
+    <string name="menu_out_of_folder">Убрать из папки</string>
+    <string name="menu_rename_folder">Переименовать</string>
+    <string name="menu_ungroup">Удалить папку</string>
+    <string name="menu_back">Назад</string>
+    <string name="folder_default">Папка</string>
+    <string-array name="folder_names">
+        <item>Система</item>
+        <item>Видео</item>
+        <item>Музыка</item>
+        <item>Игры</item>
+        <item>Дети</item>
+        <item>Инструменты</item>
+        <item>Папка</item>
+    </string-array>
+    <string name="menu_hide">Скрыть с главного экрана</string>
+    <string name="menu_reset_icon">Вернуть значок по умолчанию</string>
+    <string name="menu_info">О приложении</string>
+    <string name="menu_uninstall">Удалить</string>
+    <string name="move_hint">Стрелками перемещайте · по завершении нажмите OK</string>
+    <string name="move_hint_touch">Стрелками или касанием выберите место · по завершении нажмите OK или коснитесь приложения</string>
+    <string name="hidden_title">Скрытые приложения</string>
+    <string name="hidden_hint">Выберите приложение, чтобы вернуть его на главный экран</string>
+    <string name="hidden_empty">Нет скрытых приложений</string>
+    <string name="launch_failed">Не удалось открыть %1$s</string>
+    <string name="unavailable">Недоступно на этом телевизоре</string>
+    <string name="cc_brightness">Яркость</string>
+    <string name="cc_brightness_in_settings">Настройки изображения</string>
+    <string name="cc_personalize">Персонализация</string>
+    <string name="wp_title">Персонализация</string>
+    <string name="wp_wallpaper">Обои</string>
+    <string name="wp_weather">Погода</string>
+    <string name="wp_weather_none">Погоды пока нет. Она загрузится, когда телевизор подключится к сети.</string>
+    <string name="wp_weather_guessed">Местоположение определено по сети. Если оно неверно, отсканируйте код справа и укажите свой город.</string>
+    <string name="wp_weather_chosen">Город задан на телефоне; отсканируйте код справа, чтобы изменить его.</string>
+    <string name="wx_clear">Ясно</string>
+    <string name="wx_partly_cloudy">Переменная облачность</string>
+    <string name="wx_cloudy">Облачно</string>
+    <string name="wx_fog">Туман</string>
+    <string name="wx_rain">Дождь</string>
+    <string name="wx_snow">Снег</string>
+    <string name="wx_thunder">Гроза</string>
+    <string name="wp_daily_latest">Всегда сегодняшнее</string>
+    <string name="wp_live">Аэросъёмка · играет на верхнем ряду главного экрана (в двухрядном виде — на обоих рядах)</string>
+    <string name="wp_photos_rotate">По очереди</string>
+    <string name="wp_daily_note">Фото дня от Bing, каждый день новое.</string>
+    <string name="wp_photos_rotate_note">Ваши фото по очереди: следующее каждый день или так часто, как выберете ниже.</string>
+    <string name="st_photo_every">Следующее фото</string>
+    <string name="st_photo_every_day">Каждый день</string>
+    <string name="st_photo_every_hint">Как часто главный экран переходит к следующему фото.</string>
+    <string name="wp_photo_note">Ваше фото. Отсканируйте код справа, чтобы прислать ещё с телефона.</string>
+    <string name="wp_auto_note">Свет берётся из обложки выбранного приложения.</string>
+    <string name="wp_screensaver">Заставка</string>
+    <string name="ss_follow_hint">Пока не выбрано, поэтому следует за обоями: аэросъёмка с обоями аэросъёмки, фото с картинкой, начиная с неё. Выберите, чтобы закрепить.</string>
+    <string name="ss_aerial">Аэросъёмка</string>
+    <string name="ss_photos">Фото</string>
+    <string name="ss_clock">Часы</string>
+    <string name="wp_phone_title">Настройка с телефона или компьютера</string>
+    <string name="wp_phone_body">Отсканируйте код или откройте адрес ниже в браузере компьютера, чтобы отправлять фото и видео, менять значки приложений и выбирать город для погоды. Устройство и телевизор должны быть в одной сети.</string>
+    <string name="wp_phone_offline">Не удалось получить адрес локальной сети или запустить страницу. Проверьте сеть; повтор автоматически.</string>
+    <string name="ss_start">Запустить сейчас</string>
+    <string name="ss_delay">Запускать через</string>
+    <string name="ss_minutes">%d мин</string>
+    <string name="ss_never">Никогда</string>
+    <string name="ss_delay_system">Как в системе</string>
+    <string name="ss_delay_system_off">Как в системе · выкл.</string>
+    <string name="ss_delay_system_minutes">Как в системе · %d мин</string>
+    <string name="ss_back_hint">Совет: нажмите «Назад» в верхнем ряду главного экрана, чтобы запустить заставку.</string>
+    <string name="ss_back">Кнопка «Назад»</string>
+    <string name="ss_back_on">Запускает её</string>
+    <string name="ss_back_off">Ничего не делает</string>
+    <string name="ss_back_choice_hint">Что делает «Назад» в верхнем ряду главного экрана. Отключите, если её нажимают случайно; заставка всё равно запустится сама.</string>
+    <string name="ss_quality">Качество аэросъёмки</string>
+    <string name="ss_quality_hint">«Авто» воспроизводит лучшее, что может показать этот телевизор: 4K Dolby Vision, 4K или 1080p. С обоями аэросъёмки заставка продолжает ролик в формате обоев, без мигания; если выбрано 4K Dolby Vision, она переключается на Dolby Vision, и экран может на мгновение погаснуть. Для 4K Dolby Vision нужно около 25 Мбит/с; выберите 1080p, если ролики часто подвисают.</string>
+    <string name="ss_quality_auto">Авто</string>
+    <string name="ss_quality_hd">1080p</string>
+    <string name="ss_quality_uhd">4K</string>
+    <string name="ss_quality_dv">4K Dolby Vision</string>
+    <string name="st_focus_style">Стиль фокуса</string>
+    <string name="st_home_layout">Главный экран</string>
+    <string name="st_layout">Раскладка</string>
+    <string name="st_clock">Часы</string>
+    <string name="st_clock_left">Сверху слева</string>
+    <string name="st_clock_right">Сверху справа</string>
+    <string name="st_clock_hint">Где расположены часы, дата и погода.</string>
+    <string name="st_clock_size">Размер часов</string>
+    <string name="st_clock_small">Маленькие</string>
+    <string name="st_clock_large">Большие</string>
+    <string name="st_clock_size_hint">«Маленькие» показывают время и погоду одной строкой в углу. «Большие» ставят крупные часы вверху экрана, дату над ними и погоду под ними.</string>
+    <string name="st_clock_hours">Формат времени</string>
+    <string name="st_clock_hours_system">Как на ТВ</string>
+    <string name="st_clock_hours_24">24 часа</string>
+    <string name="st_clock_hours_12">12 часов</string>
+    <string name="st_clock_hours_hint">«Как на ТВ» следует настройке времени телевизора, а если её нет, показывает 24 часа.</string>
+    <string name="st_names">Названия приложений</string>
+    <string name="st_names_focused">Выбранное приложение</string>
+    <string name="st_names_all">Все приложения</string>
+    <string name="st_names_hint">Названия под каждым приложением или только под выбранным, как на Apple TV.</string>
+    <string name="ss_kind">Вид</string>
+    <string name="wp_weather_city">Местоположение</string>
+    <string name="st_home_standard">Два ряда</string>
+    <string name="st_home_one_row">Один ряд</string>
+    <string name="st_home_layout_hint">«Один ряд» показывает на экране только верхний ряд, пониже, чтобы виднелось больше обоев, например семейного фото. «Два ряда» показывает ещё верх второго ряда. Нажмите вниз, чтобы увидеть остальное.</string>
+    <string name="st_plate">Верхний ряд</string>
+    <string name="st_plate_hint">Подложка из матового стекла под верхним рядом, как на Apple TV, или приложения прямо на обоях.</string>
+    <string name="st_plate_glass">Стекло</string>
+    <string name="st_plate_none">Нет</string>
+    <string name="st_sounds">Звуки</string>
+    <string name="st_sounds_hint">Звук при перемещении фокуса, выборе и нажатии «Назад», как на Apple TV.</string>
+    <string name="st_sounds_tv_hint">Собственные звуки клавиш телевизора, как в его меню. Если они выключены в настройках телевизора, звука не будет: тогда выберите Halo TV.</string>
+    <string name="st_sounds_tv">ТВ</string>
+    <string name="st_sounds_aerial">Halo TV</string>
+    <string name="st_on">Вкл.</string>
+    <string name="st_off">Выкл.</string>
+    <string name="st_hidden_apps">Скрытые приложения</string>
+    <string name="st_hidden_apps_hint">Приложения, скрытые с главного экрана, хранятся здесь, чтобы их можно было вернуть. Если задан родительский PIN-код, сначала он будет запрошен.</string>
+    <string name="st_home_lock">Закрепить экран</string>
+    <string name="st_home_lock_hint">Если включено, удержание OK или кнопка «Меню» на приложении не открывают меню, и приложения нельзя случайно переместить, скрыть или удалить. С родительским PIN-кодом для выключения нужен PIN.</string>
+    <string name="home_locked_notice">Экран закреплён. Чтобы упорядочить приложения, выключите «Закрепить экран» в разделе «Персонализация».</string>
+    <string name="st_hidden_none">Нет</string>
+    <string name="st_hidden_count">%d</string>
+    <string name="st_focus_high">Высокий контраст</string>
+    <string name="st_focus_standard">Стандартный</string>
+    <string name="st_focus_high_hint">Белая рамка вокруг выбранного приложения, хорошо заметная с другого конца комнаты.</string>
+    <string name="st_focus_standard_hint">Как на Apple TV из коробки: выбранное приложение лишь приподнимается.</string>
+    <string name="st_effects">Эффекты</string>
+    <string name="st_effects_auto">Авто</string>
+    <string name="st_effects_full">Полные</string>
+    <string name="st_effects_lite">Лёгкие</string>
+    <string name="st_effects_hint">Лёгкие: простые панели, выбранное приложение без блика, экран остаётся на 60 Гц. Для телевизоров, которые подтормаживают.</string>
+    <string name="st_effects_auto_lite_hint">У этого телевизора мало памяти или старый Android, поэтому «Авто» выбирает лёгкие.</string>
+    <string name="cc_inputs_settings">Настройки источников</string>
+    <string name="cc_inputs_list">Показывать в списке</string>
+    <string name="cc_inputs_list_hint">Снимите отметку с источников, которых у телевизора нет или которыми вы не пользуетесь. Они пропадут из списка и с главного экрана.</string>
+    <string name="cc_inputs_cec">Переключать при включении устройства</string>
+    <string name="cc_inputs_cec_hint">Когда приставка или консоль включается по HDMI-CEC (One Touch Play), телевизор переключается на её источник, как это делает его собственный главный экран. Не каждый телевизор сообщает об этом; телевизоры на Amlogic, как многие Xiaomi, сообщают.</string>
+    <string name="cc_inputs_pin">Показывать на главном экране (любое число)</string>
+    <string name="cc_inputs_boot">При включении телевизора (один)</string>
+    <string name="cc_inputs_boot_none">Ничего, оставаться в Halo TV</string>
+    <string name="cc_inputs_boot_hint">Переключаться на этот источник при включении телевизора или выходе из ожидания. Кнопка «Домой» по-прежнему возвращает в Halo TV.</string>
+    <string name="cc_inputs_pin_hint">Закреплённые источники появляются плитками в начале главного экрана; выберите одну, чтобы сразу переключиться. Удерживайте плитку, чтобы переместить или убрать её.</string>
+    <string name="menu_unpin_source">Убрать с главного экрана</string>
+    <string name="menu_source_device">Подключённое устройство</string>
+    <string name="menu_source_plain">По умолчанию</string>
+    <string name="device_apple_tv">Apple TV</string>
+    <string name="device_playstation">PlayStation</string>
+    <string name="device_switch">Nintendo Switch</string>
+    <string name="device_xbox">Xbox</string>
+    <string name="device_console">Игровая консоль</string>
+    <string name="device_computer">Компьютер</string>
+    <string name="device_set_top_box">ТВ-приставка</string>
+    <string name="device_speaker">Саундбар</string>
+    <string name="cc_update_available">Новая версия: %s</string>
+    <string name="cc_update_title">Halo TV %s</string>
+    <string name="cc_update_current">На этом телевизоре установлено приложение Halo TV %s.</string>
+    <string name="cc_update_notes">Что нового в %s</string>
+    <string name="cc_update_keeps">Ваши приложения, раскладка, обои и настройки останутся без изменений.</string>
+    <string name="cc_update_scan">Отсканируйте QR-код, чтобы открыть страницу релизов Halo TV с APK и инструкциями.</string>
+    <string name="cc_update_scan_else">Не получается установить? Отсканируйте телефоном, чтобы увидеть другие способы обновления.</string>
+    <string name="cc_update_install">Скачать и установить</string>
+    <string name="cc_update_downloading">Загрузка… %d%%</string>
+    <string name="cc_update_opened">Установщик открыт: подтвердите обновление в нём. Когда всё закончится, выберите «Готово», чтобы вернуться в Halo TV со всеми сохранёнными настройками.</string>
+    <string name="cc_update_permission">Разрешите Halo TV устанавливать приложения в открывшихся настройках, затем вернитесь и снова выберите «Скачать и установить».</string>
+    <string name="cc_update_storage_permission">Для сохранения обновления этому телевизору нужен доступ к хранилищу. Разрешите доступ к файлам в запросе, затем снова выберите «Скачать и установить».</string>
+    <string name="cc_update_failed_download">Не удалось скачать или проверить обновление. Проверьте сеть и повторите попытку либо используйте QR-код для установки вручную.</string>
+    <string name="cc_update_failed_blocked">Этот телевизор не позволяет приложениям устанавливать другие приложения. Обновитесь командой ниже.</string>
+    <string name="cc_update_failed_signature">Aerial на этом телевизоре подписан иначе, чем официальный, поэтому обновить его поверх нельзя.</string>
+    <string name="cc_update_failed_older">Более новой версии на сайте пока нет. Повторите попытку позже.</string>
+    <string name="st_pin">Родительский PIN-код</string>
+    <string name="st_pin_off">Выкл.</string>
+    <string name="st_pin_on">Вкл.</string>
+    <string name="st_pin_hint">Запрашивается перед открытием настроек телевизора и перед возвратом скрытых приложений.</string>
+    <string name="pin_enter">Введите PIN-код</string>
+    <string name="pin_enter_hint">Используйте цифровые клавиши или клавиатуру ниже.</string>
+    <string name="pin_create">Выберите PIN-код</string>
+    <string name="pin_create_hint">Четыре цифры. Сохраните его в надёжном месте: если он забыт, сбросить его можно только с компьютера по ADB.</string>
+    <string name="pin_confirm">Введите ещё раз</string>
+    <string name="pin_wrong">Неверный PIN-код. Попробуйте ещё раз.</string>
+    <string name="pin_mismatch">PIN-коды не совпадают. Выберите заново.</string>
+    <string name="pin_kind_hint">Цифры вводятся цифровыми клавишами или с клавиатуры на экране. Стрелки — это четыре нажатия клавиш со стрелками, и ребёнок рядом ничего не увидит.</string>
+    <string name="pin_kind_digits">Четыре цифры</string>
+    <string name="pin_kind_arrows">Четыре стрелки</string>
+    <string name="pin_arrows_hint">Нажмите клавиши со стрелками четыре раза: вверх, вниз, влево или вправо.</string>
+    <string name="pin_arrows_create_hint">Нажмите клавиши со стрелками четыре раза. Сохраните порядок в надёжном месте: если он забыт, сбросить его можно только с компьютера по ADB.</string>
+    <string name="weather_clear">Ясно</string>
+    <string name="weather_partly_cloudy">Переменная облачность</string>
+    <string name="weather_cloudy">Облачно</string>
+    <string name="weather_fog">Туман</string>
+    <string name="weather_rain">Дождь</string>
+    <string name="weather_snow">Снег</string>
+    <string name="weather_thunder">Грозы</string>
+    <string name="weather_temperature">%1$d°</string>
+    <string name="weather_high_low">Макс.: %1$d°  Мин.: %2$d°</string>
+    <string name="st_columns">Приложений в ряду</string>
+    <string name="st_columns_hint">Сколько приложений помещается в ряд на главном экране и в папках. Шесть — больше видно сразу; четыре — крупнее, их лучше видно издалека.</string>
+    <string name="st_peek">Второй ряд</string>
+    <string name="st_peek_show">Выглядывает</string>
+    <string name="st_peek_hide">Скрыт</string>
+    <string name="st_peek_hint">При одном ряде верх второго ряда выглядывает под первым, показывая, что ниже есть ещё. «Скрыт» прячет его, пока вы не нажмёте вниз.</string>
+    <string name="menu_boot_on">Открывать при включении ТВ</string>
+    <string name="menu_boot_off">Не открывать при включении ТВ</string>
+    <string name="cc_boot">При включении ТВ</string>
+    <string name="notice_boot_on">%1$s откроется при включении телевизора</string>
+    <string name="notice_boot_switch">%1$s откроется при включении телевизора вместо %2$s</string>
+    <string name="notice_boot_off">%1$s больше не будет открываться при включении телевизора</string>
+    <string name="tile_stock_home">Главный экран ТВ</string>
+    <string name="tile_xiaowei_call">Xiaowei Call</string>
+    <string name="tile_kids">Детям</string>
+    <string name="ss_videos">Видео</string>
+    <string name="ss_videos_hint">Добавьте MP4 или MOV со страницы на телефоне. Просмотр без сети; если видео недоступны, показываются фото.</string>
+    <string name="ss_system">Системная</string>
+    <string name="ss_system_hint">Заставка самого телевизора, как задумал производитель (например, картины Xiaomi). Halo TV свою не показывает.</string>
+    <string name="wp_videos_note">Ваши видео, отправленные с телефона: без звука, одно за другим. Движутся как аэросъёмка и останавливаются на текущем кадре.</string>
+    <string name="wp_videos_rotate">Мои видео по очереди</string>
+    <string name="wp_video_note">Ваше видео, отправленное с телефона: без звука, по кругу. Движется как аэросъёмка и останавливается на текущем кадре.</string>
+    <string name="wp_source_note">Живая картинка этого входа за главным экраном, без звука; звук есть, если открыть сам вход. У приложений ниже фон становится матовым. Пока картинки нет, виден тёмный фон.</string>
+    <string name="st_play">Воспроизведение</string>
+    <string name="st_play_still">В покое</string>
+    <string name="st_play_always">Всегда</string>
+    <string name="st_play_hint">В покое: через 10 секунд на верхнем ряду (в двухрядном виде — на любом из двух); любая кнопка останавливает. Всегда: кнопки не останавливают, фон чуть затемнён; останавливается, когда вы переходите к приложениям ниже.</string>
+    <string name="ss_show_time">Время</string>
+    <string name="ss_show_time_hint">Время на заставках с аэросъёмкой и фото. Время и название места время от времени слегка сдвигаются, чтобы не выгорал экран.</string>
+    <string name="ss_flip_clock">Перекидные часы</string>
+    <string name="ss_standby_after">Переход в режим ожидания</string>
+    <string name="ss_standby_hint">Через это время Halo TV завершит системную заставку, чтобы Android перевёл телевизор в режим ожидания. «Никогда» оставляет заставку включённой.</string>
+    <string name="home_good_morning">Доброе утро</string>
+    <string name="home_good_afternoon">Добрый день</string>
+    <string name="home_good_evening">Добрый вечер</string>
+    <string name="home_good_night">Спокойной ночи</string>
+    <string name="wp_wallpaper_title">Настройки обоев</string>
+    <string name="wp_dynamic">Динамические видеообои</string>
+    <string name="wp_dynamic_hint">Отсканируйте код справа, загрузите видео с телефона и выберите его здесь.</string>
+    <string name="st_refresh_rate">Частота обновления</string>
+    <string name="st_refresh_rate_hint">Применяется только к Halo TV; видеоприложения используют системный режим. Неподдерживаемые режимы отключены. Авто выбирает максимальный режим без затемнения экрана по данным Android (Android 12+), иначе действует системный режим. Ручное переключение может ненадолго погасить экран.</string>
+    <string name="st_refresh_auto">Авто</string>
+    <string name="st_refresh_30">30 Гц</string>
+    <string name="st_refresh_60">60 Гц</string>
+    <string name="st_refresh_120">120 Гц</string>
+    <string name="cc_about_attribution">Halo TV — неофициальная модификация проекта Aerial с открытым исходным кодом.</string>
+    <string name="donate_title">Поддержать Halo TV</string>
+    <string name="donate_open">Открыть</string>
+    <string name="donate_subtitle">Поддержите разработчика Halo TV</string>
+    <string name="donate_description">Спасибо, что пользуетесь Halo TV. Ваша поддержка помогает его развитию.</string>
+    <string name="donate_hint">Поддержка добровольная, сумма любая. Все функции бесплатны.</string>
+    <string name="donate_wechat">WeChat Pay</string>
+    <string name="donate_alipay">Alipay</string>
+    <string name="donate_close">Закрыть</string>
+    <string name="donate_back">Нажмите Назад для закрытия</string>
+    <string name="guard_consent_description">Home Guard использует специальные возможности для кнопки Home и может возвращать Halo TV. При наличии разрешений служба может восстанавливаться после перезапуска. Отключите её здесь; домашний экран выбирается в настройках системы.</string>
+    <string name="guard_agree_enable">Согласиться и настроить Home Guard</string>
+    <string name="guard_turn_off">Выключить Home Guard</string>
+    <string name="guard_turn_off_hint">Отключает Home Guard и его автоматическое восстановление. Домашний экран меняется в системных настройках.</string>
+    <string name="cc_system_settings">Системные настройки</string>
+    <string name="cc_halo_settings">Настройки Halo TV</string>
+    <string name="halo_notice_title">Уведомление Halo TV</string>
+    <string name="halo_notice_body">Halo TV не является работой автора Aerial или официальным выпуском. Проект создан на основе открытого проекта pengchujin/aerial-tv (https://github.com/pengchujin/aerial-tv), подготовлен и опубликован Null_. Права на оригинальный проект Aerial, его название, код и лицензии принадлежат соответствующим правообладателям. Проект не связан с автором Aerial, Apple или производителями телевизоров и не поддерживается ими.</string>
+    <string name="halo_notice_close">Закрыть</string>
+    <string name="halo_notice_back">Нажмите «Назад», чтобы закрыть</string>
+    <string name="home_wallpaper_screensaver">Обои и заставка</string>
+    <string name="home_network_settings">Настройки сети</string>
+    <string name="clock_bar">Панель часов</string>
+    <string name="clock_center">По центру</string>
+    <string name="clock_status">В строке состояния</string>
+    <string name="clock_bar_size">Размер часов</string>
+    <string name="clock_default">По умолчанию</string>
+    <string name="clock_extra">Очень большой</string>
+    <string name="weather_city_edit">Город погоды</string>
+    <string name="weather_city_hint">Введите название города</string>
+    <string name="weather_city_failed">Город не найден</string>
+    <string name="clock_text_color">Цвет текста рабочего стола</string>
+    <string name="clock_white">Белый</string>
+    <string name="clock_dark_gray">Тёмно-серый</string>
+    <string name="clock_black">Чёрный</string>
+    <string name="plate_liquid">Жидкое стекло</string>
+    <string name="category_static">Статичные обои</string>
+    <string name="category_dynamic">Живые обои</string>
+    <string name="category_saver">Заставка</string>
+    <string name="focus_liquid_slide">Жидкое скольжение</string>
+    <string name="sound_soft">Мягкий</string>
+    <string name="sound_crystal">Звонкий</string>
+    <string name="settings_preview_title">Предпросмотр</string>
+    <string name="settings_preview_hint">Схема · условные значки</string>
+    <string name="wallpaper_hold_manage">Удерживайте OK для просмотра или удаления загруженных обоев</string>
+    <string name="ss_aerial_keeps">Halo TV хранит на телевизоре %2$d последних фильма (до %1$s); обои и заставка показывают их по очереди, каждый день добавляется новый. В заставке вправо — новый фильм, влево — предыдущий.</string>
+    <string name="cc_self_compile">Сделать Halo TV плавнее</string>
+    <string name="home_clean_background">Очистить фон</string>
+    <string name="home_clean_requested">Запрошена очистка фоновых приложений; решение принимает система.</string>
+    <string name="home_clean_none">Подходящие приложения не найдены.</string>
+    <string name="home_clean_unsupported">Android 14 и выше не разрешает такую очистку других приложений.</string>
+    <string name="home_clean_result">Запрошена очистка %1$d приложений. Изменение доступной памяти: %2$s МБ (оценка системы).</string>
+    <string name="video_sound">Звук видеообоев</string>
+    <string name="video_sound_hint">Применяется к загруженным видеообоям; по умолчанию звук выключен.</string>
+    <string name="video_muted">Без звука</string>
+    <string name="video_unmuted">Со звуком</string>
+    <string name="video_fit">Масштаб видео</string>
+    <string name="video_fit_hint">При заполнении видео может обрезаться; при вписывании возможны чёрные полосы.</string>
+    <string name="video_fill">Заполнить</string>
+    <string name="video_contain">Вписать</string>
+    <string name="wallpaper_current">Используется</string>
+    <string name="wallpaper_apply">Установить обои</string>
+    <string name="wallpaper_delete">Удалить</string>
+    <string name="wallpaper_delete_confirm">Удалить эти загруженные обои?</string>
+    <string name="settings_category_home">Главный экран</string>
+    <string name="settings_category_clock">Часы и погода</string>
+    <string name="settings_category_controls">Управление и производительность</string>
+    <string name="settings_category_safety">Безопасность</string>
+    <string name="settings_icon_position">Положение значка настроек</string>
+    <string name="settings_icon_left">Вверху слева</string>
+    <string name="settings_icon_right">Справа</string>
+    <string name="settings_icon_upper_right">Вверху справа</string>
+    <string name="settings_icon_visibility">Значок настроек</string>
+    <string name="settings_icon_always">Всегда виден</string>
+    <string name="settings_icon_fade">Скрывать</string>
+    <string name="settings_icon_fade_hint">После затухания нажмите вверх или меню; скрытый значок остаётся доступным.</string>
+    <string name="show_lunar_date">Лунная дата</string>
+    <string name="lunar_date_value">Лунный календарь: %1$s</string>
+    <string name="lite_weather_phone_hint">Отсканируйте QR-код, чтобы выбрать город на телефоне.</string>
+    <string name="settings_icon_hidden">Скрыть</string>
+    <string name="clock_bold">Крупный и жирный</string>
+
+    <string name="cc_update_waiting">Ожидание установки…</string>
+
+    <string name="kids_title">Дети и пожилые</string>
+
+    <string name="kids_hint">На главном экране только выбранные приложения, переставить ничего нельзя. Чтобы выйти, нужен родительский PIN; режим вернётся сам, когда включится заставка или телевизор уснёт.</string>
+
+    <string name="kids_kind">Для кого</string>
+
+    <string name="kids_kind_kids">Дети</string>
+
+    <string name="kids_kind_elders">Пожилые</string>
+
+    <string name="kids_kind_kids_hint">Для детей: лимит времени, перерывы, другие приложения не открываются.</string>
+
+    <string name="kids_kind_elders_hint">Для пожилых: крупные плитки с названиями и белая рамка фокуса, ничего не сдвинуть случайно.</string>
+
+    <string name="kids_block">Другие приложения</string>
+
+    <string name="kids_block_on">Не пускать</string>
+
+    <string name="kids_block_off">Пускать</string>
+
+    <string name="kids_block_hint">Невыбранное приложение, открытое кнопкой пульта, голосовым помощником или из другого приложения, сразу возвращает на главный экран.</string>
+
+    <string name="kids_block_no_guard">На этом телевизоре не включена защита главного экрана: на нём только выбранные приложения, но открытые иначе остановить нельзя.</string>
+
+    <string name="kids_weekday">Будни</string>
+
+    <string name="kids_weekend">Выходные</string>
+
+    <string name="kids_minutes_hint">Минут в день в приложениях и на входах; время на главном экране не считается. На странице для телефона можно задать любое число.</string>
+
+    <string name="kids_no_limit">Нет</string>
+
+    <string name="kids_latest">До</string>
+
+    <string name="kids_latest_hint">Телевизор недоступен до %s и с этого времени. На странице для телефона можно задать любое время.</string>
+
+    <string name="kids_break">Перерывы</string>
+
+    <string name="kids_break_hint">После стольких минут просмотра — перерыв на %d мин.</string>
+
+    <string name="kids_start_kids">Включить детский режим</string>
+
+    <string name="kids_start_elders">Включить режим для пожилых</string>
+
+    <string name="kids_pick_first">Сначала выберите справа хотя бы одно приложение.</string>
+
+    <string name="kids_loading">Приложения ещё загружаются.</string>
+
+    <string name="kids_turn_off">Выключить режим</string>
+
+    <string name="kids_apps">Приложения · %d</string>
+
+    <string name="kids_apps_hint">Показываются в порядке выбора. Новые приложения сами не добавляются.</string>
+
+    <string name="kids_sources_note">Если выбран вход, кнопкой входов на пульте можно переключиться и на другие входы телевизора: у них общий плеер, и Aerial их не различает.</string>
+
+    <string name="kids_m">%d мин</string>
+
+    <string name="kids_h">%d ч</string>
+
+    <string name="kids_hm">%1$d ч %2$d мин</string>
+
+    <string name="kids_lock_day">На сегодня всё</string>
+
+    <string name="kids_lock_day_sub">Сегодня уже %s телевизора. Продолжим завтра.</string>
+
+    <string name="kids_lock_late">Время телевизора закончилось</string>
+
+    <string name="kids_lock_late_sub">Телевизор доступен с %1$s до %2$s.</string>
+
+    <string name="kids_lock_break">Пора отдохнуть</string>
+
+    <string name="kids_lock_break_sub">Посмотрите вдаль. Можно продолжить через %s.</string>
+
+    <string name="kids_parent">Родитель</string>
+
+    <string name="kids_grant_title">Добавить время</string>
+
+    <string name="kids_grant">Ещё %d мин</string>
+
+    <string name="kids_grant_day">Сегодня без лимита</string>
+
+    <string name="cc_kids_allowed_until">Разрешено до %s</string>
+
+    <string name="cc_kids_no_limit">Сегодня без лимита · уже %s</string>
+
+    <string name="cc_kids_left">Сегодня осталось %s</string>
+
+    <string name="cc_kids_leave">Выйти из детского режима</string>
+
+    <string name="cc_elders_leave">Выйти из режима для пожилых</string>
+
+    <string name="cc_kids_back">Вернуться в детский режим</string>
+
+    <string name="cc_elders_back">Вернуться в режим для пожилых</string>
+
+    <string name="st_kids">Дети и пожилые</string>
+
+    <string name="st_kids_hint">Главный экран только с выбранными приложениями и лимит времени для детей.</string>
+
+    <string name="kids_blocked">«%s» здесь недоступно</string>
+
+    <string name="kids_warn">Осталось %d мин</string>
+
+    <string name="kids_warn_break">Перерыв через %d мин</string>
+    <string name="category_sources">Источники ТВ</string>
+    <string name="halo_kids_custom">Другое значение</string>
+    <string name="halo_kids_configure_first">Сначала настройте детский режим и режим для пожилых в настройках Halo TV</string>
+    <string name="halo_kids_invalid_minutes">Введите число минут от 1 до 1440</string>
+
+    <string name="halo_cat_appearance">Внешний вид</string>
+    <string name="halo_cat_apps">Приложения и Dock</string>
+    <string name="halo_cat_remote">Пульт и звук</string>
+    <string name="halo_cat_family">Семья</string>
+    <string name="halo_cat_performance">Производительность</string>
+    <string name="halo_cat_about">О приложении</string>
+    <string name="halo_phone_features">Загрузка фото и видео\nЗначки приложений\nГород погоды</string>
+    <string name="halo_phone_hint">Подключите телефон или компьютер к той же сети, что и телевизор. Адрес можно открыть в браузере.</string>
+
+    <string name="halo_recent">Недавние изменения</string>
+    <string name="halo_reset_action">Сбросить настройки</string>
+    <string name="halo_reset_confirm">Сбросить настройки этой страницы?</string>
+    <string name="halo_reset_hint">Будут сброшены только настройки этой страницы. Файлы и скрытые приложения сохранятся.</string>
+    <string name="halo_reset_cancel">Отмена</string>
+    <string name="halo_phone_tips">Советы</string>
+
+    <string name="halo_phone_scan">Настройка по QR-коду</string>
+    <string name="halo_phone_same_network">Телефон и ТВ в одной сети</string>
+    <string name="halo_phone_browser">Или откройте адрес в браузере</string>
+    <string name="halo_free_notice">Halo TV можно бесплатно скачать и использовать. Если вы заплатили другому источнику, автор Halo TV не получал эту оплату. Если вам нравится Halo TV, вы можете добровольно поддержать автора на странице пожертвований. Спасибо за поддержку!</string>
+
+    <string name="halo_video_decoder_error">Видеообои не воспроизводятся: телевизор может не поддерживать кодек или разрешение.</string>
+    <string name="halo_video_damaged_error">Не удалось прочитать видеообои: файл может быть повреждён. Загрузите его снова.</string>
+    <string name="halo_video_playback_error">Ошибка видеообоев: файл может быть повреждён или не поддерживается.</string>
+
+    <string name="bing_library">Bing wallpapers</string>
+    <string name="bing_loading">Loading…</string>
+    <string name="bing_failed">Could not load. Check your network and retry.</string>
+    <string name="bing_retry">Retry</string>
+    <string name="bing_select">Select a wallpaper for HD preview</string>
+    <string name="bing_apply">Установить обои</string>
+    <string name="bing_applying">Применение…</string>
+    <string name="bing_download_failed">Download or save failed. Check network and storage.</string>
+    <string name="bing_all">All</string>
+
+    <string name="wallpaper_online_video">Online video wallpaper</string>
+    <string name="wallpaper_local_video">Local video wallpaper</string>
+    <string name="wallpaper_local_photo">Local wallpapers</string>
+    <string name="wallpaper_empty_video">No local videos. Scan the QR code to upload.</string>
+    <string name="wallpaper_empty_photo">No local photos. Scan the QR code to upload.</string>
+    <string name="wallpaper_follow_app">Follow app</string>
+    <string name="saver_local_photos">Local photos</string>
+    <string name="saver_local_video">Local videos</string>
+    <string name="saver_online_video">Online video</string>
+
+    <string name="aerial_source_notice">Videos from Apple; thumbnail catalogue references Aerial Views. Rights belong to their respective owners.</string>
+    <string name="bing_source_notice">Wallpapers from Bing, archive by YanGN (https://github.com/ygnstudio/bing_wallpaper_archive). Image rights belong to their respective owners.</string>
+
+    <string name="aerial_creator_unknown">Source: Apple · individual creator not listed</string>
+    <string name="bing_credit_unknown">Creator information not provided by the archive</string>
+    <string name="bing_credit_details">Full copyright information</string>
+
+    <string name="rotation_off">Off</string>
+    <string name="rotation_daily">Daily</string>
+    <string name="rotation_half_hour">Every 30 minutes</string>
+    <string name="rotation_hour">Every hour</string>
+    <string name="rotation_custom">Custom interval</string>
+    <string name="rotation_custom_value">Custom: %1$d min</string>
+    <string name="rotation_custom_minutes">Custom interval (minutes, 1–1440)</string>
+    <string name="bing_local_note">Downloaded images are stored on this device and appear in local photos.</string>
+    <string name="bing_rotation_hint">Select an interval, then set a photo as wallpaper to start. You can turn rotation off anytime.</string>
+
+    <string name="rotation_starting">Loading a random wallpaper…</string>
+    <string name="rotation_started">Random rotation started. Return home to view.</string>
+    <string name="rotation_failed">Unable to load wallpaper. Check your network or select the interval again.</string>
+
+    <string name="bing_cache_note">Онлайн-обои хранятся только в заменяемом кэше.</string>
+    <string name="halo_source_bing_note">Explore daily wallpapers</string>
+    <string name="halo_source_local_photo_note">Use photos stored on this device</string>
+    <string name="halo_source_online_video_note">Browse online video wallpapers</string>
+    <string name="halo_source_local_video_note">Use videos stored on this device</string>
+    <string name="halo_power">Power</string>
+    <string name="halo_power_unavailable">Cannot open the system power menu. Use the remote power button.</string>
+    <string name="halo_kids_mode">Kids mode</string>
+    <string name="halo_elders_mode">Elders mode</string>
+    <string name="halo_power_warning">The TV power menu may immediately start a shutdown countdown. Be ready to cancel with the remote. Available actions depend on your TV.</string>
+    <string name="halo_power_continue">Open system power menu</string>
+    <string name="halo_auto_clean">Clean cached apps when idle</string>
+    <string name="halo_auto_clean_note">After 2 minutes idle on Home, request cleanup of cached apps; skipped during audio playback. Android controls the result.</string>
+    <string name="halo_contact_title">Contact and feedback</string>
+    <string name="halo_contact_details">Douyin: eyubaobao777  ·  Xiaohongshu: 11350972266
+WeChat: scan code  ·  Email: 1227888560@qq.com</string>
+    <string name="halo_contact_heading_email">Contact: WeChat / Douyin / Xiaohongshu · 1227888560@qq.com</string>
+    <string name="aerial_source_about">Videos from Apple; thumbnail catalogue references Aerial Views (https://github.com/theothernt/AerialViews). Rights belong to their respective owners.</string>
+    <string name="quiz_interval">Quiz interval (minutes)</string>
+    <string name="elder_reminder">Rest reminder (minutes)</string>
+    <string name="quiz_reward_max">Maximum reward (minutes)</string>
+    <string name="quiz_progress">Question %1$d / 5 · Answer 4 correctly</string>
+    <string name="quiz_pass">Quiz passed!</string>
+    <string name="quiz_retry">Try again: answer 4 correctly</string>
+    <string name="quiz_continue">Continue watching</string>
+    <string name="quiz_again">Try again</string>
+    <string name="quiz_submit">Submit answer</string>
+    <string name="elder_rest_message">You have been watching for a while. Consider taking a break.</string>
+    <string name="halo_clock_format">Clock format</string>
+    <string name="halo_clock_24">24 hour</string>
+    <string name="halo_clock_12">12 hour</string>
+    <string name="halo_flip_seconds">Показывать секунды</string>
+    <string name="halo_saver_bing">Online wallpapers</string>
+    <string name="halo_saver_bing_loading">Loading Bing wallpaper…</string>
+    <string name="halo_saver_bing_offline">Online wallpaper unavailable. Retrying shortly.</string>
+    <string name="halo_desktop_clock_format">Desktop clock format</string>
+    <string name="rotation_home_return">Change when returning home</string>
+    <string name="halo_update_manage">Обновление ПО</string>
+    <string name="halo_update_phone_confirm">Обновить Halo TV с %1$s до %2$s?</string>
+    <string name="halo_update_phone_install">Подтвердить обновление</string>
+    <string name="halo_update_phone_back">Назад</string>
+    <string name="halo_update_phone_offline">Подключите телевизор к локальной сети, чтобы показать код.</string>
+    <string name="halo_update_new">Есть обновление</string>
+    <string name="halo_update_check">Проверить обновления</string>
+    <string name="halo_update_checking">Проверка обновлений…</string>
+    <string name="halo_update_current">Установлена последняя версия.</string>
+    <string name="halo_update_check_failed">Не удалось проверить обновления. Повторите попытку или выберите локальный APK.</string>
+    <string name="halo_update_online">Обновить по сети</string>
+    <string name="halo_update_manual">Обновить вручную</string>
+    <string name="halo_update_shared_qr">Отсканируйте QR-код настроек и выберите отправку APK на главной странице телефона.</string>
+    <string name="halo_update_install_permission">Разрешите Halo TV установку приложений в настройках системы, затем вернитесь и подтвердите ещё раз.</string>
+    <string name="halo_update_discard">Удалить полученный APK</string>
+    <string name="halo_show_home_greeting">Приветствие</string>
+    <string name="halo_show_home_time">Время</string>
+    <string name="halo_show_home_date">Дата</string>
+    <string name="halo_update_step_connect">Подключите телефон и телевизор к одной сети.</string>
+    <string name="halo_update_step_install">После отправки APK откройте Пункт управления → Обновление ПО на телевизоре. Выберите установку обновления с телефона и подтвердите.</string>
+    <string name="halo_update_phone_received">Установить обновление с телефона</string>
+    <string name="halo_update_phone_tv_only">Телефон передаёт файл. Установка начнётся после подтверждения на телевизоре.</string>
+    <string name="halo_update_qr_loading">Подготовка QR-кода…</string>
+    <string name="quiz_title">Викторина</string>
+    <string name="quiz_position">Вопрос %1$d из %2$d</string>
+    <string name="quiz_goal">Ответь правильно на 4 вопроса, чтобы получить время для просмотра.</string>
+    <string name="quiz_rest_title">Дай глазам отдохнуть</string>
+    <string name="quiz_rest_message">Привет! Мир вокруг ещё интереснее экрана. Потянись, подвигайся и посмотри вдаль. Возвращайся, когда отдохнёшь!</string>
+    <string name="quiz_pick_one">Выбери один ответ</string>
+    <string name="quiz_pick_multiple">Выбери все верные ответы</string>
+    <string name="quiz_pick_before_submit">Сначала выбери ответ</string>
+    <string name="quiz_score">Правильных ответов: %1$d из %2$d</string>
+    <string name="quiz_back_to_questions">Вернуться к викторине</string>
+    <string name="halo_dock_corners">Стиль углов</string>
+    <string name="halo_dock_corners_round">Большой радиус</string>
+    <string name="halo_dock_corners_compact">Малый радиус</string>
+    <string name="quiz_parent_allowance_hint">Родитель может добавить время просмотра ниже или выйти из детского режима.</string>
+    <string name="quiz_rest_message_playful">Мир вокруг интереснее экрана! Подвигайся, посмотри вдаль и возвращайся после отдыха!</string>
+    <string name="quiz_remote_hint">Стрелки: выбор · OK: ответ</string>
+    <string name="welcome3_eyebrow">Добро пожаловать</string>
+    <string name="welcome3_tagline">Ваш телевизор — таким, как вам нравится.</string>
+    <string name="welcome3_credit">На основе открытого проекта Aerial. Поддержка и выпуск: Null_.</string>
+    <string name="welcome3_thanks">Спасибо автору Aerial и всем участникам открытых проектов.</string>
+    <string name="welcome3_start">Начать</string>
+    <string name="welcome3_disclaimer">Неофициальный выпуск Aerial. Не связан с Apple и производителями ТВ.</string>
+    <string name="aerial_library">Онлайн-видео</string>
+    <string name="aerial_library_hint">Выберите видео для просмотра, затем установите его фоном. Требуется интернет.</string>
+    <string name="aerial_library_choose">Выберите видео для просмотра</string>
+    <string name="aerial_library_rotate">Чередовать онлайн-видео</string>
+    <string name="saver_online_unavailable">Онлайн-заставка недоступна. Повторная попытка позже. Назад — на рабочий стол.</string>
+    <string name="saver_local_unavailable">Локальное видео недоступно. Проверьте файл. Назад — на рабочий стол.</string>
+    <string name="halo_installed_build">Установлено на телевизоре: %1$s</string>
+    <string name="halo_guard_running">Защита главного экрана работает</string>
+    <string name="halo_guard_unbound">Защита включена, но служба не работает</string>
+    <string name="halo_guard_unknown">Система не сообщает состояние защиты</string>
+    <string name="halo_guard_disabled">Разрешите защиту в специальных возможностях</string>
+    <string name="halo_guard_restore_allowed">Автовосстановление разрешено. Разрешите доступ к уведомлениям и автозапуск.</string>
+    <string name="halo_guard_restore_missing">Нет разрешения на автовосстановление. Включите специальные возможности; если защита отключается, следуйте QR-инструкции ADB.</string>
+    <string name="halo_guard_repair">Переподключить защиту</string>
+    <string name="halo_guard_restricted">О приложении: разрешить ограниченные настройки</string>
+</resources>

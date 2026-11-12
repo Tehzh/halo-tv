@@ -1,0 +1,639 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="st_device_capacity">Жад және сақтау орны</string>
+    <string name="st_device_capacity_hint">Сағаттың астында қолжетімді жедел жад пен ішкі сақтау орнын көрсету.</string>
+    <string name="home_device_capacity">Жедел жад бос %1$s · Сақтау орны бос %2$s</string>
+
+    <string name="guard_name">Halo TV Home Guard</string>
+    <string name="guard_description">Басты экранды өзгертуге болмайтын теледидарларда Halo TV-ді басты экран ретінде сақтайды. Экран мазмұнын оқымайды.</string>
+    <string name="greeting_morning">Қайырлы таң</string>
+    <string name="greeting_afternoon">Қайырлы күн</string>
+    <string name="greeting_evening">Қайырлы кеш</string>
+    <string name="cc_title">Басқару орталығы</string>
+    <string name="cc_inputs">Көздер</string>
+    <string name="cc_network">Желі</string>
+    <string name="cc_settings">Параметрлер</string>
+    <string name="cc_volume">Дыбыс деңгейі</string>
+    <string name="cc_muted">Дыбыс өшірулі</string>
+    <string name="cc_home_default">Halo TV — сіздің басты экраныңыз</string>
+    <string name="cc_home_guarded">Home Guard қосулы</string>
+    <string name="cc_home_not_default">Әдепкі басты экран емес</string>
+    <string name="cc_setup_title">Halo TV-ді басты экран жасаңыз</string>
+    <string name="cc_setup_body">Halo TV тек APK-дан орнатылса, ол ашылады, бірақ «Басты бет» түймесі, қосу және күту режимінен шығу бұрынғы лаунчерге апара береді.</string>
+    <string name="cc_setup_guard">Home Guard қосу</string>
+    <string name="cc_setup_guard_where">Арнайы мүмкіндіктер</string>
+    <string name="cc_setup_home">Әдепкі басты экран қолданбасын таңдау</string>
+    <string name="cc_setup_revival">Күтуден кейін оралу</string>
+    <string name="cc_setup_revival_where">Хабарландыруларға қолжетімділік</string>
+    <string name="cc_setup_scan">Halo TV орнату нұсқаулығы</string>
+    <string name="cc_setup_scan_hint">Halo TV орнату және баптау нұсқаулығын көру үшін кодты сканерлеңіз.</string>
+    <string name="cc_back">Артқа</string>
+    <string name="cc_no_inputs">Бұл теледидарда сигнал көздері табылмады</string>
+    <string name="cc_native_inputs">Теледидардың сигнал көздері мәзірі</string>
+    <string name="net_ethernet">Ethernet</string>
+    <string name="net_wifi">Wi-Fi</string>
+    <string name="net_offline">Қосылмаған</string>
+    <string name="net_vpn">VPN</string>
+    <string name="input_connected">Қосылған</string>
+    <string name="input_live_tv">Эфирлік ТД</string>
+    <string name="input_antenna">Антенна</string>
+    <string name="input_digital">Сандық ТД</string>
+    <string name="input_av">AV</string>
+    <string name="menu_move">Жылжыту</string>
+    <string name="menu_to_folder">Қалтаға жылжыту</string>
+    <string name="menu_new_folder">Жаңа қалта</string>
+    <string name="menu_out_of_folder">Қалтадан шығару</string>
+    <string name="menu_rename_folder">Атын өзгерту</string>
+    <string name="menu_ungroup">Қалтаны жою</string>
+    <string name="menu_back">Артқа</string>
+    <string name="folder_default">Қалта</string>
+    <string-array name="folder_names">
+        <item>Жүйе</item>
+        <item>Бейне</item>
+        <item>Музыка</item>
+        <item>Ойындар</item>
+        <item>Балалар</item>
+        <item>Құралдар</item>
+        <item>Қалта</item>
+    </string-array>
+    <string name="menu_hide">Басты экраннан жасыру</string>
+    <string name="menu_reset_icon">Әдепкі белгішені қайтару</string>
+    <string name="menu_info">Қолданба туралы</string>
+    <string name="menu_uninstall">Жою</string>
+    <string name="move_hint">Жылжыту үшін көрсеткілерді пайдаланыңыз · аяқталғанда OK басыңыз</string>
+    <string name="move_hint_touch">Орынды таңдау үшін көрсеткілерді пайдаланыңыз немесе түртіңіз · аяқталғанда OK басыңыз немесе қолданбаны түртіңіз</string>
+    <string name="hidden_title">Жасырын қолданбалар</string>
+    <string name="hidden_hint">Қолданбаны басты экранға қайтару үшін таңдаңыз</string>
+    <string name="hidden_empty">Жасырын қолданбалар жоқ</string>
+    <string name="launch_failed">%1$s ашылмады</string>
+    <string name="unavailable">Бұл теледидарда қолжетімсіз</string>
+    <string name="cc_brightness">Жарықтық</string>
+    <string name="cc_brightness_in_settings">Кескін параметрлері</string>
+    <string name="cc_personalize">Жекелендіру</string>
+    <string name="wp_title">Жекелендіру</string>
+    <string name="wp_wallpaper">Түсқағаз</string>
+    <string name="wp_weather">Ауа райы</string>
+    <string name="wp_weather_none">Ауа райы әлі жоқ. Теледидар желіге қосылғанда жүктеледі.</string>
+    <string name="wp_weather_guessed">Орналасқан жер желі бойынша анықталды. Қате болса, оң жақтағы кодты сканерлеп, қалаңызды көрсетіңіз.</string>
+    <string name="wp_weather_chosen">Қала телефонда орнатылған; өзгерту үшін оң жақтағы кодты сканерлеңіз.</string>
+    <string name="wx_clear">Ашық</string>
+    <string name="wx_partly_cloudy">Ауыспалы бұлтты</string>
+    <string name="wx_cloudy">Бұлтты</string>
+    <string name="wx_fog">Тұман</string>
+    <string name="wx_rain">Жаңбыр</string>
+    <string name="wx_snow">Қар</string>
+    <string name="wx_thunder">Нөсер</string>
+    <string name="wp_daily_latest">Әрқашан бүгінгісі</string>
+    <string name="wp_live">Аэрожиын · басты экранның жоғарғы қатарында ойнайды (екі қатарлы көріністе — екі қатарда да)</string>
+    <string name="wp_photos_rotate">Кезекпен</string>
+    <string name="wp_daily_note">Bing күн суреті, күн сайын жаңасына ауысады.</string>
+    <string name="wp_photos_rotate_note">Фотоларыңыз кезекпен: келесісі күн сайын немесе төменде таңдағаныңыздай жиі.</string>
+    <string name="st_photo_every">Келесі фото</string>
+    <string name="st_photo_every_day">Күн сайын</string>
+    <string name="st_photo_every_hint">Басты экран келесі фотоға қаншалықты жиі ауысады.</string>
+    <string name="wp_photo_note">Сіздің фотоңыз. Телефоннан тағы жіберу үшін оң жақтағы кодты сканерлеңіз.</string>
+    <string name="wp_auto_note">Жарық таңдалған қолданбаның суретінен алынады.</string>
+    <string name="wp_screensaver">Экран қорғаушы</string>
+    <string name="ss_follow_hint">Әлі таңдалмаған, сондықтан түсқағазға ілеседі: аэрожиын түсқағазымен аэрожиын, сурет түсқағазымен фотолар, сол суреттен бастап. Бекіту үшін біреуін таңдаңыз.</string>
+    <string name="ss_aerial">Аэрожиын</string>
+    <string name="ss_photos">Фотолар</string>
+    <string name="ss_clock">Сағат</string>
+    <string name="wp_phone_title">Телефоннан немесе компьютерден баптау</string>
+    <string name="wp_phone_body">Фото мен бейнелерді жіберу, қолданба белгішелерін өзгерту және ауа райына арналған қаланы орнату үшін кодты сканерлеңіз немесе төмендегі мекенжайды компьютер браузерінде ашыңыз. Құрылғы мен теледидар бір желіде болуы керек.</string>
+    <string name="wp_phone_offline">Жергілікті желі мекенжайын алу немесе бетті іске қосу мүмкін болмады. Желі тексеріліп, қайта әрекет жасалады.</string>
+    <string name="ss_start">Қазір бастау</string>
+    <string name="ss_delay">Бастау уақыты</string>
+    <string name="ss_minutes">%d мин</string>
+    <string name="ss_never">Ешқашан</string>
+    <string name="ss_delay_system">Жүйе бойынша</string>
+    <string name="ss_delay_system_off">Жүйе бойынша · өшірулі</string>
+    <string name="ss_delay_system_minutes">Жүйе бойынша · %d мин</string>
+    <string name="ss_back_hint">Кеңес: экран қорғауышты бастау үшін басты экранның жоғарғы қатарында «Артқа» түймесін басыңыз.</string>
+    <string name="ss_back">«Артқа» түймесі</string>
+    <string name="ss_back_on">Бастайды</string>
+    <string name="ss_back_off">Ештеңе істемейді</string>
+    <string name="ss_back_choice_hint">Басты экранның жоғарғы қатарында «Артқа» не істейді. Кездейсоқ басылса, өшіріңіз; экран қорғаушы бәрібір өзі басталады.</string>
+    <string name="ss_quality">Аэрожиын сапасы</string>
+    <string name="ss_quality_hint">«Авто» осы теледидар көрсете алатын ең жақсысын ойнатады: 4K Dolby Vision, 4K немесе 1080p. Түсқағаз аэрожиын болса, экран қорғаушы бейнені түсқағаздың форматында жалғастырады, экран жыпылықтамайды; 4K Dolby Vision таңдалса, Dolby Vision-ға ауысады, сонда экран бір сәтке қараюы мүмкін. 4K Dolby Vision үшін шамамен 25 Мбит/с керек; бейнелер жиі тоқтаса, 1080p таңдаңыз.</string>
+    <string name="ss_quality_auto">Авто</string>
+    <string name="ss_quality_hd">1080p</string>
+    <string name="ss_quality_uhd">4K</string>
+    <string name="ss_quality_dv">4K Dolby Vision</string>
+    <string name="st_focus_style">Фокус стилі</string>
+    <string name="st_home_layout">Басты экран</string>
+    <string name="st_layout">Орналасу</string>
+    <string name="st_clock">Сағат</string>
+    <string name="st_clock_left">Жоғарғы сол жақ</string>
+    <string name="st_clock_right">Жоғарғы оң жақ</string>
+    <string name="st_clock_hint">Сағат, күн және ауа райы қайда орналасады.</string>
+    <string name="st_clock_size">Сағат өлшемі</string>
+    <string name="st_clock_small">Кіші</string>
+    <string name="st_clock_large">Үлкен</string>
+    <string name="st_clock_size_hint">«Кіші» уақыт пен ауа райын бұрышта бір жолда көрсетеді. «Үлкен» экранның жоғарғы жағына үлкен сағатты, оның үстіне күнді, астына ауа райын қояды.</string>
+    <string name="st_clock_hours">Уақыт пішімі</string>
+    <string name="st_clock_hours_system">ТД сияқты</string>
+    <string name="st_clock_hours_24">24 сағат</string>
+    <string name="st_clock_hours_12">12 сағат</string>
+    <string name="st_clock_hours_hint">«ТД сияқты» теледидардың уақыт параметріне сүйенеді, ол болмаса 24 сағатты көрсетеді.</string>
+    <string name="st_names">Қолданба атаулары</string>
+    <string name="st_names_focused">Таңдалған қолданба</string>
+    <string name="st_names_all">Барлық қолданбалар</string>
+    <string name="st_names_hint">Атаулар әр қолданбаның астында немесе тек таңдалғанның астында, Apple TV сияқты.</string>
+    <string name="ss_kind">Түрі</string>
+    <string name="wp_weather_city">Орналасқан жер</string>
+    <string name="st_home_standard">Екі қатар</string>
+    <string name="st_home_one_row">Бір қатар</string>
+    <string name="st_home_layout_hint">«Бір қатар» экранда тек жоғарғы қатарды төменірек көрсетеді, сонда түсқағаздың, мысалы отбасылық фотоның, көбірек бөлігі көрінеді. «Екі қатар» екінші қатардың жоғарғы жағын да көрсетеді. Қалғанын көру үшін төмен басыңыз.</string>
+    <string name="st_plate">Жоғарғы қатар</string>
+    <string name="st_plate_hint">Жоғарғы қатардың астындағы күңгірт шыны тақта, Apple TV сияқты, немесе қолданбалар тікелей түсқағазда.</string>
+    <string name="st_plate_glass">Шыны</string>
+    <string name="st_plate_none">Жоқ</string>
+    <string name="st_sounds">Дыбыстар</string>
+    <string name="st_sounds_hint">Фокус жылжығанда, таңдағанда және «Артқа» басқанда дыбыс шығады, Apple TV сияқты.</string>
+    <string name="st_sounds_tv_hint">Теледидардың өз түйме дыбыстары, мәзірлеріндегідей. Теледидар параметрлерінде өшірулі болса, дыбыс болмайды: онда Halo TV таңдаңыз.</string>
+    <string name="st_sounds_tv">ТД</string>
+    <string name="st_sounds_aerial">Halo TV</string>
+    <string name="st_on">Қосулы</string>
+    <string name="st_off">Өшірулі</string>
+    <string name="st_hidden_apps">Жасырын қолданбалар</string>
+    <string name="st_hidden_apps_hint">Басты экраннан жасырылған қолданбалар қайтару үшін осында сақталады. Ата-аналық PIN-код орнатылған болса, алдымен сол сұралады.</string>
+    <string name="st_home_lock">Экранды бекіту</string>
+    <string name="st_home_lock_hint">Қосулы болса, қолданбада OK түймесін басып тұру немесе «Мәзір» мәзірді ашпайды, сондықтан қолданбаларды байқаусызда жылжыту, жасыру не жою мүмкін емес. Ата-ана PIN коды болса, өшіру үшін PIN керек.</string>
+    <string name="home_locked_notice">Экран бекітілген. Қолданбаларды реттеу үшін «Жекелендіру» бөлімінде «Экранды бекіту» параметрін өшіріңіз.</string>
+    <string name="st_hidden_none">Жоқ</string>
+    <string name="st_hidden_count">%d</string>
+    <string name="st_focus_high">Жоғары контраст</string>
+    <string name="st_focus_standard">Стандартты</string>
+    <string name="st_focus_high_hint">Таңдалған қолданбаның айналасындағы ақ жақтау, бөлменің арғы шетінен де жақсы көрінеді.</string>
+    <string name="st_focus_standard_hint">Apple TV-дің бастапқы күйіндей: таңдалған қолданба тек көтеріледі.</string>
+    <string name="st_effects">Эффекттер</string>
+    <string name="st_effects_auto">Авто</string>
+    <string name="st_effects_full">Толық</string>
+    <string name="st_effects_lite">Жеңіл</string>
+    <string name="st_effects_hint">Жеңіл: панельдер қарапайым, таңдалған қолданбада жылтыр жоқ, экран 60 Гц-те қалады. Кідіретін теледидарларға арналған.</string>
+    <string name="st_effects_auto_lite_hint">Бұл теледидарда жад аз немесе Android ескі, сондықтан «Авто» жеңілді таңдайды.</string>
+    <string name="cc_inputs_settings">Көздер параметрлері</string>
+    <string name="cc_inputs_list">Тізімде көрсету</string>
+    <string name="cc_inputs_list_hint">Теледидарда жоқ немесе пайдаланбайтын көздерден белгіні алыңыз. Олар тізімнен және басты экраннан жоғалады.</string>
+    <string name="cc_inputs_cec">Құрылғы қосылғанда ауысу</string>
+    <string name="cc_inputs_cec_hint">Консоль немесе приставка HDMI-CEC арқылы қосылғанда (One Touch Play), теледидар оның көзіне ауысады, өзінің басты экраны сияқты. Әр теледидар бұл туралы хабарламайды; Amlogic теледидарлары (көптеген Xiaomi) хабарлайды.</string>
+    <string name="cc_inputs_pin">Басты экранда көрсету (кез келген саны)</string>
+    <string name="cc_inputs_boot">Теледидар қосылғанда (біреу)</string>
+    <string name="cc_inputs_boot_none">Ештеңе, Halo TV-де қалу</string>
+    <string name="cc_inputs_boot_hint">Теледидар қосылғанда немесе күту режимінен шыққанда осы көзге ауысу. «Басты бет» бәрібір Halo TV-ге қайтарады.</string>
+    <string name="cc_inputs_pin_hint">Бекітілген көздер басты экранның басында тақтайшалар болып пайда болады; бірден ауысу үшін біреуін таңдаңыз. Жылжыту немесе алып тастау үшін тақтайшаны ұзақ басыңыз.</string>
+    <string name="menu_unpin_source">Басты экраннан алып тастау</string>
+    <string name="menu_source_device">Қосылған құрылғы</string>
+    <string name="menu_source_plain">Әдепкі</string>
+    <string name="device_apple_tv">Apple TV</string>
+    <string name="device_playstation">PlayStation</string>
+    <string name="device_switch">Nintendo Switch</string>
+    <string name="device_xbox">Xbox</string>
+    <string name="device_console">Ойын консолі</string>
+    <string name="device_computer">Компьютер</string>
+    <string name="device_set_top_box">ТД қосымша қорабы</string>
+    <string name="device_speaker">Саундбар</string>
+    <string name="cc_update_available">Жаңа нұсқа: %s</string>
+    <string name="cc_update_title">Halo TV %s</string>
+    <string name="cc_update_current">Бұл теледидарда Halo TV %s қолданбасы орнатылған.</string>
+    <string name="cc_update_notes">%s нұсқасындағы жаңалықтар</string>
+    <string name="cc_update_keeps">Қолданбаларыңыз, орналасуыңыз, түсқағазыңыз және параметрлеріңіз сол күйінде қалады.</string>
+    <string name="cc_update_scan">APK мен нұсқаулар бар Halo TV GitHub релиздер бетін ашу үшін QR кодын сканерлеңіз.</string>
+    <string name="cc_update_scan_else">Орната алмай жатсыз ба? Жаңартудың басқа тәсілдерін көру үшін телефонмен сканерлеңіз.</string>
+    <string name="cc_update_install">Жүктеп алу және орнату</string>
+    <string name="cc_update_downloading">Жүктелуде… %d%%</string>
+    <string name="cc_update_opened">Орнатқыш ашылды: жаңартуды сонда растаңыз. Аяқталғанда, барлық параметрлер сақталған күйде Halo TV-ге оралу үшін «Дайын» таңдаңыз.</string>
+    <string name="cc_update_permission">Жаңа ашылған параметрлерде Halo TV-ге қолданбаларды орнатуға рұқсат беріңіз, содан кейін оралып, «Жүктеп алу және орнату» таңдаңыз.</string>
+    <string name="cc_update_storage_permission">Жаңартуды сақтау үшін бұл теледидарға жадқа кіруге рұқсат қажет. Файлдарға кіру сұрауын мақұлдап, «Жүктеп алу және орнату» түймесін қайта таңдаңыз.</string>
+    <string name="cc_update_failed_download">Жаңартуды жүктеу немесе тексеру мүмкін болмады. Желіні тексеріп қайталаңыз немесе қолмен орнату үшін QR кодын пайдаланыңыз.</string>
+    <string name="cc_update_failed_blocked">Бұл теледидар қолданбаларға басқа қолданбаларды орнатуға рұқсат бермейді. Төмендегі пәрменмен жаңартыңыз.</string>
+    <string name="cc_update_failed_signature">Бұл теледидардағы Aerial ресми нұсқадан басқаша қол қойылған, сондықтан оның үстінен жаңартуға болмайды.</string>
+    <string name="cc_update_failed_older">Сайтта әзірге жаңа нұсқа жоқ. Кейінірек қайталап көріңіз.</string>
+    <string name="st_pin">Ата-аналық PIN-код</string>
+    <string name="st_pin_off">Өшірулі</string>
+    <string name="st_pin_on">Қосулы</string>
+    <string name="st_pin_hint">Теледидар параметрлерін ашар алдында және жасырын қолданбаларды қайтарар алдында сұралады.</string>
+    <string name="pin_enter">PIN-кодты енгізіңіз</string>
+    <string name="pin_enter_hint">Сандық пернелерді немесе төмендегі пернетақтаны пайдаланыңыз.</string>
+    <string name="pin_create">PIN-код таңдаңыз</string>
+    <string name="pin_create_hint">Төрт сан. Оны сенімді жерде сақтаңыз: ұмытып қалсаңыз, оны тек компьютерден ADB арқылы ғана өшіруге болады.</string>
+    <string name="pin_confirm">Қайта енгізіңіз</string>
+    <string name="pin_wrong">PIN-код дұрыс емес. Қайталап көріңіз.</string>
+    <string name="pin_mismatch">Екі PIN-код сәйкес келмейді. Қайтадан таңдаңыз.</string>
+    <string name="pin_kind_hint">Сандар сандық пернелермен немесе экрандағы пернетақтамен енгізіледі. Көрсеткілер — көрсеткі пернелерін төрт рет басу, қасындағы бала ештеңе көрмейді.</string>
+    <string name="pin_kind_digits">Төрт сан</string>
+    <string name="pin_kind_arrows">Төрт көрсеткі</string>
+    <string name="pin_arrows_hint">Көрсеткі пернелерін төрт рет басыңыз: жоғары, төмен, солға немесе оңға.</string>
+    <string name="pin_arrows_create_hint">Көрсеткі пернелерін төрт рет басыңыз. Ретін сенімді жерде сақтаңыз: ұмытып қалсаңыз, оны тек компьютерден ADB арқылы ғана өшіруге болады.</string>
+    <string name="weather_clear">Ашық</string>
+    <string name="weather_partly_cloudy">Ауыспалы бұлтты</string>
+    <string name="weather_cloudy">Бұлтты</string>
+    <string name="weather_fog">Тұман</string>
+    <string name="weather_rain">Жаңбыр</string>
+    <string name="weather_snow">Қар</string>
+    <string name="weather_thunder">Найзағай</string>
+    <string name="weather_temperature">%1$d°</string>
+    <string name="weather_high_low">Макс.: %1$d°  Мин.: %2$d°</string>
+    <string name="st_columns">Қатардағы қолданбалар</string>
+    <string name="st_columns_hint">Басты экранда және қалталарда бір қатарға қанша қолданба сыяды. Алты — бірден көбірек көрінеді; төрт — үлкенірек, алыстан жақсы көрінеді.</string>
+    <string name="st_peek">Екінші қатар</string>
+    <string name="st_peek_show">Көрінеді</string>
+    <string name="st_peek_hide">Жасырын</string>
+    <string name="st_peek_hint">Бір қатар болғанда екінші қатардың жоғарғы жиегі біріншінің астынан көрініп, төменде тағы бар екенін білдіреді. «Жасырын» төмен басқанша оны көрсетпейді.</string>
+    <string name="menu_boot_on">Теледидар қосылғанда ашу</string>
+    <string name="menu_boot_off">Теледидар қосылғанда ашпау</string>
+    <string name="cc_boot">Теледидар қосылғанда</string>
+    <string name="notice_boot_on">Теледидар қосылғанда %1$s ашылады</string>
+    <string name="notice_boot_switch">Теледидар қосылғанда %2$s орнына %1$s ашылады</string>
+    <string name="notice_boot_off">Теледидар қосылғанда %1$s енді ашылмайды</string>
+    <string name="tile_stock_home">ТД басты экраны</string>
+    <string name="tile_xiaowei_call">Xiaowei Call</string>
+    <string name="tile_kids">Балаларға</string>
+    <string name="ss_videos">Бейне</string>
+    <string name="ss_videos_hint">Телефон бетінен MP4 немесе MOV қосыңыз. Интернетсіз ойнатылады; бейне болмаса, фотолар көрсетіледі.</string>
+    <string name="ss_system">Жүйелік</string>
+    <string name="ss_system_hint">Теледидардың өз экран сақтағышы (мысалы, Xiaomi суреттері). Halo TV өзінікін көрсетпейді.</string>
+    <string name="wp_videos_note">Телефоннан жіберілген өз бейнелеріңіз: дыбыссыз, бірінен соң бірі. Аэрожиын сияқты қозғалады және ағымдағы кадрда тоқтайды.</string>
+    <string name="wp_videos_rotate">Бейнелерім кезекпен</string>
+    <string name="wp_video_note">Телефоннан жіберілген өз бейнеңіз: дыбыссыз, қайталанып ойнайды. Аэрожиын сияқты қозғалады және ағымдағы кадрда тоқтайды.</string>
+    <string name="wp_source_note">Осы кірістің басты экран артындағы тірі суреті, дыбыссыз; дыбыс үшін кірістің өзін ашыңыз. Төмендегі қолданбаларда күңгірт фонға ауысады. Сурет жоқ кезде қараңғы фон көрінеді.</string>
+    <string name="st_play">Ойнату</string>
+    <string name="st_play_still">Тыныштықта</string>
+    <string name="st_play_always">Әрдайым</string>
+    <string name="st_play_hint">Тыныштықта: жоғарғы қатарда (екі қатарлы көріністе — екеуінің кез келгенінде) 10 секундтан кейін; кез келген түйме тоқтатады. Әрдайым: түймелер тоқтатпайды, фон сәл күңгірттенеді; төмендегі қолданбаларға өткенде тоқтайды.</string>
+    <string name="ss_show_time">Уақыт</string>
+    <string name="ss_show_time_hint">Аэрожиын және фото экран қорғауыштарындағы уақыт. Экран күйіп қалмас үшін уақыт пен орын атауы анда-санда сәл жылжиды.</string>
+    <string name="ss_flip_clock">Аударылатын сағат</string>
+    <string name="ss_standby_after">Күту режиміне өту</string>
+    <string name="ss_standby_hint">Осы уақыт өткен соң Halo TV жүйелік экран қорғауышын аяқтап, Android теледидарды күту режиміне өткізуіне мүмкіндік береді. «Ешқашан» экран қорғауышты қосулы қалдырады.</string>
+    <string name="home_good_morning">Қайырлы таң</string>
+    <string name="home_good_afternoon">Қайырлы күн</string>
+    <string name="home_good_evening">Қайырлы кеш</string>
+    <string name="home_good_night">Қайырлы түн</string>
+    <string name="wp_wallpaper_title">Тұсқағаз параметрлері</string>
+    <string name="wp_dynamic">Қозғалмалы бейне тұсқағаз</string>
+    <string name="wp_dynamic_hint">Оң жақтағы кодты сканерлеп, телефоннан бейне жүктеңіз, содан кейін оны осы жерден таңдаңыз.</string>
+    <string name="st_refresh_rate">Жаңарту жиілігі</string>
+    <string name="st_refresh_rate_hint">Тек Halo TV қолданбасына әсер етеді; бейне қолданбалары жүйе режимін қолданады. Қолдау көрсетілмейтін режимдер өшірілген. Авто Android қауіпсіз деп белгілеген ең жоғары режимді таңдайды (Android 12+), әйтпесе жүйе режимін қолданады. Қолмен ауыстырғанда экран қысқа уақытқа сөнуі мүмкін.</string>
+    <string name="st_refresh_auto">Авто</string>
+    <string name="st_refresh_30">30 Гц</string>
+    <string name="st_refresh_60">60 Гц</string>
+    <string name="st_refresh_120">120 Гц</string>
+    <string name="cc_about_attribution">Halo TV — Aerial ашық бастапқы жобасының бейресми өзгертілген нұсқасы.</string>
+    <string name="donate_title">Halo TV жобасын қолдау</string>
+    <string name="donate_open">Ашу</string>
+    <string name="donate_subtitle">Halo TV әзірлеушісін қолдаңыз</string>
+    <string name="donate_description">Halo TV қолданғаныңызға рақмет. Қолдауыңыз жобаны дамытуға көмектеседі.</string>
+    <string name="donate_hint">Қолдау ерікті, сома өз қалауыңызша. Барлық функциялар тегін.</string>
+    <string name="donate_wechat">WeChat Pay</string>
+    <string name="donate_alipay">Alipay</string>
+    <string name="donate_close">Жабу</string>
+    <string name="donate_back">Жабу үшін Артқа басыңыз</string>
+    <string name="guard_consent_description">Home Guard Home түймесін өңдеу және Halo TV-ге оралу үшін арнайы мүмкіндіктерді пайдаланады. Рұқсат берілсе, қайта іске қосылғанда қалпына келуі мүмкін. Оны осында өшіріңіз; басты экран жүйе баптауларында таңдалады.</string>
+    <string name="guard_agree_enable">Келісу және Home Guard баптау</string>
+    <string name="guard_turn_off">Home Guard өшіру</string>
+    <string name="guard_turn_off_hint">Home Guard және оның автоматты қалпына келуін тоқтатады. Басты экранды жүйе баптауларында өзгертіңіз.</string>
+    <string name="cc_system_settings">Жүйе баптаулары</string>
+    <string name="cc_halo_settings">Halo TV баптаулары</string>
+    <string name="halo_notice_title">Halo TV туралы мәлімдеме</string>
+    <string name="halo_notice_body">Halo TV Aerial авторының туындысы немесе ресми нұсқасы емес. Бұл жоба pengchujin/aerial-tv ашық жобасына (https://github.com/pengchujin/aerial-tv) негізделген, оны Null_ әзірлеп жариялаған. Aerial жобасының атауы, коды және лицензиялары тиісті құқық иелеріне тиесілі. Жоба Aerial авторымен, Apple компаниясымен немесе теледидар өндірушілерімен байланысты емес және олар мақұлдамаған.</string>
+    <string name="halo_notice_close">Жабу</string>
+    <string name="halo_notice_back">Жабу үшін Артқа түймесін басыңыз</string>
+    <string name="home_wallpaper_screensaver">Тұсқағаз және экран сақтағыш</string>
+    <string name="home_network_settings">Желі баптаулары</string>
+    <string name="clock_bar">Сағат жолағы</string>
+    <string name="clock_center">Ортада</string>
+    <string name="clock_status">Күй жолағында</string>
+    <string name="clock_bar_size">Сағат өлшемі</string>
+    <string name="clock_default">Әдепкі</string>
+    <string name="clock_extra">Өте үлкен</string>
+    <string name="weather_city_edit">Ауа райы қаласы</string>
+    <string name="weather_city_hint">Қала атауын енгізіңіз</string>
+    <string name="weather_city_failed">Қала табылмады</string>
+    <string name="clock_text_color">Негізгі экран мәтінінің түсі</string>
+    <string name="clock_white">Ақ</string>
+    <string name="clock_dark_gray">Қою сұр</string>
+    <string name="clock_black">Қара</string>
+    <string name="plate_liquid">Сұйық әйнек</string>
+    <string name="category_static">Статикалық тұсқағаз</string>
+    <string name="category_dynamic">Жанды тұсқағаз</string>
+    <string name="category_saver">Экран сақтағыш</string>
+    <string name="focus_liquid_slide">Сұйық сырғу</string>
+    <string name="sound_soft">Жұмсақ</string>
+    <string name="sound_crystal">Сыңғыр</string>
+    <string name="settings_preview_title">Алдын ала қарау</string>
+    <string name="settings_preview_hint">Үлгі · шартты белгішелер</string>
+    <string name="wallpaper_hold_manage">Жүктелген тұсқағазды қарау немесе жою үшін OK түймесін ұстап тұрыңыз</string>
+    <string name="ss_aerial_keeps">Halo TV теледидарда соңғы %2$d фильмді сақтайды (ең көбі %1$s); тұсқағаз бен скринсейвер оларды кезекпен ойнатады, күн сайын жаңасы қосылады. Скринсейверде оңға — жаңа фильм, солға — алдыңғысы.</string>
+    <string name="cc_self_compile">Halo TV жұмысын тегістеу</string>
+    <string name="home_clean_background">Фонды тазалау</string>
+    <string name="home_clean_requested">Фонды тазалау сұралды; шешімді жүйе қабылдайды.</string>
+    <string name="home_clean_none">Сәйкес қолданбалар табылмады.</string>
+    <string name="home_clean_unsupported">Android 14 және одан жаңасы басқа қолданбаларды осылай тазалауға рұқсат етпейді.</string>
+    <string name="home_clean_result">%1$d қолданбаны тазалау сұралды. Бос жад өзгерісі: %2$s МБ (жүйелік бағалау).</string>
+    <string name="video_sound">Бейне тұсқағаздың дыбысы</string>
+    <string name="video_sound_hint">Жүктелген бейне тұсқағаздарға қолданылады; әдепкіде дыбыс өшірулі.</string>
+    <string name="video_muted">Дыбыссыз</string>
+    <string name="video_unmuted">Дыбыс қосулы</string>
+    <string name="video_fit">Бейне өлшемі</string>
+    <string name="video_fit_hint">Толтыру бейнені қиюы мүмкін; сыйғызғанда қара жолақтар көрінуі мүмкін.</string>
+    <string name="video_fill">Толтыру</string>
+    <string name="video_contain">Сыйғызу</string>
+    <string name="wallpaper_current">Қолданылуда</string>
+    <string name="wallpaper_apply">Тұсқағаз орнату</string>
+    <string name="wallpaper_delete">Жою</string>
+    <string name="wallpaper_delete_confirm">Жүктелген тұсқағаз жойылсын ба?</string>
+    <string name="settings_category_home">Басты экран</string>
+    <string name="settings_category_clock">Сағат және ауа райы</string>
+    <string name="settings_category_controls">Басқару және өнімділік</string>
+    <string name="settings_category_safety">Қауіпсіздік</string>
+    <string name="settings_icon_position">Баптау белгішесінің орны</string>
+    <string name="settings_icon_left">Жоғарғы сол жақ</string>
+    <string name="settings_icon_right">Оң жақта</string>
+    <string name="settings_icon_upper_right">Жоғарғы оң жақта</string>
+    <string name="settings_icon_visibility">Баптау белгішесі</string>
+    <string name="settings_icon_always">Әрқашан көріну</string>
+    <string name="settings_icon_fade">Біртіндеп жоғалу</string>
+    <string name="settings_icon_fade_hint">Сөнгеннен кейін жоғары немесе мәзірді басыңыз; жасырын белгіше таңдалады.</string>
+    <string name="show_lunar_date">Ай күнтізбесі</string>
+    <string name="lunar_date_value">Ай күнтізбесі: %1$s</string>
+    <string name="lite_weather_phone_hint">Қаланы телефонда таңдау үшін QR-кодты сканерлеңіз.</string>
+    <string name="settings_icon_hidden">Жасыру</string>
+    <string name="clock_bold">Үлкен әрі қалың</string>
+
+    <string name="cc_update_waiting">Орнатуды күту…</string>
+
+    <string name="kids_title">Балалар мен қарттар</string>
+
+    <string name="kids_hint">Басты экранда тек таңдалған қолданбалар, ештеңені орнынан жылжыту мүмкін емес. Шығу үшін ата-ана PIN коды керек; заставка қосылғанда немесе теледидар ұйықтағанда режим өзі қайтады.</string>
+
+    <string name="kids_kind">Кімге</string>
+
+    <string name="kids_kind_kids">Балалар</string>
+
+    <string name="kids_kind_elders">Қарттар</string>
+
+    <string name="kids_kind_kids_hint">Балаларға: уақыт шегі, үзілістер, басқа қолданбалар ашылмайды.</string>
+
+    <string name="kids_kind_elders_hint">Қарттарға: атаулары бар үлкен тақтайшалар және ақ фокус жиегі, кездейсоқ ештеңе жылжымайды.</string>
+
+    <string name="kids_block">Басқа қолданбалар</string>
+
+    <string name="kids_block_on">Жібермеу</string>
+
+    <string name="kids_block_off">Жіберу</string>
+
+    <string name="kids_block_hint">Таңдалмаған қолданба пульт түймесімен, дауыс көмекшісімен не басқа қолданбадан ашылса, бірден басты экранға қайтарады.</string>
+
+    <string name="kids_block_no_guard">Бұл теледидарда басты экран қорғанысы қосылмаған: басты экранда тек таңдалғандар, бірақ басқа жолмен ашылғанын тоқтату мүмкін емес.</string>
+
+    <string name="kids_weekday">Жұмыс күндері</string>
+
+    <string name="kids_weekend">Демалыс күндері</string>
+
+    <string name="kids_minutes_hint">Күніне қолданбалар мен кірістерге берілетін минут; басты экрандағы уақыт есептелмейді. Телефон бетінде кез келген санды қоюға болады.</string>
+
+    <string name="kids_no_limit">Жоқ</string>
+
+    <string name="kids_latest">Дейін</string>
+
+    <string name="kids_latest_hint">%s дейін және осы уақыттан кейін теледидар қолжетімсіз. Телефон бетінде кез келген уақытты қоюға болады.</string>
+
+    <string name="kids_break">Үзілістер</string>
+
+    <string name="kids_break_hint">Осынша минут көргеннен кейін %d минут үзіліс.</string>
+
+    <string name="kids_start_kids">Балалар режимін қосу</string>
+
+    <string name="kids_start_elders">Қарттар режимін қосу</string>
+
+    <string name="kids_pick_first">Алдымен оң жақтан кемінде бір қолданба таңдаңыз.</string>
+
+    <string name="kids_loading">Қолданбалар әлі жүктелуде.</string>
+
+    <string name="kids_turn_off">Режимді өшіру</string>
+
+    <string name="kids_apps">Қолданбалар · %d</string>
+
+    <string name="kids_apps_hint">Таңдалған ретпен көрсетіледі. Жаңа қолданбалар өздігінен қосылмайды.</string>
+
+    <string name="kids_sources_note">Кіріс таңдалса, пульттегі кіріс түймесімен теледидардың басқа кірістеріне де ауысуға болады: олардың ойнатқышы ортақ, Aerial оларды ажырата алмайды.</string>
+
+    <string name="kids_m">%d мин</string>
+
+    <string name="kids_h">%d сағ</string>
+
+    <string name="kids_hm">%1$d сағ %2$d мин</string>
+
+    <string name="kids_lock_day">Бүгінге жетеді</string>
+
+    <string name="kids_lock_day_sub">Бүгін %s теледидар көрілді. Ертең жалғастырамыз.</string>
+
+    <string name="kids_lock_late">Теледидар уақыты бітті</string>
+
+    <string name="kids_lock_late_sub">Теледидар %1$s – %2$s аралығында қолжетімді.</string>
+
+    <string name="kids_lock_break">Демалатын уақыт</string>
+
+    <string name="kids_lock_break_sub">Алысқа қараңыз. %s кейін жалғастыруға болады.</string>
+
+    <string name="kids_parent">Ата-ана</string>
+
+    <string name="kids_grant_title">Уақыт қосу</string>
+
+    <string name="kids_grant">Тағы %d мин</string>
+
+    <string name="kids_grant_day">Бүгін шектеусіз</string>
+
+    <string name="cc_kids_allowed_until">%s дейін рұқсат</string>
+
+    <string name="cc_kids_no_limit">Бүгін шектеусіз · %s көрілді</string>
+
+    <string name="cc_kids_left">Бүгін %s қалды</string>
+
+    <string name="cc_kids_leave">Балалар режимінен шығу</string>
+
+    <string name="cc_elders_leave">Қарттар режимінен шығу</string>
+
+    <string name="cc_kids_back">Балалар режиміне оралу</string>
+
+    <string name="cc_elders_back">Қарттар режиміне оралу</string>
+
+    <string name="st_kids">Балалар мен қарттар</string>
+
+    <string name="st_kids_hint">Тек таңдалған қолданбалары бар басты экран және балаларға уақыт шегі.</string>
+
+    <string name="kids_blocked">«%s» мұнда қолжетімсіз</string>
+
+    <string name="kids_warn">%d мин қалды</string>
+
+    <string name="kids_warn_break">%d минуттан кейін үзіліс</string>
+    <string name="category_sources">ТД кірістері</string>
+    <string name="halo_kids_custom">Басқа мән</string>
+    <string name="halo_kids_configure_first">Алдымен Halo TV баптауларында балалар мен қарттар режимін баптаңыз</string>
+    <string name="halo_kids_invalid_minutes">1 мен 1440 аралығындағы минут санын енгізіңіз</string>
+
+    <string name="halo_cat_appearance">Көрініс</string>
+    <string name="halo_cat_apps">Қолданбалар және Dock</string>
+    <string name="halo_cat_remote">Пульт және дыбыс</string>
+    <string name="halo_cat_family">Отбасы</string>
+    <string name="halo_cat_performance">Өнімділік</string>
+    <string name="halo_cat_about">Бағдарлама туралы</string>
+    <string name="halo_phone_features">Сурет пен бейне жүктеу\nҚолданба белгішелері\nАуа райы қаласы</string>
+    <string name="halo_phone_hint">Телефонды немесе компьютерді теледидармен бір желіге қосыңыз. Мекенжайды браузерде ашуға болады.</string>
+
+    <string name="halo_recent">Соңғы өзгерістер</string>
+    <string name="halo_reset_action">Әдепкіге қайтару</string>
+    <string name="halo_reset_confirm">Осы беттің баптауларын қалпына келтіру керек пе?</string>
+    <string name="halo_reset_hint">Тек осы беттің баптаулары қалпына келеді. Файлдар мен жасырын қолданбалар сақталады.</string>
+    <string name="halo_reset_cancel">Болдырмау</string>
+    <string name="halo_phone_tips">Кеңестер</string>
+
+    <string name="halo_phone_scan">QR арқылы баптау</string>
+    <string name="halo_phone_same_network">Телефон мен ТВ бір желіде болуы керек</string>
+    <string name="halo_phone_browser">Немесе мекенжайды браузерде ашыңыз</string>
+    <string name="halo_free_notice">Halo TV тегін жүктеледі және пайдаланылады. Егер оны басқа жерден ақылы алсаңыз, бұл төлемді Halo TV авторы алған жоқ. Halo TV ұнаса, қолдау бетінде авторға ерікті түрде демеушілік жасай аласыз. Қолдауыңызға рақмет!</string>
+
+    <string name="halo_video_decoder_error">Бейне тұсқағаз ойнатылмайды: теледидар кодекті немесе ажыратымдылықты қолдамауы мүмкін.</string>
+    <string name="halo_video_damaged_error">Бейне тұсқағаз оқылмады: файл бүлінген болуы мүмкін. Қайта жүктеңіз.</string>
+    <string name="halo_video_playback_error">Бейне тұсқағаз қатесі: файл бүлінген немесе қолдау жоқ болуы мүмкін.</string>
+
+    <string name="bing_library">Bing wallpapers</string>
+    <string name="bing_loading">Loading…</string>
+    <string name="bing_failed">Could not load. Check your network and retry.</string>
+    <string name="bing_retry">Retry</string>
+    <string name="bing_select">Select a wallpaper for HD preview</string>
+    <string name="bing_apply">Тұсқағаз орнату</string>
+    <string name="bing_applying">Орнатылуда…</string>
+    <string name="bing_download_failed">Download or save failed. Check network and storage.</string>
+    <string name="bing_all">All</string>
+
+    <string name="wallpaper_online_video">Online video wallpaper</string>
+    <string name="wallpaper_local_video">Local video wallpaper</string>
+    <string name="wallpaper_local_photo">Local wallpapers</string>
+    <string name="wallpaper_empty_video">No local videos. Scan the QR code to upload.</string>
+    <string name="wallpaper_empty_photo">No local photos. Scan the QR code to upload.</string>
+    <string name="wallpaper_follow_app">Follow app</string>
+    <string name="saver_local_photos">Local photos</string>
+    <string name="saver_local_video">Local videos</string>
+    <string name="saver_online_video">Online video</string>
+
+    <string name="aerial_source_notice">Videos from Apple; thumbnail catalogue references Aerial Views. Rights belong to their respective owners.</string>
+    <string name="bing_source_notice">Wallpapers from Bing, archive by YanGN (https://github.com/ygnstudio/bing_wallpaper_archive). Image rights belong to their respective owners.</string>
+
+    <string name="aerial_creator_unknown">Source: Apple · individual creator not listed</string>
+    <string name="bing_credit_unknown">Creator information not provided by the archive</string>
+    <string name="bing_credit_details">Full copyright information</string>
+
+    <string name="rotation_off">Off</string>
+    <string name="rotation_daily">Daily</string>
+    <string name="rotation_half_hour">Every 30 minutes</string>
+    <string name="rotation_hour">Every hour</string>
+    <string name="rotation_custom">Custom interval</string>
+    <string name="rotation_custom_value">Custom: %1$d min</string>
+    <string name="rotation_custom_minutes">Custom interval (minutes, 1–1440)</string>
+    <string name="bing_local_note">Downloaded images are stored on this device and appear in local photos.</string>
+    <string name="bing_rotation_hint">Select an interval, then set a photo as wallpaper to start. You can turn rotation off anytime.</string>
+
+    <string name="rotation_starting">Loading a random wallpaper…</string>
+    <string name="rotation_started">Random rotation started. Return home to view.</string>
+    <string name="rotation_failed">Unable to load wallpaper. Check your network or select the interval again.</string>
+
+    <string name="bing_cache_note">Онлайн тұсқағаздар тек ауыстырылатын кэшті пайдаланады.</string>
+    <string name="halo_source_bing_note">Explore daily wallpapers</string>
+    <string name="halo_source_local_photo_note">Use photos stored on this device</string>
+    <string name="halo_source_online_video_note">Browse online video wallpapers</string>
+    <string name="halo_source_local_video_note">Use videos stored on this device</string>
+    <string name="halo_power">Power</string>
+    <string name="halo_power_unavailable">Cannot open the system power menu. Use the remote power button.</string>
+    <string name="halo_kids_mode">Kids mode</string>
+    <string name="halo_elders_mode">Elders mode</string>
+    <string name="halo_power_warning">The TV power menu may immediately start a shutdown countdown. Be ready to cancel with the remote. Available actions depend on your TV.</string>
+    <string name="halo_power_continue">Open system power menu</string>
+    <string name="halo_auto_clean">Clean cached apps when idle</string>
+    <string name="halo_auto_clean_note">After 2 minutes idle on Home, request cleanup of cached apps; skipped during audio playback. Android controls the result.</string>
+    <string name="halo_contact_title">Contact and feedback</string>
+    <string name="halo_contact_details">Douyin: eyubaobao777  ·  Xiaohongshu: 11350972266
+WeChat: scan code  ·  Email: 1227888560@qq.com</string>
+    <string name="halo_contact_heading_email">Contact: WeChat / Douyin / Xiaohongshu · 1227888560@qq.com</string>
+    <string name="aerial_source_about">Videos from Apple; thumbnail catalogue references Aerial Views (https://github.com/theothernt/AerialViews). Rights belong to their respective owners.</string>
+    <string name="quiz_interval">Quiz interval (minutes)</string>
+    <string name="elder_reminder">Rest reminder (minutes)</string>
+    <string name="quiz_reward_max">Maximum reward (minutes)</string>
+    <string name="quiz_progress">Question %1$d / 5 · Answer 4 correctly</string>
+    <string name="quiz_pass">Quiz passed!</string>
+    <string name="quiz_retry">Try again: answer 4 correctly</string>
+    <string name="quiz_continue">Continue watching</string>
+    <string name="quiz_again">Try again</string>
+    <string name="quiz_submit">Submit answer</string>
+    <string name="elder_rest_message">You have been watching for a while. Consider taking a break.</string>
+    <string name="halo_clock_format">Clock format</string>
+    <string name="halo_clock_24">24 hour</string>
+    <string name="halo_clock_12">12 hour</string>
+    <string name="halo_flip_seconds">Секундтарды көрсету</string>
+    <string name="halo_saver_bing">Online wallpapers</string>
+    <string name="halo_saver_bing_loading">Loading Bing wallpaper…</string>
+    <string name="halo_saver_bing_offline">Online wallpaper unavailable. Retrying shortly.</string>
+    <string name="halo_desktop_clock_format">Desktop clock format</string>
+    <string name="rotation_home_return">Change when returning home</string>
+    <string name="halo_update_manage">Бағдарламаны жаңарту</string>
+    <string name="halo_update_phone_confirm">Halo TV нұсқасын %1$s → %2$s жаңарту керек пе?</string>
+    <string name="halo_update_phone_install">Жаңартуды растау</string>
+    <string name="halo_update_phone_back">Артқа</string>
+    <string name="halo_update_phone_offline">Кодты көрсету үшін теледидарды жергілікті желіге қосыңыз.</string>
+    <string name="halo_update_new">Жаңа нұсқа бар</string>
+    <string name="halo_update_check">Жаңартуларды тексеру</string>
+    <string name="halo_update_checking">Жаңартулар тексерілуде…</string>
+    <string name="halo_update_current">Соңғы нұсқа орнатылған.</string>
+    <string name="halo_update_check_failed">Жаңартуларды тексеру мүмкін болмады. Қайталап көріңіз немесе жергілікті APK файлын таңдаңыз.</string>
+    <string name="halo_update_online">Желі арқылы жаңарту</string>
+    <string name="halo_update_manual">Қолмен жаңарту</string>
+    <string name="halo_update_shared_qr">Баптаулар QR кодын сканерлеп, телефонның басты бетінен APK жіберуді таңдаңыз.</string>
+    <string name="halo_update_install_permission">Жүйе баптауларында Halo TV қолданбаларды орнатуына рұқсат беріп, қайта оралып растаңыз.</string>
+    <string name="halo_update_discard">Алынған APK файлын жою</string>
+    <string name="halo_show_home_greeting">Сәлемдесу</string>
+    <string name="halo_show_home_time">Уақыт</string>
+    <string name="halo_show_home_date">Күн</string>
+    <string name="halo_update_step_connect">Телефон мен теледидарды бір желіге қосыңыз。</string>
+    <string name="halo_update_step_install">APK жіберілген соң теледидардан Басқару орталығы → Бағдарламаны жаңарту бетін ашыңыз. Телефоннан жіберілген жаңартуды таңдап, растаңыз.</string>
+    <string name="halo_update_phone_received">Телефоннан келген жаңартуды орнату</string>
+    <string name="halo_update_phone_tv_only">Телефон файлды жібереді. Орнату теледидарда растаған соң басталады.</string>
+    <string name="halo_update_qr_loading">QR коды дайындалуда…</string>
+    <string name="quiz_title">Қызықты сұрақтар</string>
+    <string name="quiz_position">%2$d сұрақтың %1$d-і</string>
+    <string name="quiz_goal">Көру уақытына ие болу үшін 4 сұраққа дұрыс жауап бер.</string>
+    <string name="quiz_rest_title">Көзіңді демалт</string>
+    <string name="quiz_rest_message">Сәлем! Экраннан тыс әлем одан да қызық. Бойыңды жаз, қимылда және алысқа қара. Демалып болған соң қайта кел!</string>
+    <string name="quiz_pick_one">Бір жауапты таңда</string>
+    <string name="quiz_pick_multiple">Барлық дұрыс жауапты таңда</string>
+    <string name="quiz_pick_before_submit">Алдымен жауапты таңда</string>
+    <string name="quiz_score">Дұрыс жауап: %1$d / %2$d</string>
+    <string name="quiz_back_to_questions">Сұрақтарға қайту</string>
+    <string name="halo_dock_corners">Бұрыш стилі</string>
+    <string name="halo_dock_corners_round">Үлкен радиус</string>
+    <string name="halo_dock_corners_compact">Кіші радиус</string>
+    <string name="quiz_parent_allowance_hint">Ата-ана төменде қосымша көру уақытын таңдай алады немесе балалар режимінен шыға алады.</string>
+    <string name="quiz_rest_message_playful">Экраннан тыс әлем қызығырақ! Қимылдап, алысқа қарап, демалған соң қайта кел!</string>
+    <string name="quiz_remote_hint">Бағытпен таңда · OK: жауап</string>
+    <string name="welcome3_eyebrow">Қош келдіңіз</string>
+    <string name="welcome3_tagline">Теледидарыңыз өзіңізге ұнағандай болсын.</string>
+    <string name="welcome3_credit">Aerial ашық жобасы негізінде. Қолдау және жариялау: Null_.</string>
+    <string name="welcome3_thanks">Aerial авторына және ашық жоба қатысушыларына рақмет.</string>
+    <string name="welcome3_start">Бастау</string>
+    <string name="welcome3_disclaimer">Aerial ресми нұсқасы емес. Apple не теледидар өндірушілеріне қатысы жоқ.</string>
+    <string name="aerial_library">Онлайн бейнелер</string>
+    <string name="aerial_library_hint">Алдымен бейнені қарап, кейін тұсқағаз етіп орнатыңыз. Интернет қажет.</string>
+    <string name="aerial_library_choose">Алдын ала көру үшін бейне таңдаңыз</string>
+    <string name="aerial_library_rotate">Онлайн бейнелерді кезектестіру</string>
+    <string name="saver_online_unavailable">Онлайн экран сақтағышы қолжетімсіз. Кейін қайталап көреміз. Артқа — жұмыс үстелі.</string>
+    <string name="saver_local_unavailable">Жергілікті бейне қолжетімсіз. Файлды тексеріңіз. Артқа — жұмыс үстелі.</string>
+    <string name="halo_installed_build">Теледидарда орнатылған: %1$s</string>
+    <string name="halo_guard_running">Басты экран қорғауы жұмыс істейді</string>
+    <string name="halo_guard_unbound">Қорғау қосылған, бірақ қызмет іске қосылмаған</string>
+    <string name="halo_guard_unknown">Жүйе қорғау күйін көрсетпейді</string>
+    <string name="halo_guard_disabled">Арнайы мүмкіндіктерде қорғауға рұқсат беріңіз</string>
+    <string name="halo_guard_restore_allowed">Автоқалпына келтіруге рұқсат бар. Хабарландырулар мен автоматты іске қосуға да рұқсат беріңіз.</string>
+    <string name="halo_guard_restore_missing">Автоқалпына келтіруге рұқсат жоқ. Арнайы мүмкіндіктерді қосыңыз; қорғау өшсе, QR нұсқаулығымен ADB рұқсатын беріңіз.</string>
+    <string name="halo_guard_repair">Қорғауды қайта қосу</string>
+    <string name="halo_guard_restricted">Қолданба ақпараты: шектеулі параметрлерді тексеру</string>
+</resources>

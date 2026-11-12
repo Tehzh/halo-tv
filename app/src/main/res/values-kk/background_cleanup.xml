@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_clean_protected">Ойнату не қорғалған желі белсенді. Тазалау өткізіліп жіберілді.</string>
+    <string name="home_clean_failed">Жүйе тазалауға рұқсат бермеді.</string>
+    <string name="home_clean_busy">Тазалау орындалуда.</string>
+    <string name="home_clean_limited">%1$d қолданбаны тазалау сұралды. Процестер тізімі жасырын; жад өзгерісі: %2$s МБ.</string>
+</resources>

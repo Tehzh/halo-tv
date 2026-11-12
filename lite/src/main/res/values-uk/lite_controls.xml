@@ -1,0 +1,20 @@
+<resources>
+    <string name="lite_clean_protected">Відтворення або захищена мережа активні. Очищення пропущено.</string>
+    <string name="lite_clean_failed">Система не дозволила очищення.</string>
+    <string name="lite_power_service_title">Меню живлення Halo TV Lite</string>
+    <string name="lite_power_service_description">Відкриває лише системне меню живлення. Не читає екран і не перехоплює Home.</string>
+    <string name="lite_power_help">Відкриває меню живлення ТВ. Сон, вимкнення та перезапуск залежать від системи. Деякі ТВ одразу запускають відлік вимкнення. На Android 5.0+ спочатку ввімкніть службу меню живлення.</string>
+    <string name="lite_power_old">Стара система не надає меню живлення застосункам. Використовуйте кнопку живлення пульта.</string>
+    <string name="lite_power_enable_hint">Спочатку ввімкніть службу меню живлення Halo TV Lite та поверніться сюди.</string>
+    <string name="lite_power_enable">Увімкнути службу живлення</string>
+    <string name="lite_online_wallpaper">Онлайн-шпалери</string>
+    <string name="lite_local_wallpaper">Локальні шпалери</string>
+    <string name="lite_category_appearance">Зовнішній вигляд</string>
+    <string name="lite_category_apps">Застосунки та Dock</string>
+    <string name="lite_category_remote">Пульт і звук</string>
+    <string name="lite_contact_wechat">WeChat</string>
+    <string name="lite_contact_douyin">Douyin</string>
+    <string name="lite_contact_xhs">Xiaohongshu</string>
+    <string name="lite_contact_enlarge">Виберіть QR-код та натисніть OK для збільшення.</string>
+    <string name="lite_contact_scan">Сканувати код</string>
+</resources>

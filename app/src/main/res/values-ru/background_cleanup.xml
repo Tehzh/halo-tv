@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_clean_protected">Воспроизведение или защищённая сеть активны. Очистка пропущена.</string>
+    <string name="home_clean_failed">Система не разрешила очистку.</string>
+    <string name="home_clean_busy">Очистка уже выполняется.</string>
+    <string name="home_clean_limited">Запрошена очистка %1$d приложений. Список процессов скрыт; изменение памяти: %2$s МБ.</string>
+</resources>

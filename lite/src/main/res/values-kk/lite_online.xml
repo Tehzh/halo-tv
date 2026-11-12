@@ -1,0 +1,16 @@
+<resources>
+    <string name="lite_online_check">Жаңартуды тексеру</string>
+    <string name="lite_online_download">Онлайн жаңарту</string>
+    <string name="lite_online_manual">QR арқылы жаңарту</string>
+    <string name="lite_online_steps">1. Телефон мен ТВ бір желіде болуы керек. Кодты сканерлеңіз.\n2. APK жіберуді таңдап, жаңа Halo TV Lite пакетін жүктеңіз.\n3. Осында оралып, жаңартуды тексеріп, жүктелген пакетті орнатыңыз.</string>
+    <string name="lite_online_new">Жаңа нұсқа бар</string>
+    <string name="lite_online_progress">Жүктелуде %1$d%%</string>
+    <string name="lite_online_hint">Halo сайты және GitHub тексеріледі. Тек тексерілген Halo TV Lite пакеттері орнатылады.</string>
+    <string name="lite_online_checking">Жаңарту тексерілуде…</string>
+    <string name="lite_online_current">Жаңарақ Lite нұсқасы табылмады.</string>
+    <string name="lite_online_offer">Halo TV Lite %1$s қолжетімді.</string>
+    <string name="lite_online_failed">Жаңартуды тексеру не жүктеу мүмкін болмады. Қайталаңыз немесе QR кодын пайдаланыңыз.</string>
+    <string name="lite_online_ready">Пакет тексерілді. Орнату ашылмаса, жүктелген жаңартуды орнатыңыз.</string>
+    <string name="lite_online_space">Бос орын жеткіліксіз. Орын босатып, қайталаңыз.</string>
+    <string name="lite_online_invalid">Пакеттің нұсқасы, үйлесімділігі немесе қолтаңбасы тексеруден өтпеді. Орнату тоқтатылды.</string>
+</resources>

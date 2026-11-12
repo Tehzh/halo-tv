@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="halo_ann_entry">Announcements</string>
+    <string name="halo_ann_new">New announcement</string>
+    <string name="halo_ann_none">No announcements. Checking for the latest notices.</string>
+    <string name="halo_ann_details">Read more</string>
+    <string name="halo_ann_later">Remind me tomorrow</string>
+    <string name="halo_ann_stop">Do not remind again</string>
+    <string name="halo_ann_ack">Got it</string>
+</resources>

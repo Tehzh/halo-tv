@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="halo_ann_entry">Хабарландырулар</string>
+    <string name="halo_ann_new">Жаңа хабарландыру</string>
+    <string name="halo_ann_none">Хабарландыру жоқ. Жаңа хабарларды тексеру.</string>
+    <string name="halo_ann_details">Толығырақ</string>
+    <string name="halo_ann_later">Ертең еске салу</string>
+    <string name="halo_ann_stop">Қайта еске салмау</string>
+    <string name="halo_ann_ack">Түсінікті</string>
+</resources>

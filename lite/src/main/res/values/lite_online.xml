@@ -1,0 +1,16 @@
+<resources>
+    <string name="lite_online_check">Check for updates</string>
+    <string name="lite_online_download">Online update</string>
+    <string name="lite_online_manual">Manual update</string>
+    <string name="lite_online_steps">1. Connect phone and TV to the same network. Scan this code.\n2. Choose “Push update APK” and upload a newer Halo TV Lite APK.\n3. Return here, select Check for updates, then Install uploaded update.</string>
+    <string name="lite_online_new">New version available</string>
+    <string name="lite_online_progress">Downloading %1$d%%</string>
+    <string name="lite_online_hint">Checks the Halo website and GitHub. Only verified Halo TV Lite APKs can be installed.</string>
+    <string name="lite_online_checking">Checking for updates…</string>
+    <string name="lite_online_current">This test version is up to date. No newer Lite release was found.</string>
+    <string name="lite_online_offer">Halo TV Lite %1$s is available.</string>
+    <string name="lite_online_failed">Cannot reach the update server or complete the download. Try again, or use the QR code for a manual update.</string>
+    <string name="lite_online_ready">The package has been verified. If installation did not open, select Install uploaded update.</string>
+    <string name="lite_online_space">Not enough storage space. Free some space and try again.</string>
+    <string name="lite_online_invalid">The package could not pass version, device or signature verification. It has not been installed.</string>
+</resources>

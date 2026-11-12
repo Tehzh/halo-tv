@@ -1,0 +1,16 @@
+<resources>
+    <string name="lite_online_check">Проверить обновления</string>
+    <string name="lite_online_download">Обновить онлайн</string>
+    <string name="lite_online_manual">Обновление по QR</string>
+    <string name="lite_online_steps">1. Телефон и ТВ должны быть в одной сети. Сканируйте код.\n2. Выберите отправку APK и загрузите новый Halo TV Lite.\n3. Вернитесь сюда, проверьте обновления и установите загруженный APK.</string>
+    <string name="lite_online_new">Есть обновление</string>
+    <string name="lite_online_progress">Загрузка %1$d%%</string>
+    <string name="lite_online_hint">Проверка сайта Halo и GitHub. Устанавливаются только проверенные пакеты Halo TV Lite.</string>
+    <string name="lite_online_checking">Проверка обновлений…</string>
+    <string name="lite_online_current">Более нового выпуска Lite не найдено.</string>
+    <string name="lite_online_offer">Доступен Halo TV Lite %1$s.</string>
+    <string name="lite_online_failed">Не удалось проверить или загрузить обновление. Повторите или используйте QR-код.</string>
+    <string name="lite_online_ready">Пакет проверен. Если установка не открылась, выберите установку загруженного обновления.</string>
+    <string name="lite_online_space">Недостаточно места. Освободите место и повторите.</string>
+    <string name="lite_online_invalid">Пакет не прошёл проверку версии, совместимости или подписи. Установка остановлена.</string>
+</resources>

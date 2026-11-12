@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_clean_protected">Playback or a protected network connection is active. Cleanup was skipped.</string>
+    <string name="home_clean_failed">The system did not allow background cleanup.</string>
+    <string name="home_clean_busy">Cleanup is already running.</string>
+    <string name="home_clean_limited">Requested cleanup for %1$d apps. Android hides the process list; available memory changed %2$s MB.</string>
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_clean_protected">Відтворення або захищена мережа активні. Очищення пропущено.</string>
+    <string name="home_clean_failed">Система не дозволила очищення.</string>
+    <string name="home_clean_busy">Очищення вже триває.</string>
+    <string name="home_clean_limited">Запитано очищення %1$d застосунків. Список процесів приховано; зміна пам’яті: %2$s МБ.</string>
+</resources>

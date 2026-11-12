@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="halo_ann_entry">公告与提醒</string>
+    <string name="halo_ann_new">有新公告</string>
+    <string name="halo_ann_none">暂无公告，正在检查最新通知。</string>
+    <string name="halo_ann_details">查看说明</string>
+    <string name="halo_ann_later">明天再提醒</string>
+    <string name="halo_ann_stop">不再提醒</string>
+    <string name="halo_ann_ack">我知道了</string>
+</resources>

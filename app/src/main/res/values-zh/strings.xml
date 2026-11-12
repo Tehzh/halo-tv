@@ -1,0 +1,644 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="aerial_library">在线视频</string>
+    <string name="aerial_library_hint">选择视频预览后，可将其设为桌面动态壁纸。播放需要网络连接。</string>
+    <string name="aerial_library_choose">请选择视频预览</string>
+    <string name="aerial_library_rotate">航拍视频自动轮播</string>
+    <string name="st_device_capacity">运存和存储信息</string>
+    <string name="st_device_capacity_hint">在桌面时钟下方显示可用运存和内部存储空间。</string>
+    <string name="home_device_capacity">运存剩余 %1$s · 存储剩余 %2$s</string>
+
+    <string name="guard_name">Halo TV 桌面守护</string>
+    <string name="guard_description">在不允许更换桌面的电视上，让 Halo TV 保持为主屏幕。不会读取任何屏幕内容。</string>
+    <string name="greeting_morning">早上好</string>
+    <string name="greeting_afternoon">下午好</string>
+    <string name="greeting_evening">晚上好</string>
+    <string name="cc_title">控制中心</string>
+    <string name="cc_inputs">信号源</string>
+    <string name="cc_network">网络</string>
+    <string name="cc_settings">设置</string>
+    <string name="cc_volume">音量</string>
+    <string name="cc_muted">已静音</string>
+    <string name="cc_home_default">Halo TV 是默认桌面</string>
+    <string name="cc_home_guarded">桌面守护已开启</string>
+    <string name="cc_home_not_default">尚未设为默认桌面</string>
+    <string name="cc_setup_title">设为主屏幕</string>
+    <string name="cc_setup_body">只装了 APK 时，Halo TV 能打开，但按主页键、开机和待机后还是原来的桌面。</string>
+    <string name="cc_setup_guard">打开桌面守护</string>
+    <string name="cc_setup_guard_where">无障碍</string>
+    <string name="cc_setup_home">选择默认桌面</string>
+    <string name="cc_setup_revival">待机后自动回来</string>
+    <string name="cc_setup_revival_where">通知使用权</string>
+    <string name="cc_setup_scan">Halo TV 安装与设置指南</string>
+    <string name="cc_setup_scan_hint">手机扫码查看 Halo TV 的安装和桌面设置教程。</string>
+    <string name="cc_back">返回</string>
+    <string name="cc_no_inputs">这台电视没有可用的信号源</string>
+    <string name="cc_native_inputs">打开电视的信号源菜单</string>
+    <string name="net_ethernet">有线网络</string>
+    <string name="net_wifi">Wi-Fi</string>
+    <string name="net_offline">未连接</string>
+    <string name="net_vpn">VPN</string>
+
+    <string name="input_connected">已连接</string>
+    <string name="input_live_tv">电视直播</string>
+    <string name="input_antenna">模拟电视</string>
+    <string name="input_digital">数字电视</string>
+    <string name="input_av">AV</string>
+    <string name="menu_move">移动</string>
+    <string name="menu_to_folder">移到文件夹</string>
+    <string name="menu_new_folder">新建文件夹</string>
+    <string name="menu_out_of_folder">移出文件夹</string>
+    <string name="menu_rename_folder">重命名</string>
+    <string name="menu_ungroup">解散文件夹</string>
+    <string name="menu_back">返回</string>
+    <string name="folder_default">文件夹</string>
+    <string-array name="folder_names">
+        <item>系统应用</item>
+        <item>影视</item>
+        <item>音乐</item>
+        <item>游戏</item>
+        <item>儿童</item>
+        <item>工具</item>
+        <item>文件夹</item>
+    </string-array>
+    <string name="menu_hide">从主屏幕隐藏</string>
+    <string name="menu_info">应用信息</string>
+    <string name="menu_reset_icon">恢复默认图标</string>
+    <string name="menu_uninstall">卸载</string>
+    <string name="move_hint">用方向键移动 · 按确定键完成</string>
+    <string name="move_hint_touch">用方向键移动，或点一下要放的位置 · 按确定键或点这个 App 完成</string>
+    <string name="hidden_title">隐藏的 App</string>
+    <string name="hidden_hint">选择一个 App 放回主屏幕</string>
+    <string name="hidden_empty">没有隐藏的 App</string>
+    <string name="launch_failed">无法打开%1$s</string>
+    <string name="unavailable">此电视不支持</string>
+    <string name="cc_brightness">亮度</string>
+    <string name="cc_brightness_in_settings">在图像设置里调</string>
+    <string name="cc_personalize">个性化</string>
+    <string name="wp_title">HaloTV 设置</string>
+    <string name="wp_wallpaper">壁纸</string>
+    <string name="wp_weather">天气</string>
+    <string name="wp_weather_none">还没有天气数据，联网后会自动获取。</string>
+    <string name="wp_weather_guessed">按网络自动定位。不对的话，用手机扫右边的二维码设置城市。</string>
+    <string name="wp_weather_chosen">城市在手机上设置，扫右边的二维码可以更改。</string>
+    <string name="wx_clear">晴</string>
+    <string name="wx_partly_cloudy">多云</string>
+    <string name="wx_cloudy">阴</string>
+    <string name="wx_fog">雾</string>
+    <string name="wx_rain">雨</string>
+    <string name="wx_snow">雪</string>
+    <string name="wx_thunder">雷雨</string>
+    <string name="wp_daily_latest">每日一图</string>
+    <string name="wp_live">动态航拍。在主屏幕第一排（双排时前两排）一直播放，再往下进入其余 App 时停在当前画面并留作壁纸，下次从这一帧接着播。</string>
+    <string name="wp_photos_rotate">我的照片 · 轮换</string>
+    <string name="wp_daily_note">必应每日一图，每天自动换成当天的。</string>
+    <string name="wp_photos_rotate_note">从你的照片里轮流换一张，默认每天一张，也可以在下面选得更勤。</string>
+    <string name="st_photo_every">换照片</string>
+    <string name="st_photo_every_day">每天</string>
+    <string name="st_photo_every_hint">主屏幕多久换成下一张照片。</string>
+    <string name="wp_photo_note">你的照片。用手机扫右边的二维码可以继续添加。</string>
+    <string name="wp_auto_note">取所选 App 图片里的颜色做背景。</string>
+    <string name="wp_screensaver">屏幕保护程序</string>
+    <string name="ss_follow_hint">还没选过，跟随壁纸：航拍壁纸配航拍，其他壁纸配照片，并从这张壁纸开始。选一个就固定下来。</string>
+    <string name="ss_aerial">航拍</string>
+    <string name="ss_photos">照片</string>
+    <string name="ss_clock">时钟</string>
+    <string name="wp_phone_title">用手机或电脑设置</string>
+    <string name="wp_phone_body">扫码，或在电脑浏览器打开下面的地址，可以发照片和视频、更换 App 图标、设置天气城市。需要和电视连接同一网络。</string>
+    <string name="wp_phone_offline">无法获取局域网地址或启动手机设置服务，请检查网络，正在自动重试。</string>
+    <string name="ss_start">立即开始</string>
+    <string name="ss_delay">开始时间</string>
+    <string name="ss_minutes">%d 分钟</string>
+    <string name="ss_never">从不</string>
+    <string name="ss_delay_system">跟随系统</string>
+    <string name="ss_delay_system_off">跟随系统 · 已关闭</string>
+    <string name="ss_delay_system_minutes">跟随系统 · %d 分钟</string>
+    <string name="ss_back_hint">提示：在主页第一行按返回键，也可以立即开始屏保。</string>
+    <string name="ss_back">返回键</string>
+    <string name="ss_back_on">开始屏保</string>
+    <string name="ss_back_off">不响应</string>
+    <string name="ss_back_choice_hint">在主页第一行按返回键时做什么。容易误按的话可以关掉，屏保仍会按时自动开始。</string>
+    <string name="ss_quality">航拍画质</string>
+    <string name="ss_quality_hint">「自动」播放这台电视能显示的最好版本：4K 杜比视界、4K 或 1080p。壁纸是航拍时，屏保沿用壁纸的画质接着播，不会黑屏；选了「4K 杜比视界」则屏保切到杜比视界，切换时电视可能黑一下。4K 杜比视界需要约 25 Mbps 的网速，航拍经常跳过时可以选 1080p。</string>
+    <string name="ss_quality_auto">自动</string>
+    <string name="ss_quality_hd">1080p</string>
+    <string name="ss_quality_uhd">4K</string>
+    <string name="ss_quality_dv">4K 杜比视界</string>
+    <string name="st_focus_style">焦点样式</string>
+    <string name="st_home_layout">主屏幕</string>
+    <string name="st_layout">布局</string>
+    <string name="st_clock">时钟</string>
+    <string name="st_clock_left">左上</string>
+    <string name="st_clock_right">右上</string>
+    <string name="st_clock_hint">时钟、日期和天气显示的位置。</string>
+    <string name="st_clock_size">时钟大小</string>
+    <string name="st_clock_small">小</string>
+    <string name="st_clock_large">大</string>
+    <string name="st_clock_size_hint">小：时间和天气在角上一行小字。大：屏幕上方一个大时钟，上面是日期，下面是天气。</string>
+    <string name="st_clock_hours">时间格式</string>
+    <string name="st_clock_hours_system">跟随电视</string>
+    <string name="st_clock_hours_24">24 小时</string>
+    <string name="st_clock_hours_12">12 小时</string>
+    <string name="st_clock_hours_hint">跟随电视：按电视设置里的时间格式，没有设置时用 24 小时。</string>
+    <string name="st_names">App 名称</string>
+    <string name="st_names_focused">只显示选中的</string>
+    <string name="st_names_all">全部显示</string>
+    <string name="st_names_hint">每个 App 下面都显示名称，或者像 Apple TV 一样只显示选中的。全部显示时，第一排的名称也显示在玻璃底板里。</string>
+    <string name="ss_kind">类型</string>
+    <string name="wp_weather_city">位置</string>
+    <string name="st_home_standard">双排</string>
+    <string name="st_home_one_row">单排</string>
+    <string name="st_home_layout_hint">单排：只显示第一排，放在屏幕下方，露出更多壁纸，比如家庭合照。双排：下面露出第二排。按下键看其余 App。</string>
+    <string name="st_plate">第一排底板</string>
+    <string name="st_plate_hint">第一排下面垫一块磨砂玻璃，像 Apple TV 一样；或者让 App 直接放在壁纸上。</string>
+    <string name="st_plate_glass">磨砂玻璃</string>
+    <string name="st_plate_none">不显示</string>
+    <string name="st_sounds">按键声音</string>
+    <string name="st_sounds_hint">移动焦点、确认、返回时发出声音，像 Apple TV 一样。</string>
+    <string name="st_sounds_tv_hint">用电视系统自带的按键音，和电视菜单里一样。电视设置里关了按键音时不会响，这时请选「Halo TV」。</string>
+    <string name="st_sounds_tv">电视</string>
+    <string name="st_sounds_aerial">Halo TV</string>
+    <string name="st_on">开</string>
+    <string name="st_off">关</string>
+    <string name="st_hidden_apps">隐藏的 App</string>
+    <string name="st_hidden_apps_hint">从主屏幕隐藏的 App 在这里，可以放回主屏幕。设了家长密码时要先输入密码。</string>
+    <string name="st_home_lock">锁定主屏幕</string>
+    <string name="st_home_lock_hint">开启后，长按 App 或按菜单键不再弹出整理菜单，App 不会被误移动、隐藏或卸载。设了家长密码时，关闭要输入密码。</string>
+    <string name="home_locked_notice">主屏幕已锁定。要整理 App，在个性化里关闭「锁定主屏幕」。</string>
+    <string name="st_hidden_none">没有</string>
+    <string name="st_hidden_count">%d 个</string>
+    <string name="st_focus_high">高对比度</string>
+    <string name="st_focus_standard">标准</string>
+    <string name="st_focus_high_hint">选中的 App 外面加一圈白色描边，离得远也看得清。</string>
+    <string name="st_focus_standard_hint">与 Apple TV 默认一致：选中的 App 只放大浮起。</string>
+    <string name="st_effects">性能模式</string>
+    <string name="st_effects_auto">均衡</string>
+    <string name="st_effects_full">效果优先</string>
+    <string name="st_effects_lite">流畅优先</string>
+    <string name="st_effects_hint">流畅优先减少界面特效；均衡根据设备能力选择；效果优先保留完整特效。刷新率由系统控制。</string>
+    <string name="st_effects_auto_lite_hint">这台电视内存较小或系统较旧，「自动」用的是流畅。</string>
+    <string name="cc_inputs_settings">信号源设置</string>
+    <string name="cc_inputs_list">在列表里显示</string>
+    <string name="cc_inputs_list_hint">电视列出了实际没有的接口，或者用不到的，可以去掉勾，它们就不再出现在信号源列表和主屏幕上。</string>
+    <string name="cc_inputs_cec">外接设备开机时切过去</string>
+    <string name="cc_inputs_cec_hint">游戏机、盒子通过 HDMI-CEC 开机（一键播放）时，电视切到它所在的信号源，和电视原来的桌面一样。不是每台电视都会通知，Amlogic 芯片的电视（很多小米机型）会。</string>
+    <string name="cc_inputs_pin">显示在主屏幕（可多选）</string>
+    <string name="cc_inputs_boot">开机时打开（选一个）</string>
+    <string name="cc_inputs_boot_none">不打开，停在 Halo TV</string>
+    <string name="cc_inputs_boot_hint">电视开机或从待机唤醒时，直接切到这个信号源。按主页键仍会回到 Halo TV。想开机直接打开某个 App（比如直播 App），在主屏幕上长按它，选「开机时打开」。</string>
+    <string name="cc_inputs_pin_hint">选中的信号源会作为磁贴出现在主屏幕最前面，按一下直接切换过去。长按磁贴可以移动或移除。</string>
+    <string name="menu_unpin_source">从主屏幕移除</string>
+    <string name="menu_source_device">接入的设备</string>
+    <string name="menu_source_plain">默认</string>
+    <string name="device_apple_tv">Apple TV</string>
+    <string name="device_playstation">PlayStation</string>
+    <string name="device_switch">Nintendo Switch</string>
+    <string name="device_xbox">Xbox</string>
+    <string name="device_console">游戏机</string>
+    <string name="device_computer">电脑</string>
+    <string name="device_set_top_box">机顶盒</string>
+    <string name="device_speaker">回音壁</string>
+    <string name="cc_update_available">有新版本 %s</string>
+    <string name="cc_update_title">Halo TV %s</string>
+    <string name="cc_update_current">这台电视上运行的是 Halo TV %s。</string>
+    <string name="cc_update_notes">%s 更新内容</string>
+    <string name="cc_update_keeps">App、排列顺序、壁纸和设置都会保留。</string>
+    <string name="cc_update_scan">用手机扫码打开 Halo TV GitHub 发布页，查看安装包和升级说明。</string>
+    <string name="cc_update_scan_else">装不上？用手机扫码，看别的升级方法。</string>
+    <string name="cc_update_install">下载并安装</string>
+    <string name="cc_update_downloading">正在下载… %d%%</string>
+    <string name="cc_update_opened">已打开安装程序，按提示确认更新（小米上是「继续更新」）。装好后按「完成」，会回到 Halo TV，设置都保留。</string>
+    <string name="cc_update_permission">请在刚打开的设置里允许 Halo TV 安装应用，然后回来再点一次「下载并安装」。</string>
+    <string name="cc_update_storage_permission">这台电视需要存储权限才能保存更新。请允许弹出的文件权限请求，再点一次「下载并安装」。</string>
+    <string name="cc_update_failed_download">更新下载或校验失败。请检查网络后重试，也可以扫描二维码手动下载安装。</string>
+    <string name="cc_update_failed_blocked">这台电视不让 App 安装别的 App，请用下面的命令升级。</string>
+    <string name="cc_update_failed_signature">这台电视上的 Aerial 和官方版本签名不同，不能直接覆盖。</string>
+    <string name="cc_update_failed_older">官网上的版本还不比这台电视上的新，过一会儿再试。</string>
+    <string name="st_pin">家长密码</string>
+    <string name="st_pin_off">关闭</string>
+    <string name="st_pin_on">开启</string>
+    <string name="st_pin_hint">打开电视设置、把隐藏的 App 加回来之前，要先输入密码。</string>
+    <string name="pin_enter">输入密码</string>
+    <string name="pin_enter_hint">用遥控器的数字键，或下面的键盘。</string>
+    <string name="pin_create">设置密码</string>
+    <string name="pin_create_hint">4 位数字。请记好：忘了只能用电脑通过 ADB 清除。</string>
+    <string name="pin_confirm">再输入一次</string>
+    <string name="pin_wrong">密码不对，请重试。</string>
+    <string name="pin_mismatch">两次输入的不一样，请重新设置。</string>
+    <string name="pin_kind_hint">数字密码用遥控器的数字键或屏幕键盘输入；方向键密码按 4 下方向键，当着孩子输入也看不出来。</string>
+    <string name="pin_kind_digits">4 位数字</string>
+    <string name="pin_kind_arrows">4 个方向键</string>
+    <string name="pin_arrows_hint">依次按 4 下方向键（上、下、左、右都可以）。</string>
+    <string name="pin_arrows_create_hint">依次按 4 下方向键。请记好顺序：忘了只能用电脑通过 ADB 清除。</string>
+    <string name="weather_clear">晴</string>
+    <string name="weather_partly_cloudy">多云</string>
+    <string name="weather_cloudy">阴</string>
+    <string name="weather_fog">雾</string>
+    <string name="weather_rain">雨</string>
+    <string name="weather_snow">雪</string>
+    <string name="weather_thunder">雷雨</string>
+    <string name="weather_temperature">%1$d℃</string>
+    <string name="weather_high_low">最高 %1$d℃  最低 %2$d℃</string>
+    <string name="st_columns">每排 App</string>
+    <string name="st_columns_hint">主屏幕和文件夹里每排放几个 App。6 个一眼看到更多；4 个图标更大，离得远也看得清。</string>
+    <string name="st_peek">第二排</string>
+    <string name="st_peek_show">露出一点</string>
+    <string name="st_peek_hide">不露出</string>
+    <string name="st_peek_hint">单排时，第一排下面露出第二排的上沿，提示下面还有 App。选「不露出」时，按下键才出现。</string>
+    <string name="menu_boot_on">开机时打开</string>
+    <string name="menu_boot_off">开机时不再打开</string>
+    <string name="cc_boot">开机时打开</string>
+    <string name="notice_boot_on">开机时会打开「%1$s」</string>
+    <string name="notice_boot_switch">开机时改为打开「%1$s」，不再打开「%2$s」</string>
+    <string name="notice_boot_off">开机时不再打开「%1$s」</string>
+    <string name="tile_stock_home">原桌面</string>
+    <string name="tile_xiaowei_call">小微畅聊</string>
+    <string name="tile_kids">儿童</string>
+    <string name="ss_videos">视频</string>
+    <string name="ss_videos_hint">扫码从手机添加 MP4 或 MOV 视频，离线轮播；没有可播放的视频时显示照片。</string>
+    <string name="ss_system">系统内置</string>
+    <string name="ss_system_hint">用电视自带的屏保（比如小米的那些画面），Halo TV 不再显示自己的屏保。</string>
+    <string name="wp_videos_note">你从手机发来的视频，静音、一个接一个播放。和航拍一样会动，按键时停在当前画面。</string>
+    <string name="wp_videos_rotate">我的视频 · 轮播</string>
+    <string name="wp_video_note">你从手机发来的这个视频，静音、循环播放。和航拍一样会动，按键时停在当前画面。</string>
+    <string name="wp_source_note">这个信号源的实时画面，没有声音，打开这个信号源才有声音。往下选 App 时换成磨砂背景；没有画面时显示深色背景。</string>
+    <string name="st_play">播放</string>
+    <string name="st_play_still">静止时</string>
+    <string name="st_play_always">一直</string>
+    <string name="st_play_hint">静止时：在第一排（双排时前两排）停 10 秒后播放，按键停下。一直：按键不停，背景压暗一点；再往下进入其余 App 时停下。</string>
+    <string name="ss_show_time">时间</string>
+    <string name="ss_show_time_hint">航拍和照片屏保上的时间。时间和地名会不时挪一点位置，避免烧屏。</string>
+    <string name="ss_flip_clock">翻页时钟</string>
+    <string name="ss_standby_after">屏保后进入待机</string>
+    <string name="ss_standby_hint">屏保开始后等待所选时长，再结束 Halo TV 系统屏保，让 Android 将电视置于待机。选择“从不”则不自动待机。</string>
+    <string name="home_good_morning">早上好</string>
+    <string name="home_good_afternoon">下午好</string>
+    <string name="home_good_evening">晚上好</string>
+    <string name="home_good_night">晚安</string>
+    <string name="wp_wallpaper_title">壁纸设置</string>
+    <string name="wp_dynamic">动态视频壁纸</string>
+    <string name="wp_dynamic_hint">扫描右侧二维码，在手机上传视频；上传完成后即可在这里选择。</string>
+    <string name="st_refresh_rate">刷新率</string>
+    <string name="st_refresh_rate_hint">只影响 Halo TV 桌面，视频应用仍按系统设置运行。不支持的刷新率会置灰；自动模式仅在 Android 12 及以上选择系统标记为无黑屏切换的最高刷新率，其他情况跟随系统。手动切换可能短暂黑屏。</string>
+    <string name="st_refresh_auto">自动</string>
+    <string name="st_refresh_30">30Hz</string>
+    <string name="st_refresh_60">60Hz</string>
+    <string name="st_refresh_120">120Hz</string>
+    <string name="cc_about_attribution">Halo TV 基于 Aerial 开源项目二次开发，非 Aerial 官方版本。</string>
+    <string name="donate_title">打赏/联系作者</string>
+    <string name="donate_open">查看</string>
+    <string name="donate_subtitle">请维护者喝杯咖啡</string>
+    <string name="donate_description">感谢你喜欢 Halo TV。你的支持将帮助我持续优化和维护。</string>
+    <string name="donate_hint">自愿支持，金额随心，不影响任何功能使用。</string>
+    <string name="donate_wechat">微信</string>
+    <string name="donate_alipay">支付宝</string>
+    <string name="donate_close">关闭</string>
+    <string name="donate_back">按返回键关闭</string>
+    <string name="guard_consent_description">桌面守护会使用无障碍服务处理 Home 键，并在原桌面出现时切回 Halo TV；授予恢复权限后，重启可能自动恢复守护。你可以随时在此关闭。关闭后默认桌面仍需在系统设置中更改。</string>
+    <string name="guard_agree_enable">同意并设置桌面守护</string>
+    <string name="guard_turn_off">关闭桌面守护</string>
+    <string name="guard_turn_off_hint">关闭后停止守护及自动恢复；如需更换默认桌面，请在系统设置中选择。</string>
+    <string name="cc_system_settings">系统设置</string>
+    <string name="cc_halo_settings">Halo TV 设置</string>
+    <string name="halo_notice_title">关于 Halo TV</string>
+    <string name="halo_notice_body">Halo TV 并非 Aerial 原作者作品，也不是官方发行版。
+
+本项目基于 pengchujin/aerial-tv（https://github.com/pengchujin/aerial-tv）开源项目进行二次开发，由 Null_ 整理和发布。
+
+Aerial 原项目及其名称、代码和许可归原作者及各自权利人所有。本项目与 Aerial 原作者、Apple、电视厂商均无隶属或背书关系。</string>
+    <string name="halo_notice_close">关闭</string>
+    <string name="halo_notice_back">按返回键关闭</string>
+    <string name="home_wallpaper_screensaver">壁纸与屏保</string>
+    <string name="home_network_settings">网络设置</string>
+    <string name="clock_bar">时钟栏</string>
+    <string name="clock_center">居中</string>
+    <string name="clock_status">放入状态栏</string>
+    <string name="clock_bar_size">时钟栏大小</string>
+    <string name="clock_default">默认</string>
+    <string name="clock_extra">超大</string>
+    <string name="weather_city_edit">设置天气城市</string>
+    <string name="weather_city_hint">输入城市名称</string>
+    <string name="weather_city_failed">未找到城市，请检查网络或尝试其他名称</string>
+    <string name="clock_text_color">桌面文字颜色</string>
+    <string name="clock_white">白色</string>
+    <string name="clock_dark_gray">深灰</string>
+    <string name="clock_black">黑色</string>
+    <string name="plate_liquid">液态玻璃</string>
+    <string name="category_static">静态壁纸</string>
+    <string name="category_dynamic">动态壁纸</string>
+    <string name="category_saver">屏保选择</string>
+    <string name="focus_liquid_slide">液态玻璃滑动</string>
+    <string name="sound_soft">柔和</string>
+    <string name="sound_crystal">清脆</string>
+    <string name="video_sound">视频壁纸声音</string>
+    <string name="video_sound_hint">仅影响上传的视频壁纸；默认静音。</string>
+    <string name="video_muted">静音</string>
+    <string name="video_unmuted">播放声音</string>
+    <string name="video_fit">视频画面适配</string>
+    <string name="video_fit_hint">填充可能裁切画面；完整显示可能留黑边。</string>
+    <string name="video_fill">填充</string>
+    <string name="video_contain">完整显示</string>
+    <string name="wallpaper_current">使用中</string>
+    <string name="wallpaper_apply">设为壁纸</string>
+    <string name="wallpaper_delete">删除</string>
+    <string name="wallpaper_hold_manage">长按确定可预览或删除上传的壁纸</string>
+    <string name="wallpaper_delete_confirm">删除这张上传的壁纸？</string>
+    <string name="settings_category_home">桌面布局</string>
+    <string name="settings_category_clock">时钟与天气</string>
+    <string name="settings_category_controls">操作与性能</string>
+    <string name="settings_category_safety">安全</string>
+    <string name="settings_preview_title">效果预览</string>
+    <string name="settings_preview_hint">布局示意 · 图标仅供参考</string>
+    <string name="ss_aerial_keeps">航拍会在电视上存最近 %2$d 部（最多占 %1$s），壁纸和屏保轮流放这几部，每天换一部新的；在屏保里按右键换新片，左键回到上一部。</string>
+    <string name="cc_self_compile">让 Halo TV 更流畅</string>
+    <string name="home_clean_background">清理后台</string>
+    <string name="home_clean_requested">已请求清理用户应用后台，具体由系统决定。</string>
+    <string name="home_clean_none">没有找到可清理的用户应用。</string>
+    <string name="home_clean_unsupported">Android 14 及以上不允许通过此方式清理其他应用。</string>
+    <string name="home_clean_result">已请求清理 %1$d 个应用，可用内存变化 %2$s MB（系统整体估算）。</string>
+    <string name="settings_icon_position">设置图标位置</string>
+    <string name="settings_icon_left">左上角</string>
+    <string name="settings_icon_right">右边</string>
+    <string name="settings_icon_upper_right">右上角</string>
+    <string name="settings_icon_visibility">设置图标显示</string>
+    <string name="settings_icon_always">常驻</string>
+    <string name="settings_icon_fade">淡出</string>
+    <string name="settings_icon_fade_hint">淡出后仅按上键或菜单键重新显示；隐藏时仍可盲选。</string>
+    <string name="show_lunar_date">农历日期</string>
+    <string name="lunar_date_value">农历 %1$s</string>
+    <string name="lite_weather_phone_hint">扫描右侧二维码，在手机上设置天气城市。</string>
+    <string name="settings_icon_hidden">隐藏</string>
+    <string name="clock_bold">加大加粗</string>
+
+    <string name="cc_update_waiting">正在等待系统安装…</string>
+
+    <string name="kids_title">儿童与长辈模式</string>
+
+    <string name="kids_hint">桌面上只显示你选的 App，不能整理。退出要输入家长密码；进屏保或电视待机后会自动回到这个模式。</string>
+
+    <string name="kids_kind">给谁用</string>
+
+    <string name="kids_kind_kids">儿童</string>
+
+    <string name="kids_kind_elders">长辈</string>
+
+    <string name="kids_kind_kids_hint">给孩子：可以限制时间、定时休息，并拦住其他 App。</string>
+
+    <string name="kids_kind_elders_hint">给老人：磁贴更大、都显示名称、焦点有白框，不会误操作把 App 弄乱。</string>
+
+    <string name="kids_block">其他 App</string>
+
+    <string name="kids_block_on">拦住</string>
+
+    <string name="kids_block_off">不拦</string>
+
+    <string name="kids_block_hint">没选的 App，不管是用遥控器按键、语音助手还是从别的 App 打开，都会马上回到桌面。</string>
+
+    <string name="kids_block_no_guard">这台电视没有开启桌面守护：桌面上只显示选好的 App，但从别处打开的 App 拦不住。</string>
+
+    <string name="kids_weekday">工作日每天</string>
+
+    <string name="kids_weekend">周末每天</string>
+
+    <string name="kids_minutes_hint">每天能用 App 和信号源的分钟数，停在桌面上的时间不算。手机页上可以设成任意分钟数。</string>
+
+    <string name="kids_no_limit">不限</string>
+
+    <string name="kids_latest">最晚到</string>
+
+    <string name="kids_latest_hint">早上 %s 前和这个时间以后不能看电视。手机页上可以设成任意时间。</string>
+
+    <string name="kids_break">休息</string>
+
+    <string name="kids_break_hint">每看这么多分钟，休息 %d 分钟。</string>
+
+    <string name="kids_start_kids">进入儿童模式</string>
+
+    <string name="kids_start_elders">进入长辈模式</string>
+
+    <string name="kids_pick_first">先在右边选至少一个 App。</string>
+
+    <string name="kids_loading">App 还在加载。</string>
+
+    <string name="kids_turn_off">关闭这个模式</string>
+
+    <string name="kids_apps">显示的 App · %d 个</string>
+
+    <string name="kids_apps_hint">桌面按选择的顺序显示。以后新装的 App 不会自动加进来。</string>
+
+    <string name="kids_sources_note">选了信号源以后，用遥控器的信号源键也能切到电视的其他信号源：它们共用一个播放器，Aerial 分不出来。</string>
+
+    <string name="kids_m">%d 分钟</string>
+
+    <string name="kids_h">%d 小时</string>
+
+    <string name="kids_hm">%1$d 小时 %2$d 分钟</string>
+
+    <string name="kids_lock_day">今天的时间用完了</string>
+
+    <string name="kids_lock_day_sub">今天已经看了 %s，明天再看吧。</string>
+
+    <string name="kids_lock_late">现在不能看电视了</string>
+
+    <string name="kids_lock_late_sub">可以看电视的时间是 %1$s–%2$s。</string>
+
+    <string name="kids_lock_break">休息一下</string>
+
+    <string name="kids_lock_break_sub">看看远处，让眼睛歇一歇。%s 后可以继续看。</string>
+
+    <string name="kids_parent">家长</string>
+
+    <string name="kids_grant_title">再给一些时间</string>
+
+    <string name="kids_grant">再看 %d 分钟</string>
+
+    <string name="kids_grant_day">今天不限</string>
+
+    <string name="cc_kids_allowed_until">家长允许看到 %s</string>
+
+    <string name="cc_kids_no_limit">今天不限时 · 已看 %s</string>
+
+    <string name="cc_kids_left">今天还剩 %s</string>
+
+    <string name="cc_kids_leave">退出儿童模式</string>
+
+    <string name="cc_elders_leave">退出长辈模式</string>
+
+    <string name="cc_kids_back">回到儿童模式</string>
+
+    <string name="cc_elders_back">回到长辈模式</string>
+
+    <string name="st_kids">儿童与长辈模式</string>
+
+    <string name="st_kids_hint">只显示选好的 App 的桌面，还可以给孩子限制时间。</string>
+
+    <string name="kids_blocked">「%s」不在这个模式里</string>
+
+    <string name="kids_warn">还能看 %d 分钟</string>
+
+    <string name="kids_warn_break">%d 分钟后休息一下</string>
+    <string name="halo_kids_custom">自定义</string>
+    <string name="halo_kids_configure_first">请先在 Halo TV 设置中配置儿童与长辈模式</string>
+    <string name="halo_kids_invalid_minutes">请输入有效的分钟数（1–1440）</string>
+    <string name="category_sources">信号源背景</string>
+
+    <string name="halo_cat_appearance">桌面外观</string>
+    <string name="halo_cat_apps">应用与 Dock</string>
+    <string name="halo_cat_remote">遥控与声音</string>
+    <string name="halo_cat_family">儿童长辈模式</string>
+    <string name="halo_cat_performance">性能与兼容</string>
+    <string name="halo_cat_about">关于</string>
+    <string name="halo_phone_features">上传壁纸与视频\n更换应用图标\n设置天气城市</string>
+    <string name="halo_phone_hint">手机或电脑需与电视连接同一网络。也可在浏览器输入下方地址。</string>
+
+    <string name="halo_recent">最近调整</string>
+    <string name="halo_reset_action">恢复本页默认值</string>
+    <string name="halo_reset_confirm">恢复本页默认值？</string>
+    <string name="halo_reset_hint">仅恢复本页设置，不会删除文件或取消隐藏应用。</string>
+    <string name="halo_reset_cancel">取消</string>
+    <string name="halo_phone_tips">使用提示</string>
+
+    <string name="halo_phone_scan">扫码轻松设置</string>
+    <string name="halo_phone_same_network">手机与电视需连接同一网络</string>
+    <string name="halo_phone_browser">也可在浏览器输入下方地址</string>
+    <string name="halo_free_notice">Halo TV 完全免费下载与使用。如果您在其他渠道付费获取，相关费用并非 Halo TV 作者收取。如您喜欢 Halo TV，欢迎在打赏页面自愿支持作者，感谢您的支持！</string>
+
+    <string name="halo_video_decoder_error">动态壁纸无法播放：电视可能不支持此视频编码或分辨率。</string>
+    <string name="halo_video_damaged_error">动态壁纸无法读取：文件可能已损坏，请重新上传。</string>
+    <string name="halo_video_playback_error">动态壁纸播放失败：可能是文件损坏或电视不支持，请尝试其他视频。</string>
+
+    <string name="bing_library">必应壁纸</string>
+    <string name="bing_loading">正在加载…</string>
+    <string name="bing_failed">加载失败，请检查网络后重试</string>
+    <string name="bing_retry">重试</string>
+    <string name="bing_select">请选择壁纸查看高清预览</string>
+    <string name="bing_apply">设置为壁纸</string>
+    <string name="bing_applying">正在设置…</string>
+    <string name="bing_download_failed">下载或保存失败，请检查网络和存储空间</string>
+    <string name="bing_all">全部</string>
+
+    <string name="wallpaper_online_video">在线视频壁纸</string>
+    <string name="wallpaper_local_video">本地视频壁纸</string>
+    <string name="wallpaper_local_photo">本地壁纸</string>
+    <string name="wallpaper_empty_video">暂无本地视频，请扫描右侧二维码上传。</string>
+    <string name="wallpaper_empty_photo">暂无本地照片，请扫描右侧二维码上传。</string>
+    <string name="wallpaper_follow_app">跟随 App</string>
+    <string name="saver_local_photos">本地照片</string>
+    <string name="saver_local_video">本地视频</string>
+    <string name="saver_online_video">在线视频</string>
+
+    <string name="aerial_source_notice">视频来自 Apple；缩略图目录参考 Aerial Views，版权归各权利人所有。</string>
+    <string name="bing_source_notice">壁纸来自 Bing，归档由 YanGN 提供（https://github.com/ygnstudio/bing_wallpaper_archive）；图片版权归各权利人所有。</string>
+
+    <string name="aerial_creator_unknown">来源：Apple · 目录未提供单独作者信息</string>
+    <string name="bing_credit_unknown">归档未提供版权作者信息</string>
+    <string name="bing_credit_details">查看完整版权信息</string>
+
+    <string name="rotation_off">不自动切换</string>
+    <string name="rotation_daily">每日自动切换</string>
+    <string name="rotation_half_hour">每半小时自动切换</string>
+    <string name="rotation_hour">每小时自动切换</string>
+    <string name="rotation_custom">自定义切换时间</string>
+    <string name="rotation_custom_value">自定义：%1$d 分钟</string>
+    <string name="rotation_custom_minutes">自定义切换时间（分钟，1–1440）</string>
+    <string name="bing_local_note">图片下载后将存放在本机目录，可在本地照片中查看。</string>
+    <string name="bing_rotation_hint">选择切换间隔后，选中图片并设为壁纸即可开始；可随时关闭自动切换。</string>
+
+    <string name="rotation_starting">正在随机加载壁纸…</string>
+    <string name="rotation_started">已开始随机切换，返回桌面即可查看。</string>
+    <string name="rotation_failed">壁纸加载失败，请检查网络；也可再次选择时间重试。</string>
+
+    <string name="bing_cache_note">在线壁纸仅使用可替换缓存，不保存到本地照片。</string>
+    <string name="halo_source_bing_note">每日精选的高质量壁纸</string>
+    <string name="halo_source_local_photo_note">使用设备中的照片与图片</string>
+    <string name="halo_source_online_video_note">浏览在线视频壁纸</string>
+    <string name="halo_source_local_video_note">使用设备中的视频</string>
+    <string name="halo_power">电源</string>
+    <string name="halo_power_unavailable">无法打开系统电源菜单，请使用遥控器电源键。</string>
+    <string name="halo_kids_mode">儿童模式</string>
+    <string name="halo_elders_mode">长辈模式</string>
+    <string name="halo_power_warning">即将打开电视系统电源菜单。部分电视会立即开始关机倒计时，请准备好用遥控器取消。菜单中的可选操作由电视系统决定。</string>
+    <string name="halo_power_continue">打开系统电源菜单</string>
+    <string name="halo_auto_clean">空闲时自动清理</string>
+    <string name="halo_auto_clean_note">桌面无操作 2 分钟后尝试清理缓存进程；播放音频时跳过。实际效果由系统决定。</string>
+    <string name="halo_contact_title">联系作者 · 问题反馈</string>
+    <string name="halo_contact_details">抖音：eyubaobao777　·　小红书：11350972266
+微信：扫码联系　·　邮箱：1227888560@qq.com</string>
+    <string name="halo_contact_heading_email">联系：微信 / 抖音 / 小红书　邮箱：1227888560@qq.com</string>
+    <string name="aerial_source_about">视频来自 Apple；缩略图目录参考 Aerial Views（https://github.com/theothernt/AerialViews），版权归各权利人所有。</string>
+    <string name="quiz_interval">观看多久答题（分钟）</string>
+    <string name="elder_reminder">休息提醒（分钟）</string>
+    <string name="quiz_reward_max">每次最多获得（分钟）</string>
+    <string name="quiz_progress">第 %1$d / 5 题 · 答对 4 题即可获得观看时间</string>
+    <string name="quiz_pass">答题通过！可以继续观看</string>
+    <string name="quiz_retry">再试一次，答对 4 题即可通过</string>
+    <string name="quiz_continue">领取观看时间</string>
+    <string name="quiz_again">重新答题</string>
+    <string name="quiz_submit">确认答案</string>
+    <string name="elder_rest_message">观看一段时间了，记得休息一下。</string>
+    <string name="halo_clock_format">时间制式</string>
+    <string name="halo_clock_24">24 小时</string>
+    <string name="halo_clock_12">12 小时</string>
+    <string name="halo_flip_seconds">秒钟显示</string>
+    <string name="halo_saver_bing">在线壁纸</string>
+    <string name="halo_saver_bing_loading">正在加载必应壁纸…</string>
+    <string name="halo_saver_bing_offline">暂时无法加载在线壁纸，将稍后重试</string>
+    <string name="halo_desktop_clock_format">桌面时间制式</string>
+    <string name="rotation_home_return">回到桌面自动切换</string>
+    <string name="halo_update_manage">软件更新</string>
+    <string name="halo_update_phone_confirm">将 Halo TV 从 %1$s 更新到 %2$s？</string>
+    <string name="halo_update_phone_install">确认更新</string>
+    <string name="halo_update_phone_back">返回</string>
+    <string name="halo_update_phone_offline">请先将电视连接到局域网，再打开二维码。</string>
+    <string name="halo_update_new">有新版软件</string>
+    <string name="halo_update_check">检查更新</string>
+    <string name="halo_update_checking">正在检查更新…</string>
+    <string name="halo_update_current">当前已是最新版本。</string>
+    <string name="halo_update_check_failed">暂时无法检查更新。可重试或使用手机推送安装包。</string>
+    <string name="halo_update_online">在线更新</string>
+    <string name="halo_update_manual">手动更新</string>
+    <string name="halo_update_shared_qr">扫描设置二维码，在手机首页选择「推送安装包更新」。</string>
+    <string name="halo_update_install_permission">请在系统设置中允许 Halo TV 安装应用，然后返回再次确认。</string>
+    <string name="halo_update_discard">取消并删除安装包</string>
+    <string name="halo_show_home_greeting">显示问候语</string>
+    <string name="halo_show_home_time">显示时间</string>
+    <string name="halo_show_home_date">显示日期</string>
+    <string name="halo_update_step_connect">让手机和电视连接到同一网络。</string>
+    <string name="halo_update_step_install">推送成功后，回到电视的「控制中心 → 软件更新」，选择「安装手机推送的更新」，再确认安装。</string>
+    <string name="halo_update_phone_received">安装手机推送的更新</string>
+    <string name="halo_update_phone_tv_only">手机负责传输文件，安装需要在电视上手动确认。</string>
+    <string name="halo_update_qr_loading">正在生成二维码…</string>
+    <string name="quiz_title">趣味答题</string>
+    <string name="quiz_position">第 %1$d / %2$d 题</string>
+    <string name="quiz_goal">答对 4 题即可获得观看时间。</string>
+    <string name="quiz_rest_title">给眼睛放个小假</string>
+    <string name="quiz_rest_message">亲爱的小朋友，真实世界比屏幕更有趣！起来动一动，抬头看看远方。休息好了，再回来继续探索吧！</string>
+    <string name="quiz_pick_one">选择一个答案</string>
+    <string name="quiz_pick_multiple">选出所有正确答案（多选）</string>
+    <string name="quiz_pick_before_submit">请先选择答案</string>
+    <string name="quiz_score">答对 %1$d / %2$d 题</string>
+    <string name="quiz_back_to_questions">返回答题</string>
+    <string name="halo_dock_corners">圆角样式</string>
+    <string name="halo_dock_corners_round">大圆弧</string>
+    <string name="halo_dock_corners_compact">小圆弧</string>
+    <string name="quiz_parent_allowance_hint">请家长在下方选择继续观看的时长，或退出儿童模式。</string>
+    <string name="quiz_rest_message_playful">亲爱的小朋友，真实世界比屏幕更有趣！起来动一动，看看远方，休息好了再回来吧！</string>
+    <string name="quiz_remote_hint">方向键选择 · 确认键作答</string>
+    <string name="welcome3_eyebrow">欢迎进入</string>
+    <string name="welcome3_tagline">让电视，回到你喜欢的样子。</string>
+    <string name="welcome3_credit">基于 Aerial 开源项目二次开发，由 Null_ 整理与发布。</string>
+    <string name="welcome3_thanks">感谢 Aerial 原作者及所有开源贡献者。</string>
+    <string name="welcome3_start">开始使用</string>
+    <string name="welcome3_disclaimer">非 Aerial 官方版本，与 Apple 及电视厂商无隶属或背书关系。</string>
+    <string name="saver_online_unavailable">在线屏保暂时无法播放，稍后自动重试。按返回键回到桌面。</string>
+    <string name="saver_local_unavailable">本地视频暂时无法播放，请检查所选文件。按返回键回到桌面。</string>
+    <string name="halo_installed_build">这台电视当前使用：%1$s</string>
+    <string name="halo_guard_running">桌面守护：正在运行</string>
+    <string name="halo_guard_unbound">桌面守护：开关已开启，但服务尚未运行</string>
+    <string name="halo_guard_unknown">桌面守护：系统不允许读取开关状态</string>
+    <string name="halo_guard_disabled">桌面守护：尚未开启，请在无障碍设置中授权</string>
+    <string name="halo_guard_restore_allowed">自动恢复权限已授权；请同时允许通知使用权和厂商自启动。</string>
+    <string name="halo_guard_restore_missing">尚未获得自动恢复权限。可先手动开启无障碍；若待机或重启后失效，请按扫码指南通过 ADB 授权。</string>
+    <string name="halo_guard_repair">重新连接桌面守护</string>
+    <string name="halo_guard_restricted">应用信息：检查“允许受限设置”</string>
+</resources>
