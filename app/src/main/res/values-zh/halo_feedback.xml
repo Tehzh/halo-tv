@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="halo_feedback_entry">公告与反馈</string>
+    <string name="halo_feedback_notices">查看公告</string>
+    <string name="halo_feedback_back">返回</string>
+    <string name="halo_feedback_github_scan">扫码到 GitHub 反馈</string>
+    <string name="halo_feedback_github_hint">请附上电视型号、Android 版本、HaloTV 版本和安装类型，并说明怎样复现。</string>
+    <string name="halo_feedback_public_hint">GitHub 问题是公开的。提交截图或日志前，请检查并遮掉个人信息。</string>
+    <string name="halo_feedback_diagnostics_scan">手机与电视同网，扫码可自动带上诊断摘要</string>
+</resources>

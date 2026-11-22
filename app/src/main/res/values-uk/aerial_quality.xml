@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aerial_quality_4k_unavailable">Телевізор не повідомив про сумісний декодер 4K. У режимах «Авто» і 1080p використовується джерело 1080p.</string>
+    <string name="aerial_quality_hd_uhd">Спільне налаштування шпалер і заставки. У режимі «Авто» за наявності використовується джерело 4K.</string>
+</resources>

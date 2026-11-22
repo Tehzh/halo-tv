@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import app.orchard.tv.wallpaper.Images
+import app.orchard.tv.wallpaper.replaceWithOutput
 import java.io.File
 import java.io.InputStream
 
@@ -69,9 +70,11 @@ object CustomIcons {
         return try {
             tmp.outputStream().use { input.copyTo(it) }
             val bmp = Images.decodeCover(tmp, W, H) ?: return false
-            fileFor(pkg).outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            bmp.recycle()
-            true
+            try {
+                fileFor(pkg).replaceWithOutput { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            } finally {
+                bmp.recycle()
+            }
         } finally {
             tmp.delete()
         }

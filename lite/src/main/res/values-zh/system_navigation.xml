@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lite_system_settings_unavailable">电视没有提供可打开的系统设置入口，请使用遥控器设置键或进入原桌面设置。</string>
+    <string name="lite_system_network_unavailable">电视没有提供可打开的网络设置入口，请在原桌面或遥控器设置菜单中打开 Wi-Fi。</string>
+    <string name="lite_system_uninstall_unavailable">系统卸载入口不可用或被限制，请到原桌面或电视自带的应用管理中卸载。</string>
+    <string name="lite_system_app_info_hint">可在此发起卸载，并在电视上确认。清理缓存等操作请打开系统应用信息。</string>
+    <string name="lite_system_app_details">系统应用信息</string>
+    <string name="lite_system_app_details_unavailable">系统应用信息页面不可用，您仍可使用此处的卸载按钮。</string>
+</resources>

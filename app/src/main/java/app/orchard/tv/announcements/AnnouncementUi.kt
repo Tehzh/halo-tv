@@ -1,10 +1,9 @@
 package app.orchard.tv.announcements
 
-import android.content.Intent
-import android.net.Uri
+import android.view.KeyEvent
 import android.widget.Toast
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -15,9 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -35,7 +37,6 @@ import app.orchard.tv.ui.home.MenuRow
 import app.orchard.tv.ui.theme.Glyph
 import app.orchard.tv.ui.theme.Type
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 /** A callback-driven snapshot; no polling or work while the notice UI is absent. */
 @Composable
@@ -53,26 +54,22 @@ internal fun announcementRevision(): Int {
 fun AnnouncementEntry(vm: HomeViewModel) {
     announcementRevision()
     val context = LocalContext.current
-    // Read time-based eligibility when the panel is composed, including on every reopening.
-    // A read notice remains available until withdrawn/expired; an empty feed has no entry.
-    if (Announcements.latest() == null) return
-    val unread = Announcements.unread()
-    Spacer(Modifier.height(5.dp))
-    MenuRow(Glyph.Info, stringResource(if (unread != null) R.string.halo_ann_new else R.string.halo_ann_entry),
-        modifier = Modifier.clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = 0.075f)), onClick = {
-        val notice = Announcements.unread() ?: Announcements.latest()
-        if (notice == null) {
-            Announcements.check(force = true)
-            Toast.makeText(context, R.string.halo_ann_none, Toast.LENGTH_SHORT).show()
-        } else {
-            Announcements.presented(notice)
-            vm.overlay = Overlay.Announcement(notice, true)
-        }
-    })
+    // Keep navigation stable; only the badge follows actionable unread revisions.
+    val unread = Announcements.unread() != null
+    Box(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        MenuRow(Glyph.Info, stringResource(R.string.halo_feedback_entry),
+            modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color.White.copy(alpha = 0.075f)),
+            trailing = "›", rowHeight = 40.dp, onClick = {
+                vm.whenUnlocked { vm.overlay = Overlay.Feedback }
+            })
+        if (unread) Box(Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 7.dp)
+            .size(6.dp).clip(androidx.compose.foundation.shape.CircleShape)
+            .background(Color(0xFFFF453A)).testTag("announcement-unread-dot"))
+    }
 }
 
 @Composable
-fun AnnouncementHost(vm: HomeViewModel, onOpen: (Intent) -> Unit, windowFocused: Boolean) {
+fun AnnouncementHost(vm: HomeViewModel, windowFocused: Boolean) {
     val revision = announcementRevision()
     val overlay = vm.overlay
     LaunchedEffect(revision, vm.loaded, vm.resumed, vm.screensaverVisible, overlay, Restricted.active, windowFocused) {
@@ -92,46 +89,92 @@ fun AnnouncementHost(vm: HomeViewModel, onOpen: (Intent) -> Unit, windowFocused:
     val n = shown.notice
     fun close() { vm.overlay = if (shown.fromControlCenter) Overlay.ControlCenter(CcPage.Main) else Overlay.None }
     fun later() { Announcements.later(n); close() }
-    val first = remember(n.key) { FocusRequester() }
-    val bodyScroll = rememberScrollState()
-    val scope = rememberCoroutineScope()
-    val step = with(LocalDensity.current) { 88.dp.toPx() }
     Dialog(onDismissRequest = ::later, properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false)) {
         Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.26f)), contentAlignment = Alignment.Center) {
-            Column(Modifier.width(620.dp).heightIn(max = 464.dp).liquidGlass(24.dp, translucent = true).padding(24.dp)) {
-                BasicText(stringResource(R.string.halo_ann_entry), style = Type.Callout)
-                Spacer(Modifier.height(10.dp))
-                BasicText(n.title, style = Type.LargeTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(14.dp))
-                Column(Modifier.weight(1f, fill = false).heightIn(max = 210.dp)
-                    .verticalScroll(bodyScroll).onKeyEvent { event ->
-                        val e = event.nativeKeyEvent
-                        val amount = when (e.keyCode) {
-                            android.view.KeyEvent.KEYCODE_DPAD_DOWN -> step
-                            android.view.KeyEvent.KEYCODE_DPAD_UP -> -step
-                            else -> return@onKeyEvent false
-                        }
-                        val canScroll = if (amount > 0) bodyScroll.value < bodyScroll.maxValue else bodyScroll.value > 0
-                        if (canScroll && e.action == android.view.KeyEvent.ACTION_DOWN) scope.launch { bodyScroll.scrollBy(amount) }
-                        canScroll
-                    }.focusable().padding(4.dp)) {
-                    BasicText(n.body, style = Type.Body)
-                }
-                Spacer(Modifier.height(12.dp))
-                n.detailsUrl?.let { url ->
-                    MenuRow(Glyph.Info, stringResource(R.string.halo_ann_details), onClick = {
-                        onOpen(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                    })
-                    Spacer(Modifier.height(6.dp))
-                }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.weight(1f)) { MenuRow(Glyph.Calendar, stringResource(R.string.halo_ann_later), onClick = ::later) }
-                    Box(Modifier.weight(1f)) { MenuRow(Glyph.Check, stringResource(R.string.halo_ann_stop), onClick = { Announcements.acknowledge(n); close() }) }
-                }
-                Spacer(Modifier.height(6.dp))
-                MenuRow(Glyph.Check, stringResource(R.string.halo_ann_ack), focusRequester = first, onClick = { Announcements.acknowledge(n); close() })
+            key(n.key) {
+                AnnouncementReader(n, ::later, { Announcements.acknowledge(n); close() })
             }
         }
     }
-    LaunchedEffect(n.key) { delay(100); runCatching { first.requestFocus() } }
+}
+
+/** An offline reader: remote notices are plain text, never an external-browser requirement. */
+@Composable
+internal fun AnnouncementReader(n: RemoteAnnouncement, onLater: () -> Unit, onAcknowledge: () -> Unit) {
+    val bodyFocus = remember { FocusRequester() }
+    val actionsFocus = remember { FocusRequester() }
+    val scroll = rememberScrollState()
+    var expanded by remember { mutableStateOf(false) }
+    var bodyFocused by remember { mutableStateOf(false) }
+    var viewport by remember { mutableIntStateOf(1) }
+    // Track the complete navigation press so reaching the end on key-down cannot leak key-up.
+    var heldKey by remember { mutableIntStateOf(KeyEvent.KEYCODE_UNKNOWN) }
+    val percent = if (scroll.maxValue == 0) 100 else (scroll.value.toLong() * 100 / scroll.maxValue).toInt()
+    Column(Modifier.width(if (expanded) 900.dp else 760.dp).height(if (expanded) 488.dp else 448.dp)
+        .liquidGlass(24.dp, translucent = true).padding(22.dp)
+        .onPreviewKeyEvent { event ->
+            val e = event.nativeKeyEvent
+            if (!bodyFocused && e.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                if (e.action == KeyEvent.ACTION_DOWN) bodyFocus.requestFocus()
+                true
+            } else false
+        }) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            BasicText(stringResource(R.string.halo_ann_entry), style = Type.Callout)
+            BasicText(stringResource(R.string.halo_ann_progress, percent), style = Type.Callout,
+                modifier = Modifier.testTag("announcement-progress"))
+        }
+        Spacer(Modifier.height(8.dp))
+        BasicText(n.title, style = Type.LargeTitle, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Spacer(Modifier.height(8.dp))
+        BasicText(stringResource(R.string.halo_ann_read_hint), style = Type.Callout)
+        Spacer(Modifier.height(10.dp))
+        Column(Modifier.fillMaxWidth().weight(1f).testTag("announcement-body")
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White.copy(alpha = 0.06f))
+            .border(if (bodyFocused) 2.dp else 1.dp,
+                Color.White.copy(alpha = if (bodyFocused) 0.85f else 0.18f), RoundedCornerShape(14.dp))
+            .onSizeChanged { viewport = it.height }
+            .focusRequester(bodyFocus).onFocusChanged { bodyFocused = it.isFocused }
+            .onPreviewKeyEvent { event ->
+                val e = event.nativeKeyEvent
+                val direction = when (e.keyCode) {
+                    KeyEvent.KEYCODE_DPAD_DOWN, KeyEvent.KEYCODE_PAGE_DOWN -> 1
+                    KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_PAGE_UP -> -1
+                    else -> 0
+                }
+                if (e.action == KeyEvent.ACTION_UP && e.keyCode == heldKey) {
+                    heldKey = KeyEvent.KEYCODE_UNKNOWN
+                    true
+                } else if (e.action == KeyEvent.ACTION_DOWN && direction != 0) {
+                    heldKey = e.keyCode
+                    val canScroll = if (direction > 0) scroll.value < scroll.maxValue else scroll.value > 0
+                    if (canScroll) {
+                        // Keep overlap for screenshots and avoid an animation/job queue on held keys.
+                        scroll.dispatchRawDelta(direction * viewport * 0.75f)
+                    } else if (direction > 0 && e.repeatCount == 0) {
+                        actionsFocus.requestFocus()
+                    }
+                    true
+                } else if (e.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+                    if (e.action == KeyEvent.ACTION_DOWN) { heldKey = e.keyCode; actionsFocus.requestFocus() }
+                    true
+                } else false
+            }.focusable().verticalScroll(scroll).padding(14.dp)) {
+            BasicText(n.body, style = Type.Body, modifier = Modifier.testTag("announcement-text"))
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f)) {
+                MenuRow(Glyph.Info, stringResource(if (expanded) R.string.halo_ann_compact else R.string.halo_ann_fullscreen),
+                    focusRequester = actionsFocus, onClick = { expanded = !expanded })
+            }
+            Box(Modifier.weight(1f)) { MenuRow(Glyph.Calendar, stringResource(R.string.halo_ann_later), onClick = onLater) }
+            Box(Modifier.weight(1f)) { MenuRow(Glyph.Check, stringResource(R.string.halo_ann_ack), onClick = onAcknowledge) }
+        }
+    }
+    LaunchedEffect(n.key, expanded) {
+        withFrameNanos { }
+        bodyFocus.requestFocus()
+    }
 }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="quiz_settings">Quiz settings</string>
+    <string name="quiz_stage">Age or grade</string>
+    <string name="quiz_stage_any">Any</string>
+    <string name="quiz_stage_preschool">Preschool</string>
+    <string name="quiz_stage_12">Grades 1–2</string>
+    <string name="quiz_stage_34">Grades 3–4</string>
+    <string name="quiz_stage_56">Grades 5–6</string>
+    <string name="quiz_subject">Question type</string>
+    <string name="quiz_subject_all">Mixed</string>
+    <string name="quiz_subject_math">Math</string>
+    <string name="quiz_subject_english">English</string>
+    <string name="quiz_subject_poetry">Poetry</string>
+</resources>

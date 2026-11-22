@@ -7,4 +7,10 @@
     <string name="halo_ann_later">Ертең еске салу</string>
     <string name="halo_ann_stop">Қайта еске салмау</string>
     <string name="halo_ann_ack">Түсінікті</string>
+    <string name="halo_ann_fullscreen">Толық экранда оқу</string>
+    <string name="halo_ann_compact">Ықшам көрініс</string>
+    <string name="halo_ann_read_hint">↑↓ Бетті ауыстыру · → Батырмалар · Экранды суретке түсіріңіз</string>
+    <string name="halo_ann_progress">Оқу барысы: %1$d%%</string>
+    <string name="halo_update_compatible">Жүйе арқылы орнату</string>
+    <string name="halo_update_compatible_hint">Файл жүктелді, бірақ орнату ашылмады ма? Қайта жүктемей жүйелік орнатқышты қолданыңыз. Теледидарда растаңыз.</string>
 </resources>

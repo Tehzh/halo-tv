@@ -17,4 +17,7 @@
     <string name="halo_lite_clock_weather">Clock and weather</string>
     <string name="halo_lite_interaction">Interaction</string>
     <string name="halo_lite_security">Security</string>
+    <string name="st_sounds_soft">柔和</string>
+    <string name="halo_auto_clean_idle">Clean background apps when idle</string>
+    <string name="lite_auto_clean_hint">After 2 minutes idle on Home, attempt to clean cached apps. Skipped during audio playback or VPN; the system controls the result.</string>
 </resources>

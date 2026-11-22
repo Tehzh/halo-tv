@@ -1,23 +1,25 @@
 package app.orchard.tv.ui.home
 
 import android.content.Context
+import android.content.res.ColorStateList
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
 import android.os.Build
-import android.text.InputType
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.FocusFinder
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import app.orchard.tv.R
 import app.orchard.tv.settings.AerialSettings
+import app.orchard.tv.settings.Restricted
 import kotlin.math.roundToInt
 
 /** The same TV-safe quiz is used on Home and over a video app, without replacing its task. */
@@ -36,7 +38,18 @@ internal class QuizPanel(
     private var finished = false
     private var showingPin = false
     private var pinExit: (() -> Unit)? = null
-    private var parentReturn: View? = null
+    private var inputEnabled = true
+    private var resumeFocus: View? = null
+    private var pressedTarget: View? = null
+    private var pressedCode = KeyEvent.KEYCODE_UNKNOWN
+    private var pinEntered = ""
+    private var pinError = false
+    private var pinFeedback: (() -> Unit)? = null
+    private val resizePage = Runnable {
+        val previous = (findFocus() ?: resumeFocus)?.tag
+        if (showingPin) renderParentPin() else render()
+        previous?.let { tag -> findViewWithTag<View>(tag)?.let(::focus) }
+    }
 
     init {
         clipChildren = false
@@ -49,23 +62,108 @@ internal class QuizPanel(
         if (w <= 0 || h <= 0) return
         scale = minOf(w / 960f, h / 540f)
         // A centered 960 x 540 design canvas keeps identical proportions on TV and app overlays.
-        post { if (showingPin) renderParentPin() else render() }
+        removeCallbacks(resizePage)
+        post(resizePage)
     }
 
     override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
         super.onWindowFocusChanged(hasWindowFocus)
-        if (hasWindowFocus && !hasFocus()) initialFocus?.requestFocus()
+        if (!hasWindowFocus) cancelPress()
+        if (hasWindowFocus && inputEnabled && !hasFocus()) initialFocus?.let(::focus)
     }
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
-        event.keyCode == KeyEvent.KEYCODE_BACK || super.dispatchKeyEvent(event)
+    /** Compose's PIN must own focus exclusively while it covers this native view. */
+    fun setInteractionEnabled(enabled: Boolean) {
+        if (inputEnabled == enabled) return
+        inputEnabled = enabled
+        cancelPress()
+        if (!enabled) {
+            resumeFocus = findFocus()
+            descendantFocusability = FOCUS_BLOCK_DESCENDANTS
+            clearFocus()
+        } else {
+            descendantFocusability = FOCUS_AFTER_DESCENDANTS
+            (resumeFocus?.takeIf { it.isAttachedToWindow } ?: initialFocus)?.let(::focus)
+            resumeFocus = null
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        removeCallbacks(resizePage)
+        cancelPress()
+        super.onDetachedFromWindow()
+    }
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean =
+        if (!inputEnabled) true else super.dispatchTouchEvent(event)
+
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (!inputEnabled) return false
+        val code = event.keyCode
+        if (code == KeyEvent.KEYCODE_BACK) {
+            cancelPress()
+            if (event.action == KeyEvent.ACTION_UP && !event.isCanceled && showingPin) returnToQuestions()
+            return true
+        }
+        if (showingPin) {
+            val symbol = if (AerialSettings.pinArrows) PIN_ARROWS[code]
+                else if (code in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) '0' + (code - KeyEvent.KEYCODE_0) else null
+            if (symbol != null || code == KeyEvent.KEYCODE_DEL) {
+                cancelPress()
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    if (symbol != null) typePin(symbol) else erasePin()
+                }
+                return true
+            }
+        }
+        if (code == KeyEvent.KEYCODE_DPAD_CENTER || code == KeyEvent.KEYCODE_ENTER || code == KeyEvent.KEYCODE_NUMPAD_ENTER || code == KeyEvent.KEYCODE_BUTTON_A) {
+            // Never let the release of an old press click a newly rendered question or PIN key.
+            when (event.action) {
+                KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) {
+                    cancelPress()
+                    pressedTarget = findFocus()?.takeIf { it.isEnabled && it.isClickable }
+                    pressedCode = code
+                    pressedTarget?.isPressed = true
+                }
+                KeyEvent.ACTION_UP -> {
+                    val target = pressedTarget
+                    val sameKey = pressedCode == code
+                    cancelPress()
+                    if (!event.isCanceled && sameKey && target != null && target === findFocus() &&
+                        target.isEnabled && target.isAttachedToWindow) target.performClick()
+                }
+            }
+            return true
+        }
+        if (event.action == KeyEvent.ACTION_DOWN) cancelPress()
+        val direction = when (code) {
+            KeyEvent.KEYCODE_DPAD_LEFT -> FOCUS_LEFT
+            KeyEvent.KEYCODE_DPAD_RIGHT -> FOCUS_RIGHT
+            KeyEvent.KEYCODE_DPAD_UP -> FOCUS_UP
+            KeyEvent.KEYCODE_DPAD_DOWN -> FOCUS_DOWN
+            else -> null
+        }
+        if (direction != null) {
+            if (event.action == KeyEvent.ACTION_DOWN) {
+                (FocusFinder.getInstance().findNextFocus(this, findFocus(), direction) ?: initialFocus)?.requestFocus()
+            }
+            return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    private fun cancelPress() {
+        pressedTarget?.isPressed = false
+        pressedTarget = null
+        pressedCode = KeyEvent.KEYCODE_UNKNOWN
+    }
 
     private fun unit(value: Int) = (value * scale).roundToInt().coerceAtLeast(1)
 
     private fun newRound(): List<QuizQuestion> {
         val prefs = context.getSharedPreferences("halo_quiz_history", Context.MODE_PRIVATE)
         val seen = prefs.getStringSet("seen", emptySet()).orEmpty()
-        return QuizBank.round(seen).also { round ->
+        return QuizBank.round(seen, stage = Restricted.quizStage, subject = Restricted.quizSubject).also { round ->
             prefs.edit().putStringSet("seen", seen + round.map { it.prompt }).apply()
         }
     }
@@ -109,7 +207,7 @@ internal class QuizPanel(
         isAllCaps = false
         setTextSize(TypedValue.COMPLEX_UNIT_PX, unit(25).toFloat())
         setTypeface(typeface, Typeface.BOLD)
-        setTextColor(0xffffffff.toInt())
+        setTextColor(ColorStateList(arrayOf(intArrayOf(android.R.attr.state_pressed), intArrayOf(android.R.attr.state_focused), intArrayOf()), intArrayOf(INK, INK, WHITE)))
         gravity = Gravity.CENTER
         minimumHeight = 0; minHeight = 0; minimumWidth = 0; minWidth = 0
         includeFontPadding = false
@@ -118,25 +216,30 @@ internal class QuizPanel(
         backgroundTintList = null
         background = StateListDrawable().apply {
             addState(intArrayOf(-android.R.attr.state_enabled), surface(0xff9d8ed5.toInt(), 18))
-            addState(intArrayOf(android.R.attr.state_pressed), surface(0xff66519f.toInt(), 18, FOCUS))
-            addState(intArrayOf(android.R.attr.state_focused), surface(PURPLE, 18, FOCUS))
+            addState(intArrayOf(android.R.attr.state_pressed), surface(FOCUS_FILL, 18, FOCUS, 4))
+            addState(intArrayOf(android.R.attr.state_focused), surface(FOCUS_FILL, 18, FOCUS, 4))
             addState(intArrayOf(), surface(PURPLE, 18))
         }
-        setOnClickListener { action() }
+        setOnClickListener { if (inputEnabled && isAttachedToWindow) action() }
     }
 
     private fun focus(view: View) {
         initialFocus = view
-        view.post { if (view.isAttachedToWindow) view.requestFocus() }
+        view.post {
+            if (inputEnabled && initialFocus === view && view.isAttachedToWindow && view.isEnabled) view.requestFocus()
+        }
     }
 
     private fun canvas(): FrameLayout {
+        cancelPress()
+        initialFocus = null
         removeAllViews()
         return frame().also { addView(it, LayoutParams(unit(960), unit(540), Gravity.CENTER)) }
     }
 
     private fun render() {
         showingPin = false
+        pinFeedback = null
         val page = canvas()
         val result = index == questions.size
         val card = frame().apply { background = surface(0xeefcf9ff.toInt(), 28) }
@@ -167,7 +270,7 @@ internal class QuizPanel(
             setLineSpacing(unit(7).toFloat(), 1f)
             fitText(this, 16, 20)
         }, 25, 227, 247, 124)
-        val parent = button(context.getString(R.string.kids_parent)) { onParent(this) }
+        val parent = button(context.getString(R.string.kids_parent)) { onParent(this) }.apply { tag = "parent" }
         place(side, parent, 15, 373, 255, 54)
         if (result) renderResult(card, parent) else renderQuestion(card, questions[index], parent)
         renderRemoteHint(page)
@@ -210,7 +313,7 @@ internal class QuizPanel(
             }
             place(this, badge, 39, 15, 40, 37)
             place(this, answerText, 100, 8, 150, 51)
-            setOnClickListener { action() }
+            setOnClickListener { if (inputEnabled && isAttachedToWindow) action() }
             accessibilityDelegate = object : AccessibilityDelegate() {
                 override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfo) {
                     super.onInitializeAccessibilityNodeInfo(host, info)
@@ -243,11 +346,14 @@ internal class QuizPanel(
             selected.clear()
             render()
         }
-        submit.isEnabled = false
+        submit.tag = "submit"
         fun refreshSelection() {
             options.forEachIndexed { n, tile -> tile.update(n in selected) }
             submit.setText(if (selected.isEmpty()) R.string.quiz_pick_before_submit else R.string.quiz_submit)
             submit.isEnabled = selected.isNotEmpty()
+            options.forEachIndexed { n, tile ->
+                tile.nextFocusDownId = options.getOrNull(n + 2)?.id ?: if (submit.isEnabled) submit.id else parent.id
+            }
         }
         question.choices.forEachIndexed { n, answer ->
             val tile = AnswerTile('A' + n, answer, ANSWER_COLORS[n % ANSWER_COLORS.size], multiple) {
@@ -257,6 +363,7 @@ internal class QuizPanel(
                 refreshSelection()
             }
             options.add(tile)
+            tile.tag = "answer-$n"
             place(card, tile, if (n % 2 == 0) 22 else 306, 208 + (n / 2) * 80, 270, 67)
         }
         place(card, submit, 17, 373, 563, 54)
@@ -267,10 +374,11 @@ internal class QuizPanel(
             option.nextFocusUpId = options.getOrNull(n - 2)?.id ?: option.id
             option.nextFocusDownId = options.getOrNull(n + 2)?.id ?: submit.id
             option.setOnFocusChangeListener { _, focused ->
-                if (focused) { parent.nextFocusLeftId = option.id; parentReturn = option }
+                if (focused) parent.nextFocusLeftId = option.id
             }
         }
         submit.nextFocusUpId = options[options.lastIndex / 2 * 2].id
+        refreshSelection()
         focus(options.first())
     }
 
@@ -290,6 +398,7 @@ internal class QuizPanel(
                 render()
             }
         }
+        next.tag = "submit"
         place(card, next, 17, 373, 563, 54)
         linkActions(next, parent)
         focus(next)
@@ -299,18 +408,10 @@ internal class QuizPanel(
         primary.nextFocusLeftId = primary.id
         primary.nextFocusRightId = parent.id
         primary.nextFocusDownId = primary.id
-        parentReturn = primary
         primary.setOnFocusChangeListener { _, focused ->
-            if (focused) { parent.nextFocusLeftId = primary.id; parentReturn = primary }
+            if (focused) parent.nextFocusLeftId = primary.id
         }
-        // The parent entry lives in another FrameLayout. Resolve its return explicitly instead
-        // of letting spatial focus search choose the bottom-right answer in that other column.
-        parent.setOnKeyListener { _, code, event ->
-            if (code != KeyEvent.KEYCODE_DPAD_LEFT) false else {
-                if (event.action == KeyEvent.ACTION_DOWN) (parentReturn ?: primary).requestFocus()
-                true
-            }
-        }
+        // Return to the last focused action/answer across the two card containers.
         parent.nextFocusLeftId = primary.id
         parent.nextFocusRightId = parent.id
         parent.nextFocusUpId = parent.id
@@ -318,49 +419,104 @@ internal class QuizPanel(
     }
 
     fun showParentPin(onExit: () -> Unit) {
+        if (showingPin) return
         showingPin = true
         pinExit = onExit
+        pinEntered = ""
+        pinError = false
         renderParentPin()
+    }
+
+    private fun returnToQuestions() {
+        pinEntered = ""
+        pinExit = null
+        render()
+        findViewWithTag<View>("parent")?.let(::focus)
+    }
+
+    private fun typePin(symbol: Char) {
+        if (!showingPin || pinEntered.length >= 4) return
+        pinError = false
+        pinEntered += symbol
+        if (pinEntered.length == 4) {
+            val right = AerialSettings.pinMatches(pinEntered)
+            pinEntered = ""
+            if (right) {
+                val exit = pinExit
+                pinExit = null
+                setInteractionEnabled(false)
+                exit?.invoke()
+                return
+            }
+            pinError = true
+        }
+        pinFeedback?.invoke()
+    }
+
+    private fun erasePin() {
+        pinEntered = pinEntered.dropLast(1)
+        pinError = false
+        pinFeedback?.invoke()
     }
 
     private fun renderParentPin() {
         val page = canvas()
         val card = frame().apply { background = surface(0xfffaf6ff.toInt(), 28) }
-        place(page, card, 260, 116, 440, 308)
-        place(card, label(context.getString(R.string.kids_parent), 27, bold = true), 25, 22, 390, 40)
+        place(page, card, 260, 34, 440, 472)
+        place(card, label(context.getString(R.string.pin_enter), 27, bold = true), 25, 16, 390, 40)
         val useArrows = AerialSettings.pinArrows
-        val input = EditText(context).apply {
-            setTextColor(INK)
-            setTextSize(TypedValue.COMPLEX_UNIT_PX, unit(24).toFloat())
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-            isFocusable = !useArrows
-            isSingleLine = true
+        val hint = label("", 16).apply { gravity = Gravity.CENTER; maxLines = 2 }
+        place(card, hint, 25, 60, 390, 46)
+        val dots = label("", 28, bold = true).apply { gravity = Gravity.CENTER }
+        place(card, dots, 25, 109, 390, 38)
+        pinFeedback = {
+            hint.setText(if (pinError) R.string.pin_wrong else if (useArrows) R.string.pin_arrows_hint else R.string.pin_enter_hint)
+            hint.setTextColor(if (pinError) 0xffa51f3d.toInt() else INK)
+            dots.text = (0 until 4).joinToString("  ") { if (it < pinEntered.length) "●" else "○" }
         }
-        place(card, input, 25, 74, 390, 48)
-        var arrows = ""
-        var arrowFocus: View? = null
-        if (useArrows) {
-            listOf("↑" to "U", "↓" to "D", "←" to "L", "→" to "R").forEachIndexed { n, (text, code) ->
-                val key = button(text) { arrows += code; input.setText("•".repeat(arrows.length)) }
-                if (n == 0) arrowFocus = key
-                place(card, key, 25 + n * 100, 133, 90, 42)
+        pinFeedback?.invoke()
+        val back = button(context.getString(R.string.quiz_back_to_questions), ::returnToQuestions).apply { tag = "pin-back" }
+        place(card, back, 25, 410, 390, 46)
+        if (!useArrows) {
+            val keys = mutableListOf<Button>()
+            listOf("123", "456", "789", " 0‹").forEachIndexed { row, chars ->
+                chars.forEachIndexed { col, char ->
+                    if (char != ' ') {
+                        val key = button(char.toString()) { if (char == '‹') erasePin() else typePin(char) }
+                        key.tag = "pin-$char"
+                        place(card, key, 25 + col * 133, 155 + row * 59, 124, 49)
+                        keys += key
+                    }
+                }
             }
+            keys.forEachIndexed { n, key ->
+                val lastRow = n >= 9
+                key.nextFocusLeftId = if ((n < 9 && n % 3 > 0) || n == 10) keys[n - 1].id else key.id
+                key.nextFocusRightId = if ((n < 9 && n % 3 < 2) || n == 9) keys[n + 1].id else key.id
+                key.nextFocusUpId = if (lastRow) keys[n - 2].id else keys.getOrNull(n - 3)?.id ?: key.id
+                key.nextFocusDownId = when {
+                    n < 6 -> keys[n + 3].id
+                    n < 9 -> keys[if (n == 8) 10 else 9].id
+                    else -> back.id
+                }
+            }
+            back.nextFocusUpId = keys[9].id
+            back.nextFocusLeftId = back.id; back.nextFocusRightId = back.id; back.nextFocusDownId = back.id
+            focus(keys.first())
+        } else {
+            // Arrow PINs are typed directly, matching the normal parental dialog; no IME is needed.
+            focus(back)
         }
-        val submit = button(context.getString(R.string.quiz_submit)) {
-            if (AerialSettings.pinMatches(if (useArrows) arrows else input.text.toString())) pinExit?.invoke()
-            else { input.setText(""); arrows = "" }
-        }
-        place(card, submit, 25, 187, 390, 46)
-        val back = button(context.getString(R.string.quiz_back_to_questions)) { render() }
-        place(card, back, 25, 245, 390, 46)
-        submit.nextFocusDownId = back.id; back.nextFocusUpId = submit.id
-        focus(arrowFocus ?: if (useArrows) submit else input)
     }
 
     private companion object {
         val INK = 0xff30234f.toInt()
         val FOCUS = 0xff4c3b86.toInt()
         val PURPLE = 0xff7863b4.toInt()
+        val WHITE = 0xffffffff.toInt()
+        val FOCUS_FILL = 0xffffe6a6.toInt()
+        val PIN_ARROWS = mapOf(KeyEvent.KEYCODE_DPAD_UP to 'U', KeyEvent.KEYCODE_DPAD_DOWN to 'D',
+            KeyEvent.KEYCODE_DPAD_LEFT to 'L', KeyEvent.KEYCODE_DPAD_RIGHT to 'R')
         val ANSWER_COLORS = intArrayOf(0xffffb7c3.toInt(), 0xffffdc8e.toInt(), 0xffb7ecd5.toInt(), 0xffa6d5fb.toInt())
     }
 }

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aerial_quality_4k_unavailable">Телевизор не сообщил о совместимом декодере 4K. В режимах «Авто» и 1080p используется источник 1080p.</string>
+    <string name="aerial_quality_hd_uhd">Общая настройка для обоев и заставки. В режиме «Авто» при наличии используется источник 4K.</string>
+</resources>

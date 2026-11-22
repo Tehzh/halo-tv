@@ -14,6 +14,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.asImageBitmap
@@ -129,15 +130,41 @@ fun Modifier.smoothBorder(width: Dp, color: Color, radius: Dp): Modifier = drawW
  */
 fun Bitmap.frozen(): Bitmap = copy(Bitmap.Config.ARGB_8888, false).also { recycle() }
 
-private val bakes = object : LinkedHashMap<List<Any>, Any>(16, 0.75f, true) {
-    // Sizes come and go with layout (a panel opens, the screen rotates); a few dozen is plenty.
-    // 64: panels' rows, keys, cards and their borders are baked too, each one small.
-    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<List<Any>, Any>?) = size > 64
+internal interface BakedImage { val image: ImageBitmap }
+private val bakes = LinkedHashMap<List<Any>, Any>(64, 0.75f, true)
+private var bakedBytes = 0L
+internal fun trimBakedArtwork() = synchronized(bakes) {
+    bakes.clear()
+    bakedBytes = 0L
+}
+private fun artworkBytes(value: Any): Long = when (value) {
+    is Bitmap -> value.allocationByteCount.toLong()
+    is ImageBitmap -> value.width.toLong() * value.height * 4
+    is BakedImage -> artworkBytes(value.image)
+    else -> 1L
 }
 
 /** A drawing made once per [key] (its kind and sizes) and kept while it is in use. */
 @Suppress("UNCHECKED_CAST")
-fun <T : Any> baked(key: List<Any>, make: () -> T): T = synchronized(bakes) { bakes.getOrPut(key, make) as T }
+fun <T : Any> baked(key: List<Any>, make: () -> T): T {
+    synchronized(bakes) { (bakes[key] as T?)?.let { return it } }
+    // Background artwork generation must not hold the cache lock while Home needs a small mask.
+    val made = make()
+    return synchronized(bakes) {
+        (bakes[key] as T?) ?: made.also {
+            bakes[key] = it
+            bakedBytes += artworkBytes(it)
+            val entries = bakes.entries.iterator()
+            // Live draw caches already retain the masks they use. This is only a bounded reuse
+            // pool for later pages, not a reason to keep tens of MB of closed panels alive.
+            val budget = if (app.orchard.tv.settings.AerialSettings.lite) 4L else 8L
+            while ((bakes.size > 96 || bakedBytes > budget * 1024 * 1024) && entries.hasNext()) {
+                bakedBytes -= artworkBytes(entries.next().value)
+                entries.remove()
+            }
+        }
+    }
+}
 
 /** Adds [rect] with continuous corners, clockwise from the top left, as a closed contour. */
 fun Path.addSmoothRect(rect: Rect, radius: Float, bottomRadius: Float = radius, smoothing: Float = AppleSmoothing) {

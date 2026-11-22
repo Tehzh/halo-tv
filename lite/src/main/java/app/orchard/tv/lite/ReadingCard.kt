@@ -7,12 +7,22 @@ import android.text.StaticLayout
 import android.text.TextPaint
 
 /** Readable paragraphs participate in D-pad scrolling without adding a second menu. */
-internal class ReadingCard(context: Context, private val body: String) : Control(context) {
+internal class ReadingCard(context: Context, private val body: String, padding: Float = 14f) : Control(context) {
     override val focusScale = 1f
     private val text = TextPaint(Ui.text(13f, 400)).apply { color = Ui.WHITE }
     private var layout: StaticLayout? = null
     private var lineWidth = 0
-    private val pad = Ui.pxi(14f)
+    private val pad = Ui.pxi(padding)
+
+    fun fitFont(size: Float) {
+        val pixels = Ui.px(size)
+        if (text.textSize == pixels) return
+        text.textSize = pixels
+        layout = null
+        lineWidth = 0
+        forceLayout()
+        invalidate()
+    }
 
     @Suppress("DEPRECATION")
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {

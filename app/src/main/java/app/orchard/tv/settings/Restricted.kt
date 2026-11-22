@@ -232,6 +232,8 @@ object Restricted {
         ).takeIf { it.valid } ?: RestrictedRules()
         elderReminderMinutes = p.getInt("elder_reminder", 0).coerceIn(0, 1440)
         quizRewardMax = p.getInt("quiz_reward_max", 10).coerceIn(1, 120)
+        quizStage = p.getInt("quiz_stage", 0).coerceIn(0, 4)
+        quizSubject = p.getInt("quiz_subject", 0).coerceIn(0, 3)
         usageDay = p.getString("usage_day", "") ?: ""
         usage = KidsUsage(
             usedMs = p.getLong("used_ms", 0),
@@ -243,18 +245,24 @@ object Restricted {
     }
 
 
+    var quizStage by mutableIntStateOf(0); private set
+    var quizSubject by mutableIntStateOf(0); private set
+    fun chooseQuizStage(value: Int) { quizStage = value.coerceIn(0, 4); prefs().edit { putInt("quiz_stage", quizStage) } }
+    fun chooseQuizSubject(value: Int) { quizSubject = value.coerceIn(0, 3); prefs().edit { putInt("quiz_subject", quizSubject) } }
+
     var quizRewardMax by mutableIntStateOf(10); private set
     fun chooseQuizRewardMax(minutes: Int) {
         quizRewardMax = minutes.coerceIn(1, 120)
         prefs().edit { putInt("quiz_reward_max", quizRewardMax) }
     }
-    fun completeQuiz(reward: Int) {
+    fun completeQuiz(reward: Int): Boolean {
         val now = System.currentTimeMillis()
         val cap = minOf(quizRewardMax, reward.coerceAtLeast(1), rules.breakEvery.coerceAtLeast(1))
         val remaining = limitToday(now).let { if (it == 0) cap else ((it * 60_000L - usage.usedMs).coerceAtLeast(0L) / 60_000L).toInt() }
         val awarded = minOf(cap, remaining)
         saveUsage(usage.copy(breakUntil = 0L, continuousMs = ((rules.breakEvery - awarded).coerceAtLeast(0)) * 60_000L, allowUntil = 0L))
         lock = lockNow(now)
+        return awarded > 0 && lock == null
     }
 
     private fun prefs() = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)

@@ -88,13 +88,34 @@ object Shapes {
         }
     }
 
-    private val bakes = object : LinkedHashMap<List<Any>, Any>(16, 0.75f, true) {
-        // 64: panels' rows, keys and borders are baked too, each one small.
-        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<List<Any>, Any>?) = size > 64
+    private val bakes = LinkedHashMap<List<Any>, Any>(64, 0.75f, true)
+    private var bakedBytes = 0L
+    fun trimMemory() = synchronized(bakes) {
+        bakes.clear()
+        bakedBytes = 0L
+    }
+    private fun artworkBytes(value: Any): Long = when (value) {
+        is Bitmap -> value.rowBytes.toLong() * value.height
+        is Halo -> artworkBytes(value.image)
+        else -> 1L
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun <T : Any> baked(key: List<Any>, make: () -> T): T = synchronized(bakes) { bakes[key] as T? ?: make().also { bakes[key] = it } }
+    private fun <T : Any> baked(key: List<Any>, make: () -> T): T {
+        synchronized(bakes) { (bakes[key] as T?)?.let { return it } }
+        val made = make()
+        return synchronized(bakes) {
+            (bakes[key] as T?) ?: made.also {
+                bakes[key] = it
+                bakedBytes += artworkBytes(it)
+                val entries = bakes.entries.iterator()
+                while ((bakes.size > 64 || bakedBytes > 4L * 1024 * 1024) && entries.hasNext()) {
+                    bakedBytes -= artworkBytes(entries.next().value)
+                    entries.remove()
+                }
+            }
+        }
+    }
 
     private fun bitmap(w: Int, h: Int) = Bitmap.createBitmap(w.coerceAtLeast(1), h.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
 

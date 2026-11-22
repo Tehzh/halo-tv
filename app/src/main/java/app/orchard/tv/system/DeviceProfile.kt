@@ -59,10 +59,12 @@ class DeviceProfile(
      * 5 s where Android holds app starts after Home (TCL MT5879). The owner's call, so only by profile.
      */
     val neverFilterKeys: Boolean = false,
+    /** Local 1080p SDR composition workaround; HDR/4K remain on the original surface. */
+    val localVideoTexture: Boolean = false,
 ) {
     val isEmpty get() = hiddenHardware.isEmpty() && labels.isEmpty() && xiaomiSourceIds.isEmpty() &&
         xiaomiFallbackSourceIds.isEmpty() && !ignoresPictureBacklight && bootStockMs <= 0 &&
-        !ignoresScreenBrightness && !filterHomeAlways && !neverFilterKeys
+        !ignoresScreenBrightness && !filterHomeAlways && !neverFilterKeys && !localVideoTexture
 
     /** The same fields `devices.json` uses, without the matching ones (models, buildMajorBelow, buildAtLeast). */
     fun toJson(): JSONObject = JSONObject().apply {
@@ -75,6 +77,7 @@ class DeviceProfile(
         if (ignoresScreenBrightness) put("ignoresScreenBrightness", true)
         if (filterHomeAlways) put("filterHomeAlways", true)
         if (neverFilterKeys) put("neverFilterKeys", true)
+        if (localVideoTexture) put("localVideoTexture", true)
     }
 
     /** Where the profile in use came from, for the diagnostics. */
@@ -158,6 +161,7 @@ class DeviceProfile(
                 ignoresScreenBrightness = o.optBoolean("ignoresScreenBrightness", false),
                 filterHomeAlways = o.optBoolean("filterHomeAlways", false),
                 neverFilterKeys = o.optBoolean("neverFilterKeys", false),
+                localVideoTexture = o.optBoolean("localVideoTexture", false),
             )
         }
 

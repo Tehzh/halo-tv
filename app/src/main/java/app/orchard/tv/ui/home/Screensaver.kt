@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import app.orchard.tv.R
@@ -68,6 +69,8 @@ import app.orchard.tv.wallpaper.Aerial
 import app.orchard.tv.wallpaper.AerialSet
 import androidx.compose.runtime.mutableStateListOf
 import app.orchard.tv.settings.AerialSettings
+import app.orchard.tv.wallpaper.AerialPlayback
+import app.orchard.tv.wallpaper.aerialDecoderError
 import app.orchard.tv.wallpaper.AerialFormats
 import app.orchard.tv.wallpaper.AerialQuality
 import app.orchard.tv.wallpaper.Aerials
@@ -112,9 +115,9 @@ import kotlin.random.Random
 fun Screensaver(visible: Boolean, apps: List<AppEntry>, now: LocalDateTime, skips: ScreensaverSkips, carry: SaverCarry? = null) {
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(if (Wallpapers.moves()) 0 else 1200, easing = Motion.EaseOut)),
+        enter = fadeIn(tween(if (carry is SaverCarry.Film || carry is SaverCarry.Video) 0 else if (Wallpapers.moves()) 240 else 1200, easing = Motion.EaseOut)),
         // Leaves quickly: the viewer pressed a key and wants Home back.
-        exit = fadeOut(tween(if (Wallpapers.moves()) 0 else 220, easing = Motion.EaseOut)),
+        exit = fadeOut(tween(if (Wallpapers.moves() && !saverRetainsWallpaper(Wallpapers.screensaver)) 0 else 220, easing = Motion.EaseOut)),
         modifier = Modifier.fillMaxSize(),
     ) {
         // Follows Home while up (the film may fail and hand over to the screensaver's own), and
@@ -139,6 +142,7 @@ fun Screensaver(visible: Boolean, apps: List<AppEntry>, now: LocalDateTime, skip
                     now, skips.steps, onUnavailable = { aerialFailed = true }, startAt = remember {
                         // A paused wallpaper film still holds the decoder (one 4K decoder, MiTV-MFTR0).
                         LiveFilm.onHome?.letDecoderGo()
+                        app.orchard.tv.ui.home.HomeVideo.onHome?.letDecoderGo()
                         AerialStart.start(context)
                     },
                 )
@@ -250,8 +254,11 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.drawDrawingIn(image: ImageB
  */
 fun saverCarriesWallpaper(context: android.content.Context): Boolean = when {
     Wallpapers.selectedId == Wallpapers.LIVE -> Wallpapers.screensaver == ScreensaverMode.Aerial && AerialFormats.screensaverCarriesWallpaper(context)
-    Wallpapers.isVideo() -> Wallpapers.screensaver == ScreensaverMode.Videos && !LocalSaverSelection.single(context, true) &&
-        (Wallpapers.selectedId == Wallpapers.VIDEOS || Wallpapers.items.count { it.kind == WallpaperKind.Video } <= 1)
+    Wallpapers.isVideo() -> Wallpapers.screensaver == ScreensaverMode.Videos && localSaverCarriesWallpaper(
+        Wallpapers.selectedId,
+        Wallpapers.items.filter { it.kind == WallpaperKind.Video }.map { it.id.removePrefix(Wallpapers.VIDEO_PREFIX) },
+        LocalSaverSelection.single(context, true), LocalSaverSelection.selected(context, true),
+    )
     else -> false
 }
 
@@ -279,7 +286,7 @@ object AerialStart {
     suspend fun prepareAhead(context: android.content.Context, leadMs: Long) {
         if (Wallpapers.screensaver != ScreensaverMode.Aerial || AerialFormats.screensaverCarriesWallpaper(context)) return
         val quality = AerialFormats.forScreensaver(context, overWallpaper = true).let { q ->
-            aerialQualityCap?.takeIf { it.ordinal < q.ordinal } ?: q
+            aerialQualityCap?.first?.takeIf { it.ordinal < q.ordinal } ?: q
         }
         val live = LiveFilm.onHome
         // A new day starts the screensaver on its new film, from the start (start()).
@@ -370,13 +377,21 @@ private fun Labels(
             )
         }
         val drift = saverDrift(now)
+        // Laid out at Home's size and scaled up, as Home's own clock is when it is carried here
+        // (HomeChrome's toSaverClock): laid out at the large size, the digits' advances came out
+        // wider than in the carried one, and the spacing grew when this clock took over with the
+        // first photo (Google TV, Android 14, issue #1646).
         if (time > 0f && AerialSettings.screensaverClock) BasicText(
             timeText(now),
-            style = SaverClockStyle,
+            style = SaverClockStyle.copy(fontSize = Type.Title.fontSize),
             modifier = Modifier
                 .align(if (AerialSettings.clockRight) Alignment.TopEnd else Alignment.TopStart)
                 .padding(top = SaverClockTop, start = SaverClockSide, end = SaverClockSide)
                 .graphicsLayer {
+                    val s = SaverClockStyle.fontSize.toPx() / Type.Title.fontSize.toPx()
+                    transformOrigin = TransformOrigin(if (AerialSettings.clockRight) 1f else 0f, 0f)
+                    scaleX = s
+                    scaleY = s
                     alpha = time
                     translationX = drift.x.toPx()
                     translationY = drift.y.toPx()
@@ -439,7 +454,7 @@ private var aerialsOverHttp by mutableStateOf(Build.VERSION.SDK_INT < Build.VERS
  * The quality a decoder gave up on, for the rest of the process: the screensaver then starts one
  * step lower. A TV can list a decoder it cannot drive at that size or profile.
  */
-private var aerialQualityCap: AerialQuality? = null
+private var aerialQualityCap: Pair<AerialQuality, String>? = null
 
 /**
  * [startAt]: the aerial wallpaper's film and moment to begin with, played in the wallpaper's format
@@ -457,10 +472,15 @@ private fun AerialSaver(
     startAt: Pair<String, Long>? = null,
 ) {
     val context = LocalContext.current
-    var quality by remember {
-        val wanted = AerialFormats.forScreensaver(context, overWallpaper = startAt != null)
-        mutableStateOf(aerialQualityCap?.takeIf { it.ordinal < wanted.ordinal } ?: wanted)
-    }
+    val chosen = AerialSettings.aerialQuality
+    val wanted = remember { AerialFormats.forScreensaver(context, overWallpaper = startAt != null) }
+    val cap = remember { aerialQualityCap?.takeIf { it.first.ordinal < wanted.ordinal } }
+    val playback = remember { AerialPlayback("saver") }
+    var fallbackReason by remember { mutableStateOf(cap?.second ?: when {
+        startAt != null && wanted == AerialQuality.Uhd && chosen == AerialQuality.Auto -> "wallpaper_continuity"
+        else -> AerialFormats.policyReason(context, chosen, wanted)
+    }) }
+    var quality by remember { mutableStateOf(cap?.first ?: wanted) }
     // Where it is goes to the one spot the aerial wallpaper and the next screensaver go on from
     // (Wallpapers.leaveLiveFilm), whatever the wallpaper is now: switched to the aerial one later,
     // it begins on this film.
@@ -499,9 +519,21 @@ private fun AerialSaver(
     val veil by animateFloatAsState(if (playing) 0f else 1f, tween(if (playing) liftMs else 400), label = "veil")
 
     fun load(at: Int, fromMs: Long = 0L) {
+        playback.open(chosen, quality, fallbackReason)
         player.setMediaItems(films.map { AerialStream.mediaItem(it, quality, aerialsOverHttp) }, at, fromMs)
         player.prepare()
         player.playWhenReady = true
+    }
+
+    fun lowerAfterFailure(reason: String, rememberCap: Boolean) {
+        val at = player.currentMediaItemIndex.coerceIn(films.indices)
+        val pos = player.currentPosition.coerceAtLeast(0L)
+        val legacyTrial = AerialFormats.recordLegacyFailure(context, chosen, quality, reason)
+        quality = AerialFormats.lower(quality)
+        if (rememberCap && !legacyTrial) aerialQualityCap = quality to reason
+        fallbackReason = reason
+        load(at, pos)
+        attempt++
     }
 
     /** The next film kept, after one that would not play. */
@@ -532,6 +564,7 @@ private fun AerialSaver(
         val opened = SystemClock.elapsedRealtime()
         val listener = object : Player.Listener {
             override fun onRenderedFirstFrame() {
+                playback.frame(player, films)
                 if (!playing) {
                     DiagLog.i("first frame of ${player.currentMediaItem?.mediaId} after ${SystemClock.elapsedRealtime() - opened} ms")
                     SystemScreensaver.dreamFirstFrame()?.let { MainActivity.dreamShowedAfter(context, it) }
@@ -555,7 +588,7 @@ private fun AerialSaver(
                 // Before anything has shown, the decoder may still be held by Home's wallpaper film,
                 // which is let go as Home goes behind the dream (TCL MT5879): once more at this
                 // quality, a moment later, before going lower for good.
-                if (!shownAny && !retried && error.errorCode in DECODER_ERRORS) {
+                if (!shownAny && !retried && aerialDecoderError(error.errorCode)) {
                     retried = true
                     DiagLog.i("trying ${quality.key} again in $RETRY_MS ms")
                     handler.postDelayed({ load(player.currentMediaItemIndex, if (player.currentMediaItemIndex == 0) firstAtMs else 0L) }, RETRY_MS)
@@ -563,11 +596,8 @@ private fun AerialSaver(
                     return
                 }
                 // The decoder could not play this quality: the same film one step lower.
-                if (quality != AerialQuality.Hd && error.errorCode in DECODER_ERRORS) {
-                    aerialQualityCap = AerialFormats.lower(quality)
-                    quality = AerialFormats.lower(quality)
-                    load(player.currentMediaItemIndex)
-                    attempt++
+                if (quality != AerialQuality.Hd && aerialDecoderError(error.errorCode)) {
+                    lowerAfterFailure(error.errorCodeName, rememberCap = true)
                     return
                 }
                 // Apple's video host chains to Apple Root CA, which Android does not ship. From 7.0 on
@@ -575,7 +605,10 @@ private fun AerialSaver(
                 // start on HTTP. The same files are served over plain HTTP; try that before giving up.
                 if (!aerialsOverHttp) {
                     aerialsOverHttp = true
-                    load(player.currentMediaItemIndex)
+                    load(player.currentMediaItemIndex, player.currentPosition)
+                } else if (quality == AerialQuality.Uhd) {
+                    lowerAfterFailure(error.errorCodeName, rememberCap = false)
+                    return
                 } else {
                     failures++
                     next()
@@ -618,6 +651,10 @@ private fun AerialSaver(
     LaunchedEffect(attempt, playing) {
         if (playing) return@LaunchedEffect
         delay(STALL_MS)
+        if (quality == AerialQuality.Uhd) {
+            lowerAfterFailure("first_frame_timeout", rememberCap = false)
+            return@LaunchedEffect
+        }
         DiagLog.i("no picture from ${player.currentMediaItem?.mediaId} after $STALL_MS ms; next film")
         failures++
         // Nothing has played at all this time: Apple's CDN is out of reach. Hand over to the photo
@@ -669,7 +706,6 @@ private const val RETRY_MS = 1_500L
 /** How long a film may take to show its first frame before the next one is tried. */
 private const val STALL_MS = 8_000L
 
-private val DECODER_ERRORS = PlaybackException.ERROR_CODE_DECODER_INIT_FAILED..PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED
 
 /** Only alive inside the saver. One cached photo, never added to the owner's photo library. */
 @Composable

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kids_reminder_channel">Напоминание о времени просмотра</string>
+    <string name="kids_quiz_due_hint">Пора ответить на вопросы. Вернитесь в HaloTV, чтобы продолжить.</string>
+    <string name="kids_limit_due_hint">Время просмотра истекло. Вернитесь в HaloTV, чтобы узнать подробности.</string>
+</resources>

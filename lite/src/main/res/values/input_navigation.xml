@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lite_inputs_help">Open the TV’s input menu. If switching does not work, choose HDMI / AV in system settings.</string>
+    <string name="lite_inputs_native">TV input menu</string>
+    <string name="lite_inputs_settings">Switch in system settings</string>
+    <string name="lite_inputs_unavailable">Could not open the input menu. Choose “Switch in system settings”.</string>
+</resources>

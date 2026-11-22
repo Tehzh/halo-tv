@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kids_reminder_channel">Көру уақыты туралы еске салу</string>
+    <string name="kids_quiz_due_hint">Сұрақтарға жауап беретін уақыт келді. Жалғастыру үшін HaloTV-ге оралыңыз.</string>
+    <string name="kids_limit_due_hint">Көру уақыты аяқталды. Толығырақ білу үшін HaloTV-ге оралыңыз.</string>
+</resources>

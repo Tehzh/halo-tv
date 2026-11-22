@@ -8,16 +8,16 @@ import java.security.MessageDigest
 
 /** As the full app's FocusStyle: High Contrast adds the white frame (the default on D-pad remotes). */
 enum class FocusStyle(val key: String) {
-    Standard("standard"), HighContrast("high_contrast");
+    Standard("standard"), HighContrast("high_contrast"), ClassicGlassSlide("classic_glass_slide");
 
     companion object {
-        fun of(key: String?) = entries.firstOrNull { it.key == key } ?: HighContrast
+        fun of(key: String?) = entries.firstOrNull { it.key == key } ?: ClassicGlassSlide
     }
 }
 
 /** As the full app's UiSounds: the TV's own key sounds, Aerial's, or none. */
 enum class UiSounds(val key: String) {
-    Tv("tv"), Aerial("aerial"), Off("off");
+    Tv("tv"), Aerial("aerial"), Soft("soft"), Off("off");
 
     companion object {
         fun of(key: String?) = entries.firstOrNull { it.key == key }
@@ -41,7 +41,7 @@ object LiteSettings {
     private const val PREFS = "settings"
     private lateinit var prefs: SharedPreferences
 
-    private var chosenFocusStyle = FocusStyle.HighContrast
+    private var chosenFocusStyle = FocusStyle.ClassicGlassSlide
     /** As chosen; always the white frame in Elders mode (Kids), as in the full app. */
     val focusStyle: FocusStyle get() = if (Kids.active && Kids.kind == KidsKind.Elders) FocusStyle.HighContrast else chosenFocusStyle
     var oneRowHome = true; private set
@@ -52,9 +52,12 @@ object LiteSettings {
     val homeColumns: Int get() = if (Kids.active) Kids.COLUMNS else chosenColumns
     var homePlate = true; private set
     var compactDockCorners = false; private set
-    private var chosenAllNames = false
+    var dockSize = DockSize.DEFAULT; private set
+    private var chosenNameStyle = 0
     /** As chosen; every name in Elders mode. */
-    val showAllNames: Boolean get() = chosenAllNames || (Kids.active && Kids.kind == KidsKind.Elders)
+    val appNameStyle: Int get() = if ((Kids.active && Kids.kind == KidsKind.Elders)) 1 else chosenNameStyle
+    val showAllNames: Boolean get() = appNameStyle == 1
+    val largeAppTitle: Boolean get() = appNameStyle == 2
     var clockRight = false; private set
     /** 0 left, 1 right, 2 center, 3 compact status bar. */
     var clockPosition = 0; private set
@@ -63,6 +66,7 @@ object LiteSettings {
     /** 0 white, 1 black, 2 dark gray. */
     var desktopTextColor = 0; private set
     /** 0 always visible, 1 fade after five seconds, 2 hidden except a brief explicit wake. */
+    var settingsIconPosition = 1; private set
     var settingsIconVisibility = 0; private set
     var largeClock = true; private set
     var showDeviceCapacity = true; private set
@@ -78,11 +82,13 @@ object LiteSettings {
     var showHomeDate = true; private set
     var flipClock24Hour = true; private set
     var flipClockSeconds = false; private set
+    var flipClockSecondsStyle = 0; private set
     var showWeather = true; private set
     var showLunarDate = false; private set
     var screensaverClock = true; private set
     var backStartsScreensaver = true; private set
-    var uiSounds = UiSounds.Tv; private set
+    var uiSounds = UiSounds.Soft; private set
+    var autoCleanIdle = true; private set
     var screensaverMinutes = 5; private set
     var bootApp: String? = null; private set
 
@@ -105,9 +111,11 @@ object LiteSettings {
         peekNextRow = prefs.getBoolean("peek_next_row", false)
         chosenColumns = prefs.getInt("home_columns", 5).takeIf { it in HOME_COLUMNS } ?: 5
         compactDockCorners = prefs.getBoolean("compact_dock_corners", false)
+        dockSize = DockSize.normalize(prefs.getInt("dock_size", DockSize.DEFAULT))
         homePlate = prefs.getBoolean("home_plate", true)
-        chosenAllNames = prefs.getBoolean("show_all_names", false)
-        settingsIconVisibility = prefs.getInt("settings_icon_visibility", 0).coerceIn(0, 2)
+        chosenNameStyle = prefs.getInt("app_name_style", if (prefs.getBoolean("show_all_names", false)) 1 else 0).takeIf { it in 0..2 } ?: 0
+        settingsIconPosition = prefs.getInt("settings_icon_position", 1).coerceIn(0, 2)
+        settingsIconVisibility = prefs.getInt("settings_icon_visibility", 1).coerceIn(0, 2)
         clockRight = prefs.getBoolean("clock_right", false)
         clockPosition = prefs.getInt("clock_position", prefs.getInt("halo_clock_position", if (clockRight) 1 else 0)).coerceIn(0, 3)
         desktopTextColor = prefs.getInt("clock_text_color", prefs.getInt("halo_text_color", 0)).coerceIn(0, 2)
@@ -122,14 +130,16 @@ object LiteSettings {
         showHomeDate = prefs.getBoolean("show_home_date", true)
         flipClock24Hour = prefs.getBoolean("flip_clock_24_hour", true)
         flipClockSeconds = prefs.getBoolean("flip_clock_seconds", false)
+        flipClockSecondsStyle = prefs.getInt("flip_clock_seconds_style", 0).coerceIn(0, 1)
         showWeather = prefs.getBoolean("show_weather", true)
-        showLunarDate = prefs.getBoolean("show_lunar_date", false)
+        showLunarDate = prefs.getBoolean("show_lunar_date", true)
         screensaverClock = prefs.getBoolean("screensaver_clock", true)
         backStartsScreensaver = prefs.getBoolean("back_starts_screensaver", true)
         // As the full app: the TV's own sounds where its key sound switch is on, else Aerial's.
-        uiSounds = UiSounds.of(prefs.getString("ui_sounds_kind", null)) ?: if (
-            runCatching { Settings.System.getInt(context.contentResolver, Settings.System.SOUND_EFFECTS_ENABLED, 1) }.getOrDefault(1) == 1
-        ) UiSounds.Tv else UiSounds.Aerial
+        uiSounds = UiSounds.of(prefs.getString("ui_sounds_kind", null))
+            ?: if (prefs.contains("ui_sounds") && !prefs.getBoolean("ui_sounds", true)) UiSounds.Off else UiSounds.Soft
+
+        autoCleanIdle = prefs.getBoolean("auto_clean_idle", true)
         screensaverMinutes = prefs.getInt("screensaver_minutes", 5)
         bootApp = prefs.getString("boot_app", null)
         pinHash = prefs.getString("pin_hash", null)
@@ -144,10 +154,23 @@ object LiteSettings {
     fun chooseHomeColumns(v: Int) { if (v in HOME_COLUMNS) { chosenColumns = v; put { putInt("home_columns", v) } } }
     fun choosePeekNextRow(v: Boolean) { peekNextRow = v; put { putBoolean("peek_next_row", v) } }
     fun chooseCompactDockCorners(v: Boolean) { compactDockCorners = v; put { putBoolean("compact_dock_corners", v) } }
+    fun chooseDockSize(v: Int) { if (DockSize.valid(v)) { dockSize = v; put { putInt("dock_size", v) } } }
     fun chooseHomePlate(v: Boolean) { homePlate = v; put { putBoolean("home_plate", v) } }
-    fun chooseShowAllNames(v: Boolean) { chosenAllNames = v; put { putBoolean("show_all_names", v) } }
+    fun chooseShowAllNames(v: Boolean) = chooseAppNameStyle(if (v) 1 else 0)
+    fun chooseAppNameStyle(style: Int) {
+        if (style !in 0..2) return
+        chosenNameStyle = style
+        put { putInt("app_name_style", style); putBoolean("show_all_names", style == 1) }
+    }
     fun chooseClockRight(v: Boolean) { clockRight = v; put { putBoolean("clock_right", v) } }
     fun chooseClockPosition(v: Int) { if (v in 0..3) { clockPosition = v; clockRight = v == 1; put { putInt("clock_position", v); putBoolean("clock_right", clockRight) } } }
+    fun chooseSettingsIconPosition(v: Int) {
+        if (v in 0..2) {
+            settingsIconPosition = v
+            put { putInt("settings_icon_position", v) }
+        }
+    }
+
     fun chooseSettingsIconVisibility(v: Int) { if (v in 0..2) { settingsIconVisibility = v; put { putInt("settings_icon_visibility", v) } } }
     fun chooseDesktopTextColor(v: Int) { if (v in 0..2) { desktopTextColor = v; put { putInt("clock_text_color", v) } } }
     fun chooseClockSizeMode(v: Int) { if (v in 0..2) { clockSizeMode = v; largeClock = true; put { putInt("clock_size_mode_v2", v); putBoolean("large_clock", true) } } }
@@ -162,9 +185,11 @@ object LiteSettings {
     fun chooseShowHomeDate(v: Boolean) { showHomeDate = v; put { putBoolean("show_home_date", v) } }
     fun chooseFlipClock24Hour(v: Boolean) { flipClock24Hour = v; put { putBoolean("flip_clock_24_hour", v) } }
     fun chooseFlipClockSeconds(v: Boolean) { flipClockSeconds = v; put { putBoolean("flip_clock_seconds", v) } }
+    fun chooseFlipClockSecondsStyle(v: Int) { if (v in 0..1) { flipClockSecondsStyle = v; put { putInt("flip_clock_seconds_style", v) } } }
     fun chooseShowWeather(v: Boolean) { showWeather = v; put { putBoolean("show_weather", v) } }
     fun chooseScreensaverClock(v: Boolean) { screensaverClock = v; put { putBoolean("screensaver_clock", v) } }
     fun chooseBackStartsScreensaver(v: Boolean) { backStartsScreensaver = v; put { putBoolean("back_starts_screensaver", v) } }
+    fun chooseAutoCleanIdle(v: Boolean) { autoCleanIdle = v; put { putBoolean("auto_clean_idle", v) } }
     fun chooseUiSounds(v: UiSounds) { uiSounds = v; put { putString("ui_sounds_kind", v.key) } }
     fun chooseScreensaverMinutes(v: Int) { screensaverMinutes = v; put { putInt("screensaver_minutes", v) } }
     fun chooseBootApp(pkg: String?) { bootApp = pkg; put { putString("boot_app", pkg) } }

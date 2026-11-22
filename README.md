@@ -1,9 +1,18 @@
-# Halo TV 1.66 / Halo TV Lite 1.2 Beta
+# HaloTV 3.2.3 source
 
-Halo TV 是基于 [Aerial](https://github.com/pengchujin/aerial-tv) 1.67 与 Aerial Lite 1.6 二次开发的非官方版本，保留上游版权声明与 MIT 许可。
+HaloTV is a derivative of [Aerial](https://github.com/pengchujin/aerial-tv), not an official upstream release. Original copyright and MIT license are retained; see LICENSE and NOTICE.md.
 
-完整版适用于 Android 5.0 及以上，Standard 和 Guard 二选一。Lite 使用独立包名 `app.halotv.lite`，面向 Android 4.0–4.4；Lite 是测试版，Android 4.x 真机尚未验证。Lite 不含动态视频壁纸、应用内更新、桌面守护或屏保后待机。
+This archive contains the Standard / Guard (`app/`) and Lite (`lite/`) source, resources, host-side tests and tooling corresponding to 3.2.3. Independent distribution is the default. Standard/Guard use `app.halotv.launcher`, code 220; Lite uses `app.halotv.launcher.lite`, code 76.
 
-本版调整右上角按钮大小和间距，在设置控制中心增加自愿支持作者的微信与支付宝收款码，功能均免费。收款码由维护者提供并打包在本应用中。
+## Build
 
-使用 JDK 17 和 Android SDK 构建：`./gradlew :app:assembleStandardRelease :app:assembleGuardRelease :lite:assembleRelease`。签名由构建环境提供，若与已安装版本不同，不能覆盖安装。下载与安装说明见 [Halo TV 仓库](https://github.com/Null9797/halo-tv)。
+Use JDK 17 and Android SDK 36. Set the local Android SDK location through `local.properties` or your environment. Release signing is private and excluded. For your own builds, create `local/independent-signing.properties` with `storeFile`, `storePassword`, `keyAlias`, and `keyPassword` pointing to your own keystore; never commit it. A build signed with another key cannot replace an official installation.
+
+```
+./gradlew :app:assembleStandardRelease :app:assembleGuardRelease :lite:assembleRelease
+./gradlew :app:testStandardDebugUnitTest :app:testGuardDebugUnitTest :lite:testDebugUnitTest --no-parallel --max-workers=1
+```
+
+See docs/RELEASE-3.2.3.md for the change and verification scope, and docs/ARCHITECTURE.md for the layout. No TV or emulator was operated for this release. Build/test artifacts, local device configuration and private keys are excluded.
+
+[Website](https://halo-tv.pages.dev/) · [Releases](https://github.com/Null9797/halo-tv/releases)

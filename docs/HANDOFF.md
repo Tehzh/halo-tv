@@ -1,4 +1,257 @@
+## HaloTV 3.3.5 published and verified
+
+- Latest stable GitHub Release: `v3.3.5-halo`. PR #47 merged as `a42b871ffdbf7336f65bc3640c948f6c692b35c2`; wording-only PR #48 merged as `ac5fc4ebb762234ad3bd3d5697abf0d4d1b7823b`, now public main. Release tag targets `4683ce1d2c30a64a9b33efcd0398911985215a3e`. Complete application source/archive revision: `3c30ee4ee3ca8c4b6673d9b9ba005abab20caaf0`.
+- Standard / Guard code 250, Lite 106. Fresh three Release builds and 1,412 host tests passed (607/607/198); lint Error/Fatal 0 (351/352/440 existing warnings). Independent identities/signer, minimum SDKs, permissions, ZIP/alignment, icons/welcome/other assets and full dex metadata verified. Includes previously local Dock size/alignment plus Issue 46 content refresh/cache/request fixes. No TV/emulator operation.
+- All six GitHub Release assets and three production website APKs actually downloaded and matched Desktop bytes. Production homepage/feed/version, unchanged preview, historical update source and announcements verified. All 16 publication paths and the entire clean publication checkout match final main. Cloudflare production deployment `1ff7cea4-d0bc-4639-a09c-291ce407442f` is success on final main; repository About is 3.3.5. Feedback source/bindings untouched and unauthenticated admin remains 401. No new popup.
+- Correction to earlier planned-open wording: final live inspection found Issue #46 already closed by the repository account at 2026-11-18 03:45:56 UTC, with one prior owner comment, before this release. This task did not change its state or comments. Published notes now say real-device behavior still requires feedback, without claiming it remains open. Do not reopen it automatically. Hardware behavior remains unverified.
+- Desktop: `/Users/bilinggg/Desktop/HaloTV-3.3.5-正式版`, with source/checksums, build and publication verification and screenshots. Publication checkout: `/Users/bilinggg/Documents/Codex/2026-11-18/halo-335-publication`. Old test deliveries were not overwritten. Future version codes must exceed 250/106.
+
+## HaloTV 3.3.5 publication preparation
+
+Owner explicitly authorizes GitHub and website publication as 3.3.5, including completed Dock size/alignment and Issue 46 wallpaper refresh work. Full code 250 / Lite 106 supersede public 246/102 and local 249/105. See `docs/RELEASE-3.3.5.md`; concise notes must describe changes since public 3.3.4, with host/device validation boundaries. Keep independent IDs/signer, Logo, static welcome, existing settings/performance, remote announcement contents and feedback service/bindings. No new popup, Issue comment/closure, TV/emulator operation or third-party installation. Preserve all old Desktop test folders. Publish three signed packages, complete application source/checksums/verification, website and independent update feed, and verify actual public downloads and deployment before declaring completion.
+
+## Local Issue 46 online static wallpaper fix
+
+Current bug-fix work is based on `7614a3f`, preserving both Dock previews and all previous fixes. No new product feature. See `docs/HALO-ISSUE-46.md`: refresh same-ID online content, version baked/thumbnail caches, capture request intent before I/O, reject stale/ABA requests, defer rotation during manual requests, and stage Lite content before main-thread commit. Visible 3.3.4, full code 249 / Lite 105; future codes exceed these. Three new Desktop test packages and fresh full verification only. Do not use old test results as current evidence; no TV/emulator, third-party installation, repository/site/feed/announcement publication, or Issue replies/status changes. Keep private data and signing material out of artifacts.
+
+Verified delivery: `/Users/bilinggg/Desktop/HaloTV-3.3.4-在线壁纸修复测试`. Application source/archive revision `e134c202848bc0427aae3fa4b3b9cd2fe5186f93`, branch `fix/issue46-online-wallpaper-refresh`. Three signed Release builds and 1,412 host tests passed (607/607/198), lint Error/Fatal 0 (351/352/440 existing warnings). Actual local-image pipeline tests cover same-ID backdrop/frost/thumbnail refresh, identical timestamps, out-of-order/cancelled requests, failed staging and type changes. Restoring only the old same-ID short circuit failed the regression as expected; the final fixed suite has no failures. Independent identities, signer, ZIP/alignment, full dex metadata, icons and all non-profile assets except intentional versioned phone thumbnail URLs verified. Eight Dock geometry/settings sources match `7614a3f` byte-for-byte; original test folders preserved. No device/emulator/live wallpaper-service test or publication/Issue change; affected firmware behavior remains unverified.
+
+## Local Dock header alignment correction
+
+The user explicitly corrects the previous fixed header inset: left/right clock information and status controls must move with small/default/large Dock geometry. This supersedes the fixed-header-margin note in the preview below. Keep original font sizes and default alignment. Full code 248 / Lite 104, visible 3.3.4, same independent IDs/signer/artwork. Desktop test delivery only; no TV/emulator operation, publication or announcement. Use a new `HaloTV-3.3.4-Dock对齐修复测试` folder and preserve the previous preview. Future codes must exceed 248/104. See `docs/HALO-DOCK-SIZE.md`; final results belong to that folder's verification.
+
+Verified source/archive revision: `20d127151ed7f19f86bdd3723c4eaae962deee26`. Three signed Release builds and 1,399 host tests passed (601/601/197); lint Error/Fatal 0 (351/352/440 warnings remain). Default anchors, linked corner/status geometry, and existing native Lite view relayout across three sizes passed. APK identities, v1/v2 signer, ZIP/alignment, dex metadata and all non-profile assets matched the preceding size preview. Desktop verification, source and checksums are in `/Users/bilinggg/Desktop/HaloTV-3.3.4-Dock对齐修复测试`. Real-TV behavior remains for owner testing; no publication or device operation.
+
+## Local Dock size preview
+
+User requests linked Dock/app-icon sizes: small/default/large. Keep original default, other UI sizes, independent identity/signer and original artwork. Implement in Standard/Guard/native API-14 Lite plus phone settings. Local visible 3.3.4, full code 247 / Lite 103; future codes must exceed these. Desktop test APKs only; no TV/emulator operation, repository/site/feed publication, remote announcement or feedback changes. See `docs/HALO-DOCK-SIZE.md` and the final Desktop verification for actual test results.
+
+Verified delivery: `/Users/bilinggg/Desktop/HaloTV-3.3.4-Dock大小测试`. Application source/archive revision `b59bea096c04f8f4062e9051e9509568d7cee28a`. Three signed Release builds, 1,396 host tests (600/600/196), lint Error/Fatal 0 (351/352/440 warnings), APK identity/signer/ZIP/alignment/dex metadata and unchanged non-phone assets passed. Phone JS syntax, five-language strings and generated shared Lite geometry checked. No device/emulator operation or publication; device visuals remain for owner testing. Full Home only re-prepares faces on size changes, without reloading the app catalog or icon library.
+
+## HaloTV 3.3.4 published and verified
+
+- Latest Release: `v3.3.4-halo`. PR #45 merged as `62a3a148ccc51905ab94e7f3338f5cdecd9b435c`; release tag targets `b445aebaa0a8343c815c12d5b9b11ddcc82033a1`. Full application source archive revision: `efeb0f1aea002e9306570355e0c8d8b870b8a10d`.
+- Standard / Guard code 246, Lite 102. Three Release builds and 1,383 host tests passed (595/595/193); lint Error/Fatal 0 (351/352/440 warnings remain). All eight changes appear in repository, website and independent update notes, with Lite scope and device-validation limits. Independent IDs/signer, static welcome and original artwork preserved; no TV/emulator operation.
+- All six GitHub assets and three production website APKs were downloaded and matched Desktop bytes. Production homepage, independent feed, version.txt and unchanged welcome preview match prepared files; all 16 merged paths match. Repository About is 3.3.4. Existing announcements and feedback service/bindings unchanged; unauthenticated admin returns 401. No new popup or Issue/feedback reply/status change.
+- Desktop: `/Users/bilinggg/Desktop/HaloTV-3.3.4-正式版`, including verification JSON, publication verification and screenshot. Public checkout: `/Users/bilinggg/Documents/Codex/2026-11-17/halo-334-publication`. Future package codes must exceed 246/102. Continue concise release bullets covering every actual fix/optimization.
+
+## HaloTV 3.3.4 publication preparation
+
+Owner explicitly authorizes GitHub then website publication as 3.3.4, combining bf61e7d and 5a571d0. Full code 246 / Lite 102 supersede local 245/101 and public 243/99. List all actual fixes and optimizations concisely, with OEM validation limits and Lite scope. Preserve independent IDs/signer, logos/welcome/startup assets, remote announcement content and feedback service/bindings. No new popup, private feedback publication, issue changes, TV/emulator operation or system changes. See `docs/RELEASE-3.3.4.md`. Final builds/tests/lint, release assets, production homepage/update feed and actual downloads must be verified before reporting publication.
+
+## Local public-Issue bug audit (2026-11-17, not published)
+
+- Based on bf61e7d; branch `fix/issue-feedback-bug-audit`. Preserve all four-issue candidates. Visible 3.3.3, full code 245 / Lite 101. Three new Desktop test packages must be checked with fresh results; future codes exceed 245/101.
+- Bug fixes only: validate online-wallpaper catalogs before cache/count/grid keys, recover invalid caches on Retry, and do not hide valid network data on cache-write failure. Shared with native Lite; no new dependency or feature. See `docs/HALO-ISSUES-REVIEW-2026-11-17.md`.
+- All public Issues/comments were paged. User permits closure only for fully verified complete fixes, with no comments/reopening; device-dependent candidates do not qualify. No code push, Release/site/feed/announcement publication, TV/emulator operation or system changes. Keep private feedback content, device details and credentials out of tracked files and test packages.
+
+## Local four-issue compatibility test (2026-11-17, not published)
+
+- Branch `fix/four-issue-compatibility-review`, based on d65b13f. Visible version 3.3.3; full code 244, Lite 100. Preserve independent IDs/signer, welcome/icon/startup assets and prior performance fixes. Public remains 243/99.
+- Targeted local SDR composition for reported MiTV-ASTR0; shared capture backoff and bounded return cover; opt-in, bounded keep-ADB startup checks and honest HOME diagnostics; real-ID TCL input routing. See `docs/HALO-3.3.3-FOUR-ISSUE-TEST.md`. #42 firmware HOME takeover remains unverified and cannot be guaranteed. Lite does not gain full video-wallpaper or accessibility-guard machinery.
+- Deliver three Desktop test APKs and fresh verification only. No publication, feeds, announcements, issue replies/status changes, TV/emulator operation, system launcher changes or permission grants. Actual final host build/test/lint/signature results belong to this delivery's `VERIFICATION.json`, not the older public release report. Future codes must exceed 244/100.
+
+## HaloTV 3.3.3 published (verified 2026-11-17)
+
+- Latest Release: `v3.3.3-halo`. PR #44 merged as `3718289873d97263ab31368dc5f8c6500b021674`. Complete application source archive revision: `2bc7e43163e901f547c916aec15e9cb570ce0f20`.
+- Standard / Guard code 243, Lite 99. Three Release builds and 1,270 host tests passed (544/544/182); lint Error/Fatal 0 (350/351/440 warnings remain). Independent IDs/signer, static welcome, icons and startup artwork preserved. No TV/emulator operation.
+- All six GitHub assets and three production website APKs actually downloaded and matched Desktop bytes. Homepage, independent feed, version.txt and unchanged welcome preview match prepared files; all 16 merged publication paths match. About version is 3.3.3. Announcement sources and feedback service/bindings unchanged; unauthenticated admin remains 401. No new popup or feedback status/reply change.
+- Owner requests concise release notes for this and future updates: short bullets stating actual fixes/optimizations; detailed validation stays in separate records. This release lists held-volume handling and completed-welcome upgrade entry only.
+- Desktop: `/Users/bilinggg/Desktop/HaloTV-3.3.3-正式版`, with APKs, complete source/checksums, verification, publication proof and screenshot. Future package codes must exceed 243/99.
+
+## HaloTV 3.3.3 publication preparation (2026-11-17)
+
+Owner authorizes GitHub then website publication. Full code 243 / Lite 99 supersede public 241/97 and local test 242/98. Publish the completed-welcome and held-volume fixes from c018e41, preserving independent IDs/signer/artwork, existing announcement sources and the feedback service/bindings. No new popup, TV or emulator operation. Release notes must use short, plain bullets naming actual fixes/optimizations; keep detailed audits separate. Apply this concise format to future releases too. See docs/RELEASE-3.3.3.md. Verify release artifacts, update feed and both live download channels.
+
+## Local upgrade-entry / held-volume feedback fix (2026-11-17)
+
+Visible 3.3.2; full code 242 / Lite 98, test delivery only. Preserve the independent IDs/signer and static welcome/icon/startup artwork. This installation's completed 3.x welcome now carries forward so a recovered guard is not covered by another confirmation page. Guard and Home-window volume handling compensate actual consumed repeat events only when firmware left volume unchanged; retain delayed-firmware, key-up/stale-repeat, learned-held-timer and missing-lift protections. No permission changes or legacy-package imports.
+
+Three release builds and 1,270 host tests passed (544/544/182). Three regressions fail against pre-fix sources and pass after repair. Lint Error/Fatal 0 (350/351/440 warnings; the additional UseKtx style warning is in the welcome source shared with native API-14 Lite, where AndroidX is not allowed). Identity/signer/minSdk/ZIP/alignment/shared assets/full dex metadata verified. No TV/emulator operation, feedback reply/status change, publication, feed change or announcement. Desktop: `/Users/bilinggg/Desktop/HaloTV-3.3.2-守护与音量修复测试`. See `docs/HALO-3.3.2-UPGRADE-VOLUME-FIXES.md`. Public remains 241/97; future builds must exceed 242/98. OEM behavior remains for owner testing.
+
+## HaloTV 3.3.2 published (verified 2026-11-17)
+
+- Public Release `v3.3.2-halo` is Latest; PR #43 merged as `eec5f476aa5e479d1f3e39eadd5f206554c6fc16`. Complete tracked application source ZIP revision: `42e3914e4cb339114458d2ce4e56622bbb87c466`.
+- Standard / Guard code 241, Lite 97. Three Release builds and 1,231 host tests passed (526/526/179); lint Error/Fatal 0 (349/350/440 warnings remain). Identity/signature/ZIP/alignment/shared assets/full dex metadata verified. No TV or emulator operation.
+- Six GitHub Release assets plus three website APKs actually downloaded and matched Desktop bytes. Production homepage, welcome preview image, version.txt and independent update feed match prepared 3.3.2 files. All 16 merged publication paths match local files exactly. GitHub repository About also updated to 3.3.2.
+- Existing announcement sources, feedback service code/bindings/credentials are unchanged. No new remote popup; unauthenticated admin remains 401.
+- Desktop: `/Users/bilinggg/Desktop/HaloTV-3.3.2-正式版`, including full source, checksums, verification JSON and publication screenshots. Future package codes must exceed 241/97. Preserve the static welcome and existing completion flag; animated notes below are historical.
+
+## HaloTV 3.3.2 publication preparation (2026-11-17)
+
+Owner requests repository/website publication; per standing preference the next patch is 3.3.2. Full code 241 / Lite 97 supersede local 240/96 and public 238/94. Publish the accepted static light welcome in all three editions, preserving completed welcome state, independent IDs/signer, app icons and system startup artwork. Keep existing announcements and feedback backend/bindings/credentials. No new remote popup, TV or emulator operation. See RELEASE-3.3.2.md. Final build, signature, source, update-feed and production download verification must be recorded.
+
+## Local static light welcome test (2026-11-17)
+
+Owner canceled the welcome animation. This supersedes all animated-welcome notes below. `HaloWelcomeView` now presents the entire accepted light design on its first frame, with no animator, reveal/fade, timer, scheduled refresh or two-press skip. One deliberate confirmation enters Home; the existing completion flag is preserved. Same icon/artwork/IDs/signer. Full code 240 / Lite 96, visible 3.3.1, local test packages only; future package codes must exceed these.
+
+Three release builds passed; 11 focused shared welcome/host-render regressions passed; all three lint reports have Error/Fatal 0 (warnings remain). First-frame native PNG is byte-identical to the previously accepted end-state. The native host test verifies identical pixels after five seconds at the same viewport. Installer identities, signatures, ZIP/alignment/dex metadata and assets verified. Desktop: `/Users/bilinggg/Desktop/HaloTV-3.3.1-静态欢迎页测试`. No TV/emulator operation, publication, update feed change or announcement. See `docs/HALO-WELCOME-LIGHT.md`, `design-qa.md` and Desktop verification.
+
+## Local light welcome test (2026-11-17)
+
+Accepted final pearl/lilac design with handwritten greeting, actual HaloTV logo and brand halo/star/horizon. Shared native 3.4-second entrance for all three editions, explicit remote skip/completion, reduced-motion support, no idle animation, full bitmap release on detach, and one completion flag per visual revision. Existing users see this design once; normal future releases do not reset it. See `docs/HALO-WELCOME-LIGHT.md` and `design-qa.md`.
+
+Visible 3.3.1 with full code 239 / Lite 95; local tests above public 238/94. Three Release builds, 1,234 host tests, lint Error/Fatal 0 (warnings remain), independent identity/signature/ZIP/alignment/dex-metadata and shared-asset checks passed. Fixed Kotlin's inferred API-22 BaseInterpolator field by using the API-1 Interpolator interface, plus 32-bit background color to avoid pastel banding. Native host render/animation previews passed visual comparison at TV sizes, including 4:3 letterboxing. No emulator, TV operation, announcement or publication. Independent signer, app icons, system launch art and remote sources untouched. Desktop: `/Users/bilinggg/Desktop/HaloTV-3.3.1-欢迎页动效测试`. Future public package codes must exceed 239/95.
+
+## HaloTV 3.3.1 published (verified 2026-11-17)
+
+- Public Release `v3.3.1-halo` is Latest; PR #41 merged as `0a90ccb7ef5c21a7a72d21376b2509ff667c316b`. Application source archive revision: `d9124908433cdbaf616df37991e15151eaa3b2e0`.
+- Standard / Guard code 238, Lite 94. Three Release builds, 1,220 host tests and 8 backend tests passed; lint Error/Fatal 0 (warnings remain). Same independent IDs, signer and startup art. No TV/emulator operation.
+- All six GitHub release assets and all three website APKs actually downloaded and matched Desktop bytes. Production homepage, version.txt and independent update feed are 3.3.1. Source ZIP and checksums are attached to Release; automatically generated GitHub source archives are only publication-repository snapshots.
+- Existing announcement files and feedback backend/bindings/credentials unchanged. No new announcement. Feedback production activation remains in force.
+- Desktop: `/Users/bilinggg/Desktop/HaloTV-3.3.1-正式版`, with `PUBLICATION-VERIFICATION-3.3.1.json` and website/GitHub screenshots. Next package codes must exceed 238/94. Older preparation/test notes below are historical.
+
+## HaloTV 3.3.1 publication preparation (2026-11-17)
+
+User explicitly requested GitHub and website release as 3.3.1. Full codes 238, Lite 94 exceed feedback tests 237/93. Publish the existing opt-in feedback feature with activated backend, complete application source, checksums, same-edition independent update feed and website downloads. Preserve IDs/signature/startup artwork, existing announcements and backend credentials/bindings. No TV/emulator operation. See RELEASE-3.3.1.md; final build/package/publication verification must be recorded before reporting completion.
+
+## Feedback production activation verified (2026-11-17)
+
+Owner configured FEEDBACK_ADMIN_HASH personally; FEEDBACK_DB bound to halotv-feedback after explicit confirmation. Production redeployment c6cf183e-3f5b-407f-a38f-f877bac167ea of source 0d2971d6d53f0b555e450a003fef4aa4b2723f8b succeeded. Service now enabled. Verified real HTTPS submission 201, idempotent retry 200, unauthenticated admin 401, unowned receipt 404, description supplement, browser admin login/detail/reply, and user summary receipt with resolved status and saved reply. Synthetic report 4fb56e68-a5f6-4ec9-aab3-b52cd04ff29e is marked resolved and clearly labeled as deployment testing; no real TV/user diagnostics uploaded. Admin remains open in Chrome. Never copy administrator credentials into repository, APK or public notes.
+
+Desktop `正式后台启用验证.json` records proof; `使用与启用说明.txt` updated. Feedback feature test APKs remain visible version 3.3 / codes 237 and 93, not publicly released. Existing official 3.3 downloads, update and announcement sources unchanged. No TV/emulator operation.
+
+## Local announcements and feedback feature (2026-11-17)
+
+User accepted one-click feedback and asked to integrate it into the existing Control Center entry, renamed “公告与反馈”. Standard/Guard code 237 and Lite 93, visible version 3.3, are local test builds only. Preserve published 3.3 codes 236/92, update feeds, announcements, independent identity/signer and startup art. No TV/emulator operation.
+
+Adds a shared native feedback sheet, explicit consent/optional diagnostics, bounded retry/history, token-scoped phone supplement page, and private Cloudflare D1 dashboard/replies. See `feedback-service/README.md`. D1 `halotv-feedback` (f5192a14-2d0f-48e2-8d7b-f8308453d676) schema created; production bindings/admin secret are NOT configured. Owner must enter new credential using Desktop `后台密钥设置.html`; no production key has been created by the agent. GitHub branch `feature/feedback-service` contains only seven website service files. Publication status must be verified before claiming live collection.
+
+Desktop staging: `/Users/bilinggg/Desktop/HaloTV-3.3-公告与反馈测试`. Local synthetic browser flow was verified: consent submission, phone text supplement, admin login/list/detail/reply, receipt refresh. Screenshot in Desktop folder. Backend eight tests pass. Final build passed; 1,220 host tests and 8 backend tests passed, lint Error/Fatal 0 (warnings remain), all APK signatures/ZIP/alignment/identities verified and copied to Desktop. Pending draft creation now atomically rejects replacement. PR #40 merged as 0d2971d6d53f0b555e450a003fef4aa4b2723f8b; production deployment 0ad20ded-af9d-4c6d-945d-25b3c01efe3d succeeded. All four public feedback assets match reviewed bytes; API returns expected 503 service_not_ready until owner configures credentials/binding. New APKs are NOT published.
+
+## HaloTV 3.3 published (verified 2026-11-17)
+
+- Release `v3.3-halo` is public and Latest; PR #39 merged as `22b6f95eb011b5009cd8e7059ebe670c989d0b08`. Complete application source/archive revision is `22f617068f8fdee862500e654658a1b27b9a9817`.
+- Standard / Guard code 236, Lite 92. Three release builds and 1,199 host tests passed; lint has no Error/Fatal (warnings remain). Identity, signer, ZIP, alignment and dex metadata verified. No TV/emulator operation.
+- Production website HTML, independent feed, version file and all three APKs downloaded from both website and GitHub match local release bytes; all six Release asset sizes/digests match. Existing announcements and legacy feed unchanged. Repository About also updated to 3.3 / Aerial 1.99.
+- Desktop artifacts: `/Users/bilinggg/Desktop/HaloTV-3.3-正式版`, including `PUBLICATION-3.3.json` and `官网发布确认.jpg`. Next public codes must exceed 236/92. Preserve independent identities, signing key and startup artwork.
+
+## HaloTV 3.3 release preparation (2026-11-16)
+
+Owner explicitly authorizes GitHub and website publication as 3.3. Codes 236/92 supersede all 3.2.8 tests (235/91). Publish the entire confirmed performance/guard/wallpaper/upstream-1.99/control-layout set, preserving independent IDs, signer and artwork. No TV/emulator operation or new announcement requested. Update independent feed, matching three packages, complete source, checksums and documentation; keep existing announcement and historical feed content unchanged. See RELEASE-3.3.md. Publication verification is recorded on Desktop.
+
+## Local Control Center layout, 3.2.8 codes 235/91 (2026-11-16)
+
+Owner requested three Desktop test packages. The second row pairs HaloTV settings with renamed Home Guard settings; the last action row pairs software updates with a permanent announcements entry. Its red badge follows eligible unread announcements; acknowledgment clears the badge, snooze retains it. This explicitly supersedes the older hide-completed-entry UI preference; completed notices still remain acknowledged. Lite registers the paired controls in the same remote navigation order and observes badge changes without hiding rows. Existing permission behavior, independent IDs/signer/artwork and prior performance/transition fixes are preserved. No new announcements, publication, TV or emulator operation. Desktop verification records build/test/signature scope; real-device layout awaits owner testing. Future public version codes must exceed 235/91. All three Release builds and 1,199 host unit tests passed; lint reports no Error/Fatal (344/345/436 warnings remain). APK identity, independent signer, ZIP integrity, alignment and full-build dex metadata verified. Desktop copies match SHA-256.
+
+## Local Aerial 1.99 integration and review, 3.2.8 codes 234/90 (2026-11-16)
+
+Preserved the existing dirty workspace in a sibling snapshot before merging upstream v1.99 (25f12514e3790dcf87533a1b620189d75f89aa8a) against v1.98. Verified official APK identities/digests: full 1.99/146; Lite 1.31/33. Integrated compatibility fixes, persisted shutdown hold across Halo recovery paths, bounded Lite thumbnail cache/work, cancelled obsolete wallpaper frame saves, and packaged MIT/OFL/notices. See `HALO-3.2.8-UPSTREAM-199-REVIEW.md`. Independent identities/signer/artwork and all prior Halo features retained. Desktop test artifacts only; no publication/TV/emulator/announcement. Next package codes must exceed 234/90. Real-device performance remains unmeasured.
+
+## Local wallpaper transition review, 3.2.8 codes 233/89 (2026-11-16)
+
+User reported flashes entering/leaving screensavers and slow wallpaper restart from other apps. Added bounded transition copies, covered decoder handoffs for both online/local players, reuse for identical selected local saver videos, retention under non-video savers, and immediate resume for already-rendered local video in idle-only mode. See `HALO-3.2.8-WALLPAPER-TRANSITIONS.md`. Earlier guard/performance fixes retained. Independent identities, signer and artwork unchanged. Desktop test packages only; no TV/emulator/publication. Next package codes must exceed 233/89. Real firmware playback behavior is not verified.
+
+## Local guard activation review, 3.2.8 codes 232/88 (2026-11-16)
+
+User requested available guard permissions and local APKs. Added explicit one-click repair plus capability-aware system permission guidance; exact notification approval/connection checks; bounded boot/wake recovery and no-op counter correction. Setup progress survives Control Center disposal during external permission pages. Lite exposes only its actual default-Home capabilities. See `HALO-3.2.8-GUARD-ACTIVATION.md`. Prior performance changes retained; independent IDs/signer/artwork unchanged. No TV/emulator/publication requested. Next package codes must exceed 232/88. Verification results accompany Desktop delivery; OEM runtime behavior remains unverified.
+
+## Local performance review, 3.2.8 codes 231/87 (2026-11-16)
+
+Branch `fix/whole-app-performance-review`. User found local 230/86 slower. Reduced retained panel/layer/cache costs, deferred return probes, prepared focus art off draw, deferred/bounded texture copies, and moved Lite capacity reads off drawing. See `HALO-3.2.8-WHOLE-APP-PERFORMANCE.md`. All three release builds, 1,130 unit tests, 27 guard-script tests, signature/alignment checks passed; lint no Error/Fatal. Warnings remain. No TV/emulator/install/publication; runtime gains unmeasured. Next release codes must exceed 231/87. Independent identities/signature and startup artwork preserved.
+
+## HaloTV 3.2.7 published
+
+- PR #38 merged as `1bf965cd0d41d28bd7f8adf7b4e4fd914598a252`; latest stable tag `v3.2.7-halo`. Build/source archive revision `38d626b2c1841530d0d2be447a6dcafd259bdf20`; codes 229 / Lite 85.
+- Three Release builds and 1,111 host tests passed; Lint no Error/Fatal (warnings remain). Verified independent signer, identity, version, ZIP/alignment and dex metadata. Earlier Guard 228 TV validation still applies to the same runtime fix; this version rebuild was not installed again.
+- Production HTML/feed/version and all three APKs downloaded from both website and GitHub match local files. All six Release asset digests match local files. Current notices and historical feed unchanged; no new popup. Public checkout clean after remote tree verification.
+- Desktop artifacts and audit: `/Users/bilinggg/Desktop/HaloTV-3.2.7-正式版`, including `PUBLICATION-3.2.7.json` and publication screenshots.
+
+## Release preference and 3.2.7 preparation
+
+- Owner preference: when asked to publish to the website/repository without specifying a version, increment the latest public patch version automatically; an explicitly requested version takes precedence.
+- Owner authorized 3.2.7 publication of announcement completion and the confirmed settings ANR fix. Full code 229, Lite 85, above all 3.2.6 test packages. Preserve independent IDs, signer and artwork. Publish three APKs, matching source/checksums, docs and independent update feed. Do not send a new announcement or change existing announcement content.
+
+## 2026-11-16 · Confirmed settings ANR: retained PIN re-enters launch (228 / 84)
+
+- Owner authorized connecting to their installed TV for the remaining settings freeze. Read-only logcat/dropbox evidence from the affected TCL MT5879 shows repeated `MainActivity.launch -> HomeViewModel.whenUnlocked -> launch` on the main thread, with v227 input-dispatch ANRs. Original stock-home entry was already working.
+- Root cause: launch checked `AerialSettings.locked` even with family mode off; `whenUnlocked` immediately executes its callback when `Restricted.active` is false, recursively entering launch. Gate the tile PIN check on `Restricted.active`, consistent with the callback's policy. Lite's tile check now also treats a retained PIN as dormant outside active family mode. PIN storage is not cleared.
+- Added a real launch regression with a saved PIN and family mode disabled; asserts system Settings starts and the PIN remains stored. Guard tests passed. All three Release APKs built and identity/signature/ZIP/alignment/dex metadata validated; Standard test result is recorded with the desktop artifacts.
+- Installed Guard v228 through the TV's own multi-screen confirmation (ADB installer rejected verification); compiled to `speed`. Actual application-grid Settings tile opened TCL settings, then returned to the same HaloTV process without a new ANR/restart during verification. Preserved user data and system configuration. Logs/screenshots remain local under the sibling `halo326-settings-tv-audit` folder, not release content.
+- Three desktop packages: visible 3.2.6, Standard/Guard 228, Lite 84. Future public builds must exceed these codes. No website/repository publication or new announcement.
+
+## 2026-11-16 · Announcement completion and system-tile launch hardening (local 227 / 83)
+
+- Owner requested completed notices disappear from Control Center. `latest()` now returns only unread actionable revisions; both UI implementations hide the entry after acknowledgment and retain snoozed notices. A revised notice or another unread notice can still appear. Persistent read history survives restart/feed refresh.
+- Full tile launch now includes firmware probes, system-route selection and stock-home guard calls inside its recovery boundary. Recognized stock-home tiles use the direct/guard route without tile animation, even while the guard is unbound. Settings launches omit tile animation options; ordinary-app animation setup can fail safely. HOME Binder failure falls back to the direct component; settings-app resolution tolerates vendor PackageManager errors. Lite settings selection is inside its launch recovery boundary too.
+- No connected ADB devices were present. No emulator/TV was operated, no crash trace from the affected firmware was available. These are code-confirmed uncaught failure paths and defensive fixes, not a reproduced root cause for every report; real-device feedback/logs are still needed to confirm resolution.
+- Local 3.2.6 test codes 227 / Lite 83; future public builds must exceed them. Independent IDs, signer and artwork unchanged. Do not publish this local build or send a new announcement without an owner request.
+
+## 2026-11-16 · HaloTV 3.2.6 published
+
+- PR #37 merged as `23a6ee20f00753a59f8e2c5f3036a8322c442c46`; stable Release `v3.2.6-halo` is latest. Application source/archive revision: `aced12dd39446154a7c7366c70303090f78fee79`.
+- All three Release builds, 1,105 host tests and Lint passed (no Error/Fatal; warnings remain). Independent signatures, package IDs, version codes 226/82, ZIP, alignment and dex metadata verified. No TV/emulator operation.
+- Production website, independent feed and version file match the prepared files. Downloaded all three APKs from both website and GitHub and confirmed SHA-256. Six Release asset digests match local artifacts. Existing announcement JSON and historical stable feed are unchanged.
+- Desktop delivery and verification evidence: `/Users/bilinggg/Desktop/HaloTV-3.2.6-正式版`, including `PUBLICATION-3.2.6.json`.
+
+## 2026-11-16 · HaloTV 3.2.6 release preparation
+
+- Owner authorized GitHub and website publication of the compact Dock correction. Standard/Guard 3.2.6 code 226; Lite 3.2.6 code 82, above the 225/81 local test packages.
+- Publish all three packages, matching full source and checksums, documentation and independent update feed. Retain the existing independent IDs, signing key and artwork. No new announcement; preserve current announcement and historical feed files.
+- No TV or emulator operations. Validate release builds, existing tests, signatures and the actual published downloads.
+
+## 2026-11-16 · Local 3.2.5 compact Dock correction (225 / 81)
+
+- Owner reported excess empty space below Dock icons in selected-only app-name mode, with a screenshot of the older compact layout as reference.
+- Restore the original `showAllNames && homePlate` caption-band condition in both Compose HomeScreen and Lite HomeView. Selected-only no longer reserves 28 canvas units below the Dock or the wider two-row caption pitch; captions retain the original outside-plate/grid behavior. All-names and large-title modes remain separate.
+- Visible version stays 3.2.5; Standard/Guard code 225 and Lite 81 allow covering the public 224/80 packages. Future public updates must exceed these test codes. Independent identity, signer and artwork remain unchanged.
+- Local desktop test delivery only. No repository/website update, announcement, TV or emulator operation is requested for this correction.
+
+## 2026-11-16 · HaloTV 3.2.5 published
+
+- Public PR #36 merged as `4db5a2ef0c7c98bf9fdf82ab2a86f768f9bef025`; tag `v3.2.5-halo` points to that commit and is the latest stable release.
+- Application source used for the build/archive: `c439da6544c83b2d47daabc2f272a7143ac9e337`. Standard/Guard 224, Lite 80. All three Release builds, 1,105 host tests and Lint completed; no Error/Fatal, warnings remain. No TV/emulator run.
+- Six Release assets were verified against local SHA-256. All three APKs were downloaded independently from both the production website and GitHub and matched local bytes.
+- Website HTML, independent feed and version file match the prepared files. Existing announcement JSON and historical stable feed remain byte-identical. No new popup was sent.
+- Desktop delivery: `/Users/bilinggg/Desktop/HaloTV-3.2.5-正式版`; `PUBLICATION-3.2.5.json` contains publication and download verification evidence.
+
+## 2026-11-16 · HaloTV 3.2.5 release preparation
+
+- Owner authorized public release to GitHub and the website. Full version 3.2.5 / 224; Lite 3.2.5 / 80, above the local 223 / 79 test builds.
+- Includes the announcement reader, update recovery, system Settings tile routing, and three app-name styles described below. Independent IDs, signer, artwork, and user data remain unchanged.
+- Publish matching APKs, full source archive, checksums and verification scope; update the independent feed. Keep historical bridge feed and announcement content unchanged.
+- No TV/emulator operation requested; host tests and APK validation do not establish vendor firmware behavior.
+
+## 2026-11-16 · 3.2.4 local test fixes (223 / Lite 79)
+
+- Working branch: `fix/announcement-remote-reading`. Independent package IDs and signing key unchanged; no logo/startup changes. No TV or emulator operations (owner request).
+- Announcement reader: focus starts in the text, remote Up/Down advances overlapping pages, Right enters actions, Up returns to text. Local full-screen reading and progress work without a browser. Lite uses a bounded, cached StaticLayout body.
+- Update downloads: website remains the first APK source even when metadata came from GitHub; bounded retries include early failures and responses without strong ETags. Such partials restart; only matching strong validators permit resuming. Slow advancing transfers are retained. Lite retries transfers with identity encoding and a longer read timeout.
+- Installer: retain verified downloads, defer installation while Home is away, add an explicit system-installer compatibility action in full builds. Revalidate the staged package without downloading it again; both installer intents carry read-only URI grants and ClipData where supported. Existing package/edition/signature/version checks remain.
+- App-list system Settings tiles now use the Control Center route when available (including OEM services), retaining parental checks and ordinary stock-home launches. Preserve a launchable original tile if the replacement route is absent.
+- App names: `app_name_style` 0 = focused caption below icon, 1 = all captions, 2 = large left-aligned title above Dock. TV and phone controls agree; old `show_all_names` and ADB setting remain supported. Elders mode still forces all names. Caption modes reserve room on the Dock.
+- Public APK release remains 3.2.4 / 222 / 78. These local test builds use 223 / 79; any later public release must exceed them for test users to update.
+- Announcement content correction only was published in public PR #31 (revision 2): navigation hint and no external-browser details action. Native reader changes require these new APKs; remote JSON cannot change installed UI code.
+- Verification and package audit are recorded with the Desktop test packages. Firmware-specific installer/settings behavior still needs owner testing; do not claim all TVs are verified.
+
 # 交接说明
+
+## 2026-11-16 · Local 3.2.8 performance and orphan system registrations
+
+- Owner requested local packages based on TCL 3.2.7 measurements; codes 230 / Lite 86, independent IDs/signer/artwork retained. Do not publish or operate the TV/emulator for this delivery.
+- Retained Control Center composition/layer, byte-bounded reusable artwork caches and off-main start recovery; online wallpaper stopped-player reuse, wallpaper keyframe seeks, readiness/timeout safeguards and bounded background retention. Lite shares cache improvements.
+- Orphan system registration repair requires unlocked storage and WSS. Preserve installed Aerial and other services; do not inherit grants. Correct stale dream ownership, malformed same-package classes, and an orphan vendor boot entry only with independent guard consent. Respect System/Never/opt-out.
+- Details and verification limits: `docs/HALO-3.2.8-PERFORMANCE-REGISTRATIONS.md`. Desktop `HaloTV-3.2.8-性能与系统注册修复测试` contains packages, notes, hashes and verification. Firmware performance gains are not yet measured.
+
+## 2026-11-15 HaloTV 3.2.4 official independent release
+
+The active code now targets only the existing HaloTV independent identities and release signer. Legacy bridge builds and cross-package configuration / guard migration are removed. Upstream runtime baseline: Aerial v1.98; upstream Lite remains 1.30. Official version codes: full 222, Lite 78; these are newer than the public test (221 / 77). See `HALO-3.2.4-INDEPENDENT-BASE.md` for scope and verification. Historical sections below describe older releases and must not be used to recreate legacy signing or migration behavior. Keep existing independent app data and artwork. Per user instruction, publish 3.2.4 as the official latest release and update the independent online feed. Do not operate the TV or emulator or change the startup artwork.
+
+## 2026-11-15 Lite source-picker compatibility follow-up
+
+- Lite 3.2.2 code 75 includes the preceding quiz repairs plus Sharp/MStar input
+  entry matching and a parental-gated system-settings fallback. See
+  `HALO_LITE_INPUT_COMPATIBILITY.md` for scope, evidence and verification limits.
+- Standard/Guard retain test code 219. The affected Sharp model is unknown;
+  no claim of real-TV validation, no emulator/TV operation or public release.
+
+## 2026-11-15 local quiz input repair
+
+- Independent 3.2.2 test codes: Standard/Guard 219, Lite 74. Reserve these codes
+  when preparing the next public update; this task does not publish anything.
+- See `HALO_QUIZ_INPUT_REVIEW.md` for focus/PIN ownership, remote press pairing,
+  overlay keypad and Lite rendering changes and test scope.
+- User requested local APK delivery, no emulator/TV operations or artwork changes.
 
 写给接手 Aerial 的人或 AI。先读这份，再读 [ARCHITECTURE.md](ARCHITECTURE.md) 和 [devices/](devices/)。
 
@@ -361,7 +614,7 @@ adb -s $XIAOMI_TV:5555 shell "dumpsys package dexopt | grep -A2 'app.orchard.tv\
 - **帧率**：`adb shell dumpsys gfxinfo app.orchard.tv reset`，操作几下，再执行 `... framestats`，看 `SwapBuffers→GpuCompleted` 这一段的耗时。
 - **守护状态**：`dumpsys accessibility | grep -E "label=(Aerial|app.orchard.tv)"`（有输出就是已绑定；小米 ASTP0 上标签显示成类名）；日志 tag 是 `AerialGuard`。
 - **壁纸**：日志 tag 是 `AerialWallpaper`。
-- **logcat 看不到 App 日志的电视**（创维 7T631_T60）：`adb shell dumpsys activity app.orchard.tv/.MainActivity` 末尾打印 `DiagLog` 最近的记录（启动、显示模式、绘制、按键、焦点、屏保、加载耗时）；诊断版（`./gradlew -Pdiag ...`，版本名带 `-diag`）或 `ConfigReceiver --ez diag true` 之后还写进 `/sdcard/Android/data/app.orchard.tv/files/aerial-diag.log`，可以 `adb pull`。试验开关（下次启动生效）：`--ez mode_switch false` 不切刷新率（诊断版默认就不切），`--ez soft_layer true` 用软件绘制首页。
+- **logcat 看不到 App 日志的电视**（创维 7T631_T60）：`adb shell dumpsys activity app.orchard.tv/.MainActivity` 末尾打印 `DiagLog` 最近的记录（启动、显示模式、绘制、按键、焦点、屏保、加载耗时）；诊断版（`./gradlew -Pdiag ...`，版本名带 `-diag`）或 `ConfigReceiver --ez diag true` 之后还写进 `/sdcard/Android/data/app.orchard.tv/files/aerial-diag.log`，可以 `adb pull`。试验开关 `--ez soft_layer true` 用软件绘制首页，下次启动生效。
 - **机型适配信息**：`TV=<ip> tools/report.sh`（只读）生成可以贴进 issue 的 `aerial-report-<机型>.md`，macOS 上顺便复制到剪贴板；用户也可以在手机页最下面「反馈问题」里复制。issue 表单是 `.github/ISSUE_TEMPLATE/device.yml`。内容和隐私边界见 ARCHITECTURE.md「诊断报告」。
 - **测应用内升级**：`ConfigReceiver --ez check_update true` 立刻检查；`--ez update_test true` 让「下载并安装」用推到 `Android/data/app.orchard.tv/files/update-test.apk` 的包（测完删掉这个文件）。见 ARCHITECTURE.md「升级」。
 - **手机配置页**：令牌不写日志，从电视截图里识别二维码即可：`swift tools/qr-from-screenshot.swift shot.png`。
@@ -435,3 +688,51 @@ plutil -convert json -o en.json TVIdleScreenStrings.bundle/en.lproj/Localizable.
 Based on public 3.0.3 (183), formal Guard and Standard only. Manual cleanup follows the 2.1.4 installed-user-app request model, retaining per-package service/foreground exclusions. Global music/uncertain-transport guard applies only to idle automation. Local video parks ExoPlayer with stop() to release decoder/buffer while retaining playlist; idempotent repeated leave/ON_STOP avoids duplicate software frame extraction. Library-ID checks prevent resuming an outdated local playlist after phone add/delete. New native WallpaperReturnShield covers empty video planes until the submitted first frame is committed, for both local and online wallpaper. Separate screensaver-frame handoff remains authoritative. MainActivity onPause / Home-bounce logic is unchanged to avoid stopping a retained Home surface on firmware Home bounces.
 
 Version name remains 3.0.3, code 184; same package/signature. 284 tests per formal variant, including early first-frame/window-visibility ordering. Tests which bind PhoneServer.PORT must run serially across flavors (--max-workers=1); a concurrent run can fail due to the shared test port. User authorized desktop artifacts and Guard installation only, no repository/site publication. Desktop folder: HaloTV-3.0.3-动态返回与清理修复测试. Raw personal TV captures/logs are outside source under ../halo-303-return-cleaner-audit; do not publish them. Next public build must use an internal code greater than 184 if this test has been distributed.
+
+
+## HaloTV 3.0.5 recovery test (2026-11-12; local only)
+
+Source baseline: HaloTV 3.0.5 (187 / Lite 43). Local test codes: full 188, Lite 44;
+public versionName stays 3.0.5. Do not publish without the owner's test result.
+Compared Desktop Aerial 1.95 / 135 and official tag v1.95. HomeGuardService retains
+Halo quiz/power/mute integration but matches upstream's filterHomeAlways handling
+when already the default Home. GuardSetup rebind restores lastRevivedAt, retains the
+atomic delayed rebind and checks that the system kept the component. Other services
+and guard_off_in_standby are preserved; no new polling or permission auto-grants.
+
+Updates carries the upstream 1.95 short-lived confirmation-page fallback and its
+Cancel regression test. A verified, explicitly requested update records UpdateReturn
+before installation. Actual replacement (higher code) returns Home once; failed or
+cancelled installs do not, nor does automatic download. Older full releases' installer
+marker is accepted only when PackageManager confirms a replacement after that marker.
+BootOpen records update handling with opened_target=false, so it suppresses the boot
+app/input without falsely telling HomeGuard that a just-opened target was covered.
+Do not remove that distinction or HomeGuard can reopen the old input again.
+Lite has a native equivalent and a MY_PACKAGE_REPLACED receiver, retaining API 14 and
+no new Home accessibility service. Build/signature unchanged. No TV or emulator operated.
+
+Regression tests cover installer death vs Cancel, stalled rebind / another service
+added during the gap, ungranted permissions, update return once, expiry / boot change /
+screen-off / legacy update marker, and later real boot-target opening. See local build
+logs and Desktop test-folder report for validation and artifacts. Signing files stay local.
+
+
+## 2026-11-13 local focus / seconds UI preview (not published)
+
+- Working source: `work/halo-306-ui-preview`, based on `work/halo-306-release`.
+- Visible version remains 3.0.6; internal full 190, Lite 46; signing unchanged.
+- Added independent `classic_glass_slide` style from 2.1.4. Existing `liquid_slide` unchanged. Lite uses native property animation and a small drawn overlay.
+- Added persisted `flip_clock_seconds_style` (0 numeric / 1 blinking colon); the existing seconds switch still gates visibility and ticking. TV and phone settings are in sync.
+- Selected-only shelf app name now appears once above the Dock, aligned to its outer left edge; all-name/grid modes remain separate.
+- GitHub / website / Quark addresses added to both About entry points and phone About.
+- Build and 722 tests passed; Lite lint has no errors. No TV/emulator interaction, installation, publication or announcement. Desktop outputs: `HaloTV-3.0.6-焦点与时钟测试版`.
+
+
+### 2026-11-13 selected-name alignment follow-up
+
+User requested the selected app name align to the first icon, not the Dock outer edge. Full HomeScreen now uses metrics.margin, Lite uses MARGIN; both labels increased from 25 to 28. No other appearance changes. Release rebuild and signature/version verification passed. Internal codes full 191 / Lite 47, visible version still 3.0.6. Desktop test APKs replaced in the same preview folder; no installation or publication. The previous complete test run was 722 tests; this typography-only follow-up rebuilt all three Release variants without running the full suite again.
+
+
+## 2026-11-13 HaloTV 3.1 local preview
+
+Source: `work/halo-31-preview`, cloned from `work/halo-306-ui-preview` after label alignment. The Control Center About dialog no longer scrolls: it measures its full text against actual window dimensions once, fits body typography, and reduces right-column card padding and spacing. All five source/notice/link paragraphs remain intact. Lite About uses compact cards and fits text before first drawing, with a five-language native layout regression test. Shared welcome reads BuildConfig.VERSION_NAME so a fresh 3.1 installation does not show a 3.0 heading; completion flag unchanged. Version name 3.1 for all variants; full internal 192 / Lite 48; signing unchanged. Three Release builds, 723 tests, signature/version checks passed; Lite lint no errors. Desktop: `HaloTV-3.1-测试版`. No TV/emulator interaction or publication.

@@ -88,6 +88,7 @@ object Diagnostics {
             .forEach { key -> prop(key)?.takeIf { it.isNotEmpty() }?.let { appendLine("  $key = $it") } }
         appendLine("Screen      ${screen(context)}")
         appendLine("Memory      ${memory(context)}")
+        appendLine("Output      ${OutputDevice.describe(context)}")
         val network = SystemProbe.network(context)
         val validated = if (Build.VERSION.SDK_INT >= 23) runCatching {
             val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as android.net.ConnectivityManager
@@ -102,6 +103,11 @@ object Diagnostics {
         val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
         val resolved = pm.resolveActivity(homeIntent, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo
         appendLine("Resolves to ${resolved?.let { "${it.packageName}/${it.name}" } ?: "-"}  (${SystemProbe.homeStatus(context)})")
+        resolved?.let {
+            appendLine("  resolved exported=${it.exported} enabled=${it.enabled && it.applicationInfo.enabled}" +
+                " permission=${it.permission ?: "none"}" +
+                " permitted=${it.permission?.let { p -> granted(context, p) } ?: true}")
+        }
         runCatching { pm.queryIntentActivities(homeIntent, 0) }.getOrDefault(emptyList()).forEach {
             appendLine("  candidate ${it.activityInfo.packageName}/${it.activityInfo.name} priority=${it.priority}")
         }
@@ -112,7 +118,9 @@ object Diagnostics {
         appendLine("**Takeover**")
         appendLine("```")
         val accessibility = secure(context, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
-        appendLine("Home Guard  enabled=${accessibility?.contains("${context.packageName}/") == true} running=${HomeGuardService.isRunning}")
+        val guardHealth = app.orchard.tv.guard.GuardHealth.read(context)
+        appendLine("Home Guard  configured=${guardHealth.configured} enabled=${guardHealth.enabled} running=${guardHealth.running}")
+        appendLine("  recovery secure=${guardHealth.secureSettingsGranted} restricted_blocked=${guardHealth.restrictedSettingsBlocked ?: "unknown"} other_guards=${guardHealth.otherGuardPackages.joinToString().ifEmpty { "none" }}")
         appendLine("  accessibility services: ${accessibility ?: "-"}")
         appendLine("Revival     notification listener allowed=${NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)}, revivals in 10 min=${GuardSetup.revivedOften(context).let { if (it) "3 or more" else "fewer than 3" }}")
         appendLine("Grants      WRITE_SECURE_SETTINGS=${granted(context, Manifest.permission.WRITE_SECURE_SETTINGS)}" +
@@ -122,18 +130,24 @@ object Diagnostics {
             " location=${granted(context, Manifest.permission.ACCESS_FINE_LOCATION)}" +
             " usage=${HomeGuardService.usageStatsAllowed(context)}" + restrictedSettings(context))
         appendLine("ADB         adb_enabled=${global(context, Settings.Global.ADB_ENABLED)} keep_adb=${GuardSetup.keepAdb(context)} guard_off_in_standby=${GuardSetup.offInStandby(context)}")
+        appendLine("            keep_adb_check=${GuardSetup.adbRecoveryState}")
         appendLine("Screensaver enabled=${secure(context, "screensaver_enabled")} components=${secure(context, "screensaver_components")} Aerial's=${Wallpapers.screensaver}")
         appendLine("Sounds      sound_effects_enabled=${system(context, Settings.System.SOUND_EFFECTS_ENABLED)}")
         appendLine("Effects     ${AerialSettings.effects.key}, lite=${AerialSettings.lite}; ${DeviceClass.describe(context)}")
         appendLine("Compiled    ${compiled(context)}")
         appendLine("Frames      ${FrameStats.summary()}")
         appendLine("Settings    focus=${AerialSettings.focusStyle.key} one_row=${AerialSettings.oneRowHome} columns=${AerialSettings.homeColumns} peek=${AerialSettings.peekNextRow} names=${AerialSettings.showAllNames} plate=${AerialSettings.homePlate} boot_source=${AerialSettings.bootSource != null} boot_app=${AerialSettings.bootApp}")
-        appendLine("            clock_hours=${AerialSettings.clockHours.key} home_locked=${AerialSettings.homeLocked} photo_minutes=${AerialSettings.photoMinutes} cec_switch=${AerialSettings.cecSwitch} hidden_sources=${AerialSettings.hiddenSources.size} volume_fixed=${OutputDevice.volumeFixed(context)} playback_device=${OutputDevice.isPlaybackDevice()}")
+        appendLine("            clock_hours=${AerialSettings.clockHours.key} home_locked=${AerialSettings.homeLocked} photo_minutes=${AerialSettings.photoMinutes} cec_switch=${AerialSettings.cecSwitch} hidden_sources=${AerialSettings.hiddenSources.size} volume_external=${SystemProbe.volume(context).external}")
         runCatching { app.orchard.tv.wallpaper.AerialStream.usage(context) }.getOrNull()?.let { (used, limit) ->
             appendLine("Aerials     quality=${AerialSettings.aerialQuality.key} films=${app.orchard.tv.wallpaper.AerialSet.films(context).joinToString(",") { it.id.take(8) }} cache=${used / 1_048_576}/${limit / 1_048_576} MB")
         }
+        val aerialCapabilities = app.orchard.tv.wallpaper.AerialFormats.supported(context).joinToString(",") { it.key }
+        appendLine("Aerial capabilities  advertised=$aerialCapabilities, legacy_trial=${app.orchard.tv.wallpaper.AerialFormats.legacyTrialStatus(context)}")
+        appendLine("Aerial playback ${app.orchard.tv.wallpaper.AerialPlayback.snapshot()}")
+        appendLine("Kids watch      ${app.orchard.tv.guard.KidsWatch.diagnosticState()}")
         appendLine("            wallpaper=${app.orchard.tv.wallpaper.Wallpapers.selectedId.substringBefore('/')} always_moves=${AerialSettings.wallpaperAlwaysMoves} quality=${AerialSettings.aerialQuality.key} weather=${AerialSettings.showWeather} saver_clock=${AerialSettings.screensaverClock}")
         runCatching { app.orchard.tv.ui.home.filmGlassReport(context) }.getOrNull()?.let { appendLine("            film glass $it") }
+        runCatching { app.orchard.tv.weather.Weather.diagnostics() }.getOrNull()?.let { appendLine("Weather     $it") }
         appendLine("```")
 
         appendLine()

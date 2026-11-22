@@ -20,7 +20,7 @@ class HaloInfoSheet(context: Context, close: () -> Unit, support: Boolean) : She
     init {
         setBackgroundColor(0xFF1D2A3A.toInt())
         if (Build.VERSION.SDK_INT >= 29) isForceDarkAllowed = false
-        val content = LinearLayout(context).apply {
+        val content = (if (support) LinearLayout(context) else AboutColumn(context)).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(Ui.pxi(14f), Ui.pxi(12f), Ui.pxi(14f), Ui.pxi(18f))
         }
@@ -72,10 +72,11 @@ class HaloInfoSheet(context: Context, close: () -> Unit, support: Boolean) : She
             content.addView(contacts, LinearLayout.LayoutParams(-1, -2).apply { topMargin = Ui.pxi(10f) })
             row(*controls.toTypedArray())
         } else {
-            addText(content, R.string.halo_notice_title, 27f, weight = 600)
-            listOf(R.string.halo_notice_body, R.string.halo_free_notice, R.string.bing_source_notice).forEach { id ->
-                val card = ReadingCard(context, context.getString(id))
-                content.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = Ui.pxi(12f) }); row(card)
+            addText(content, R.string.halo_notice_title, 24f, weight = 600)
+            listOf(R.string.halo_notice_body, R.string.halo_free_notice, R.string.bing_source_notice, R.string.halo_project_links_body).forEach { id ->
+                val card = ReadingCard(context, context.getString(id), padding = 9f)
+                (content as AboutColumn).paragraphs.add(card)
+                content.addView(card, LinearLayout.LayoutParams(-1, -2).apply { topMargin = Ui.pxi(8f) }); row(card)
             }
         }
         val back = Chip(context, context.getString(R.string.halo_notice_close), { false }).apply { action = close }
@@ -100,6 +101,28 @@ class HaloInfoSheet(context: Context, close: () -> Unit, support: Boolean) : She
         column.addView(back, LinearLayout.LayoutParams(-2, -2).apply { topMargin = Ui.pxi(14f) })
         sheet.addView(column, FrameLayout.LayoutParams(-1, -1)); sheet.row(back); sheet.focusFirst()
         detail = sheet; addView(sheet, FrameLayout.LayoutParams(-1, -1))
+    }
+}
+
+/** The native About page fits its complete text before first drawing, without a scroll jump. */
+private class AboutColumn(context: Context) : LinearLayout(context) {
+    val paragraphs = ArrayList<ReadingCard>()
+    private var fittedWidth = -1
+    private var fittedHeight = -1
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val width = MeasureSpec.getSize(widthMeasureSpec)
+        val available = (Ui.screenH - Ui.pxi(40f)).coerceAtLeast(1)
+        if (width != fittedWidth || available != fittedHeight) {
+            for (half in 26 downTo 18) {
+                paragraphs.forEach { it.fitFont(half / 2f) }
+                super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED))
+                if (measuredHeight <= available) break
+            }
+            fittedWidth = width
+            fittedHeight = available
+        }
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
     }
 }
 

@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
+import java.io.File
 
 // Aerial Lite: Home for Android 4.0-4.4 TVs, which the Compose app cannot run on (Compose needs
 // Android 5.0). Plain Views, no AndroidX, so the APK stays small and Dalvik has little to load.
@@ -9,35 +10,44 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+check(!project.hasProperty("haloLegacyBridge")) { "Legacy bridge builds are no longer supported." }
+
 android {
     namespace = "app.orchard.tv.lite"
     compileSdk = 36
 
     defaultConfig {
         // Its own package: the 4.x TVs never get the full app, and the two update separately.
-        applicationId = "app.halotv.lite"
+        applicationId = "app.halotv.launcher.lite"
         // Android 4.0.
         minSdk = 14
         targetSdk = 34
-        versionCode = 43
-        versionName = "3.0.5"
+        versionCode = 125
+        versionName = "3.5.2"
+        buildConfigField("String", "HALO_CERT", "\"ed28a19770dac5f926e7adf27224f05dd07d1a6dd54af89fc663bbcf102c41dd\"")
+        buildConfigField("String", "HALO_EDITION", "\"lite\"")
+        manifestPlaceholders["haloUpdateVariant"] = "lite"
+
     }
 
-    // Signed with the same key as Aerial (see app/build.gradle.kts and docs/HANDOFF.md).
-    val signingProps = rootProject.file("local/signing.properties")
+    // Signed with Halo TV’s selected distribution key (see app/build.gradle.kts and docs/HANDOFF.md).
+    val signingProps = rootProject.file("local/independent-signing.properties")
     signingConfigs {
         if (signingProps.exists()) {
             val p = Properties().apply { signingProps.inputStream().use { load(it) } }
             create("aerial") {
                 enableV1Signing = true
                 enableV2Signing = true
-                storeFile = rootProject.file("local/" + p.getProperty("storeFile"))
+                storeFile = p.getProperty("storeFile").let { if (File(it).isAbsolute) File(it) else rootProject.file("local/" + it) }
                 storePassword = p.getProperty("storePassword")
                 keyAlias = p.getProperty("keyAlias")
                 keyPassword = p.getProperty("keyPassword")
             }
         }
     }
+
+    sourceSets.getByName("release").res.srcDir("src/independent/res")
+    sourceSets.getByName("debug").res.srcDir("src/independent/res")
 
     buildTypes {
         release {
@@ -78,7 +88,7 @@ val copyLiteAssets by tasks.registering(Sync::class) {
     from(rootProject.file("app/src/main/res/font/inter.ttf"))
     from(rootProject.file("app/src/main/res/font/outfit.ttf"))
     from(rootProject.file("app/src/main/assets/cities-cn.tsv"))
-    from(rootProject.file("app/src/main/assets/welcome_horizon.jpg"))
+    from(rootProject.file("app/src/main/assets/welcome")) { into("welcome") }
     // Per-model corrections, read by DeviceProfile (MitvPanel and Brightness ask it).
     from(rootProject.file("app/src/main/assets/devices.json"))
     // The phone page, the full app's own.
@@ -86,16 +96,22 @@ val copyLiteAssets by tasks.registering(Sync::class) {
     into(layout.projectDirectory.dir("lite-assets"))
 }
 val sharedSources = layout.buildDirectory.dir("generated/shared")
-val copySources by tasks.registering(Copy::class) {
+val copySources by tasks.registering(Sync::class) {
+    from(rootProject.file("app/src/main/java/app/orchard/tv/settings/DockSize.kt"))
+    from(rootProject.file("app/src/main/java/app/orchard/tv/update/ReleaseIdentity.kt"))
+    from(rootProject.file("app/src/main/java/app/orchard/tv/feedback/GithubFeedback.kt"))
+    from(rootProject.file("app/src/main/java/app/orchard/tv/feedback/FeedbackView.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/announcements/AnnouncementPolicy.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/announcements/AnnouncementFeed.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/announcements/Announcements.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/ui/home/QuizBank.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/ui/home/HaloWelcomeView.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/wallpaper/PhoneOnlineLibrary.kt"))
+    from(rootProject.file("app/src/main/java/app/orchard/tv/wallpaper/OnlineWallpaperRequests.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/ui/theme/GlyphPaths.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/apps/TileRecipes.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/weather/Cities.kt"))
+    from(rootProject.file("app/src/main/java/app/orchard/tv/weather/ForecastRequest.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/apps/LayoutStore.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/apps/AppNames.kt"))
     from(rootProject.file("app/src/main/java/app/orchard/tv/apps/CustomIcons.kt"))
@@ -127,9 +143,9 @@ val copySources by tasks.registering(Copy::class) {
 android.sourceSets["main"].java.srcDir(sharedSources)
 // The full app's wording in all five languages, so menus and Control Center say the same thing.
 val sharedRes = layout.buildDirectory.dir("generated/sharedRes")
-val copyStrings by tasks.registering(Copy::class) {
+val copyStrings by tasks.registering(Sync::class) {
     from(rootProject.file("app/src/main/res")) {
-        include("values*/strings.xml", "values*/halo_update_media.xml", "values*/halo_announcements.xml")
+        include("values*/strings.xml", "values*/quiz_options.xml", "values*/halo_update_media.xml", "values*/halo_announcements.xml", "values*/halo_feedback.xml", "values*/halo_welcome.xml")
         rename("strings.xml", "app_strings.xml")
     }
     into(sharedRes)

@@ -30,7 +30,7 @@ class AnnouncementsStateTest {
         prefs.edit().putString("feed", feed()).commit(); startProcess()
         Announcements.acknowledge(Announcements.popup()!!); startProcess()
         assertNull(Announcements.popup()); assertNull(Announcements.unread())
-        assertNotNull(Announcements.latest())
+        assertNull(Announcements.latest())
     }
     @Test fun revisedNoticeCanAppearAfterTheOldRevisionWasRead() {
         prefs.edit().putString("feed", feed()).commit(); startProcess()
@@ -42,7 +42,22 @@ class AnnouncementsStateTest {
         prefs.edit().putString("feed", feed()).commit(); startProcess()
         val n = Announcements.popup()!!; Announcements.later(n); startProcess()
         assertNull(Announcements.popup()); assertNotNull(Announcements.unread())
+        assertEquals(n.key, Announcements.latest()?.key)
         assertTrue(prefs.getLong("later:${n.key}", 0) > System.currentTimeMillis())
+    }
+    @Test fun completingOneNoticeShowsTheNextAndUnchangedFeedCannotRestoreIt() {
+        val notices = listOf(
+            RemoteAnnouncement("first", 1, "First", "Body"),
+            RemoteAnnouncement("second", 1, "Second", "Body"),
+        )
+        Announcements.acceptFeed("", notices)
+        Announcements.acknowledge(notices.first())
+        assertEquals(notices.last().key, Announcements.latest()?.key)
+        Announcements.acknowledge(notices.last())
+        Announcements.acceptFeed("", notices.toList())
+        assertNull(Announcements.latest())
+        assertNull(Announcements.unread())
+        assertNull(Announcements.popup())
     }
     @Test fun aNoticeAppearsAtMostOncePerProcessWithoutAResponse() {
         prefs.edit().putString("feed", feed()).commit(); startProcess()
@@ -86,7 +101,7 @@ class AnnouncementsStateTest {
             Announcements.acceptFeed(feed("info"), list.toList())
             assertEquals(1, changes)
             Announcements.acknowledge(Announcements.latest()!!)
-            assertNotNull(Announcements.latest())
+            assertNull(Announcements.latest())
             Announcements.acceptFeed("", emptyList())
             assertEquals(3, changes)
             assertNull(Announcements.latest())

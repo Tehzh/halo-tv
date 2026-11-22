@@ -122,6 +122,8 @@ class KidsSetup(
             val next = Kids.rules.copy(endMinute = it)
             Kids.chooseRules(if (next.valid) next else next.copy(startMinute = KidsTime.DEFAULT_START))
         }
+        col.addView(context.label(string(R.string.quiz_settings), 15f, 600),
+            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = Ui.pxi(16f); leftMargin = Ui.pxi(4f) })
         choices(R.string.quiz_interval, null,
             (BREAKS + -1).map { it to if (it == -1) string(R.string.halo_kids_custom) else if (it == 0) string(R.string.st_off) else it.toString() }, if (rules.breakEvery in BREAKS) rules.breakEvery else -1) {
             if (it == -1) { customKidsTime(context, string(R.string.kids_break), rules.breakEvery, false) { value -> Kids.chooseRules(Kids.rules.copy(breakEvery = value)); rebuild() }; return@choices }
@@ -133,6 +135,14 @@ class KidsSetup(
             if (it == -1) customKidsTime(context, string(R.string.quiz_reward_max), Kids.quizRewardMax, false) { value ->
                 Kids.chooseQuizRewardMax(value); rebuild()
             } else Kids.chooseQuizRewardMax(it)
+        }
+        listOf(listOf(0 to R.string.quiz_stage_any, 1 to R.string.quiz_stage_preschool, 2 to R.string.quiz_stage_12),
+            listOf(3 to R.string.quiz_stage_34, 4 to R.string.quiz_stage_56)).forEach { options ->
+            choices(R.string.quiz_stage, null, options.map { it.first to string(it.second) }, Kids.quizStage) { Kids.chooseQuizStage(it) }
+        }
+        listOf(listOf(0 to R.string.quiz_subject_all, 1 to R.string.quiz_subject_math),
+            listOf(2 to R.string.quiz_subject_english, 3 to R.string.quiz_subject_poetry)).forEach { options ->
+            choices(R.string.quiz_subject, null, options.map { it.first to string(it.second) }, Kids.quizSubject) { Kids.chooseQuizSubject(it) }
         }
         } else {
             choices(R.string.kids_break, null, listOf(0, 30, 45, 60, -1).map {

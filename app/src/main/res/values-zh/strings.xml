@@ -19,10 +19,11 @@
     <string name="cc_settings">设置</string>
     <string name="cc_volume">音量</string>
     <string name="cc_muted">已静音</string>
+    <string name="cc_volume_external">由音响控制</string>
     <string name="cc_home_default">Halo TV 是默认桌面</string>
     <string name="cc_home_guarded">桌面守护已开启</string>
     <string name="cc_home_not_default">尚未设为默认桌面</string>
-    <string name="cc_setup_title">设为主屏幕</string>
+    <string name="cc_setup_title">桌面守护设置</string>
     <string name="cc_setup_body">只装了 APK 时，Halo TV 能打开，但按主页键、开机和待机后还是原来的桌面。</string>
     <string name="cc_setup_guard">打开桌面守护</string>
     <string name="cc_setup_guard_where">无障碍</string>
@@ -33,6 +34,7 @@
     <string name="cc_setup_scan_hint">手机扫码查看 Halo TV 的安装和桌面设置教程。</string>
     <string name="cc_back">返回</string>
     <string name="cc_no_inputs">这台电视没有可用的信号源</string>
+    <string name="cc_all_inputs_hidden">所有信号源都已隐藏，可在信号源设置中重新显示。</string>
     <string name="cc_native_inputs">打开电视的信号源菜单</string>
     <string name="net_ethernet">有线网络</string>
     <string name="net_wifi">Wi-Fi</string>
@@ -143,7 +145,8 @@
     <string name="st_names">App 名称</string>
     <string name="st_names_focused">只显示选中的</string>
     <string name="st_names_all">全部显示</string>
-    <string name="st_names_hint">每个 App 下面都显示名称，或者像 Apple TV 一样只显示选中的。全部显示时，第一排的名称也显示在玻璃底板里。</string>
+    <string name="st_names_hint">只显示选中：在选中的图标下方显示名称。全部显示：每个图标下方都显示名称。大标题：在 Dock 上方左侧显示选中应用的名称。</string>
+    <string name="st_names_title">大标题</string>
     <string name="ss_kind">类型</string>
     <string name="wp_weather_city">位置</string>
     <string name="st_home_standard">双排</string>
@@ -278,12 +281,7 @@
     <string name="wp_wallpaper_title">壁纸设置</string>
     <string name="wp_dynamic">动态视频壁纸</string>
     <string name="wp_dynamic_hint">扫描右侧二维码，在手机上传视频；上传完成后即可在这里选择。</string>
-    <string name="st_refresh_rate">刷新率</string>
-    <string name="st_refresh_rate_hint">只影响 Halo TV 桌面，视频应用仍按系统设置运行。不支持的刷新率会置灰；自动模式仅在 Android 12 及以上选择系统标记为无黑屏切换的最高刷新率，其他情况跟随系统。手动切换可能短暂黑屏。</string>
-    <string name="st_refresh_auto">自动</string>
-    <string name="st_refresh_30">30Hz</string>
-    <string name="st_refresh_60">60Hz</string>
-    <string name="st_refresh_120">120Hz</string>
+
     <string name="cc_about_attribution">Halo TV 基于 Aerial 开源项目二次开发，非 Aerial 官方版本。</string>
     <string name="donate_title">打赏/联系作者</string>
     <string name="donate_open">查看</string>
@@ -619,6 +617,11 @@ Aerial 原项目及其名称、代码和许可归原作者及各自权利人所�
     <string name="quiz_score">答对 %1$d / %2$d 题</string>
     <string name="quiz_back_to_questions">返回答题</string>
     <string name="halo_dock_corners">圆角样式</string>
+    <string name="halo_dock_size">Dock 与图标大小</string>
+    <string name="halo_dock_size_hint">Dock 底板与应用图标一起缩放，默认保持当前大小。</string>
+    <string name="halo_dock_size_small">小</string>
+    <string name="halo_dock_size_default">默认</string>
+    <string name="halo_dock_size_large">大</string>
     <string name="halo_dock_corners_round">大圆弧</string>
     <string name="halo_dock_corners_compact">小圆弧</string>
     <string name="quiz_parent_allowance_hint">请家长在下方选择继续观看的时长，或退出儿童模式。</string>
@@ -641,4 +644,44 @@ Aerial 原项目及其名称、代码和许可归原作者及各自权利人所�
     <string name="halo_guard_restore_missing">尚未获得自动恢复权限。可先手动开启无障碍；若待机或重启后失效，请按扫码指南通过 ADB 授权。</string>
     <string name="halo_guard_repair">重新连接桌面守护</string>
     <string name="halo_guard_restricted">应用信息：检查“允许受限设置”</string>
+    <string name="focus_classic_glass_slide">经典玻璃滑动</string>
+    <string name="flip_seconds_style">秒钟样式</string>
+    <string name="flip_seconds_numeric">数字秒钟</string>
+    <string name="flip_seconds_colon">跳动冒号</string>
+    <string name="halo_project_links_body">开源地址: https://github.com/Null9797/halo-tv\n官方网站: https://halo-tv.pages.dev/\n网盘下载: https://pan.quark.cn/s/a14e3ab2dd41</string>
+    <string name="halo_guard_global_off">守护服务已登记，但系统无障碍总开关未开启。</string>
+    <string name="halo_guard_restricted_blocked">系统限制了受限设置，请在应用信息中允许受限设置（如电视提供该选项）。</string>
+    <string name="halo_guard_other_service">检测到其他 Aerial/Halo 守护服务：%1$s。请只保留您要使用的守护，本软件不会自动停用其他服务。</string>
+    <string name="halo_guard_verify_home">服务运行不等于所有 Home 键和开机跳转均已生效。设置后请测试 Home 键和开机；部分电视还需允许厂商自启动。</string>
+    <string name="halo_reset_hint_apps">仅恢复本页设置；保留主屏幕锁定、隐藏应用和文件。</string>
+    <string name="focus_liquid_slide_hint">高亮随焦点滑向选中的应用。</string>
+    <string name="focus_classic_glass_slide_hint">玻璃高亮随焦点滑向选中的应用。</string>
+    <string name="aerial_quality_shared_hint">与航拍屏保共用；选择杜比视界时，壁纸仍使用 SDR。</string>
+
+    <!-- User-initiated guard permission setup. -->
+    <string name="halo_setup_activate">一键开启与修复守护</string>
+    <string name="halo_setup_working">正在检查与恢复…</string>
+    <string name="halo_setup_scope">自动开启恢复策略，修复已获授权的守护与通知连接；其他权限需在系统页面确认。保留其他应用及其权限。</string>
+    <string name="halo_setup_next">继续授权：%1$s</string>
+    <string name="halo_setup_review">请检查下方实际状态。未完成的权限需通过电视系统或电脑配置；授权后返回此页会重新检查。</string>
+    <string name="halo_setup_no_entry">此电视未提供可打开的权限页面，请在系统设置中查找，或使用下方电脑配置指南。</string>
+    <string name="halo_setup_allowed">已允许</string>
+    <string name="halo_setup_pending">等待授权</string>
+    <string name="halo_setup_unknown">无法读取</string>
+    <string name="halo_setup_connected">已连接</string>
+    <string name="halo_setup_waiting_bind">已允许·未连接</string>
+    <string name="halo_setup_unsupported">此系统不支持</string>
+    <string name="halo_setup_manual">需在系统确认</string>
+    <string name="halo_setup_overlay">后台拉起 / 悬浮窗</string>
+    <string name="halo_setup_usage">使用情况访问权限</string>
+    <string name="halo_setup_battery">允许后台运行 / 电池优化</string>
+    <string name="halo_setup_autostart">厂商自启动 / 关联启动</string>
+    <string name="halo_setup_vendor_hint">在系统应用管理中，允许 HaloTV 自启动、关联启动和后台运行。不同电视入口不同，打开此页面不代表已授权。</string>
+    <string name="halo_setup_listener_hint">通知使用权用于待机后的守护恢复，不读取通知内容。部分低内存系统无法连接此服务。</string>
+    <string name="halo_setup_lite_body">Lite 通过系统默认桌面接管主页，不包含完整版的桌面守护服务。请将 HaloTV Lite 设为默认桌面，并在系统中允许自启动及后台运行。</string>
+    <string name="halo_setup_app_details">打开系统应用管理</string>
+    <string name="halo_setup_secure_hint">自动修复需要先由电脑授权。仅打开恢复开关，无法获得系统安全设置权限。</string>
+    <string name="a11y_delete">删除</string>
+    <string name="aerial_quality_4k_trial">试播 4K SDR</string>
+    <string name="aerial_quality_4k_trial_hint">此设备的「自动」仍使用 1080p。可手动试播 4K SDR，失败时会回到 1080p。</string>
 </resources>

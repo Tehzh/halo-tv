@@ -27,21 +27,12 @@ internal object LiteUpdate {
 
     @Suppress("DEPRECATION")
     private fun valid(context: Context, apk: File): String {
-        val pm = context.packageManager
-        val next = pm.getPackageArchiveInfo(apk.path, PackageManager.GET_SIGNATURES) ?: return "wrong_app"
-        val current = pm.getPackageInfo(context.packageName, PackageManager.GET_SIGNATURES)
-        if (next.packageName != context.packageName) return "wrong_variant"
-        fun fingerprints(info: android.content.pm.PackageInfo) = info.signatures?.map {
-            MessageDigest.getInstance("SHA-256").digest(it.toByteArray()).joinToString("") { b -> "%02x".format(b) }
-        }?.toSet().orEmpty()
-        val incoming = fingerprints(next)
-        val installed = fingerprints(current)
-        if (incoming.isEmpty() || installed.isEmpty()) return "signature_unavailable"
-        if (incoming != installed) return "installed_signature_mismatch"
-        val newCode = if (Build.VERSION.SDK_INT >= 28) next.longVersionCode else next.versionCode.toLong()
-        val currentCode = if (Build.VERSION.SDK_INT >= 28) current.longVersionCode else current.versionCode.toLong()
-        if (newCode <= currentCode) return "not_newer"
-        if (Build.VERSION.SDK_INT >= 24 && (next.applicationInfo?.minSdkVersion ?: 0) > Build.VERSION.SDK_INT) return "unsupported"
+        val flags = PackageManager.GET_SIGNATURES or PackageManager.GET_META_DATA or
+            (if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else 0)
+        val preferred = context.packageManager.getPackageArchiveInfo(apk.path, flags) ?: return "wrong_app"
+        val next = if (ReleaseIdentity.signers(preferred).isEmpty() && Build.VERSION.SDK_INT >= 28)
+            context.packageManager.getPackageArchiveInfo(apk.path, PackageManager.GET_SIGNATURES or PackageManager.GET_META_DATA) ?: preferred else preferred
+        ReleaseIdentity.error(context, next)?.let { return it }
         return "ready"
     }
 
@@ -106,6 +97,8 @@ internal object LiteUpdate {
                 val c = Net.open(next)
                 connection = c
                 c.instanceFollowRedirects = false
+                c.readTimeout = 60_000
+                c.setRequestProperty("Accept-Encoding", "identity")
                 c.setRequestProperty("User-Agent", "HaloTV-Lite-Updater/3.0")
                 if (c.responseCode in listOf(301, 302, 303, 307, 308)) {
                     val location = c.getHeaderField("Location") ?: return "download_failed"
@@ -164,12 +157,26 @@ internal object LiteUpdate {
     fun install(context: Context): Boolean {
         if (!ready(context)) return false
         return runCatching {
+            @Suppress("DEPRECATION")
+            val target = context.packageManager.getPackageArchiveInfo(file(context).path, 0) ?: return false
+            LiteUpdateReturn.noteInstall(context, target.versionCode)
             val uri = installerUri(context)
-            context.startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
-            true
-        }.getOrDefault(false)
+            var opened = false
+            for (intent in installerIntents(uri)) {
+                if (runCatching { context.startActivity(intent) }.isSuccess) { opened = true; break }
+            }
+            if (!opened) LiteUpdateReturn.cancel(context)
+            opened
+        }.onFailure { LiteUpdateReturn.cancel(context) }.getOrDefault(false)
     }
+
+    @Suppress("DEPRECATION")
+    internal fun installerIntents(uri: Uri): List<Intent> =
+        listOf(Intent.ACTION_VIEW, Intent.ACTION_INSTALL_PACKAGE).map { action ->
+            Intent(action).setDataAndType(uri, "application/vnd.android.package-archive")
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                .apply { if (Build.VERSION.SDK_INT >= 16) clipData = android.content.ClipData.newRawUri("HaloTV update", uri) }
+        }
 
     /** Old installers parse a real file path and cannot open our private pending slot. */
     internal fun installerUri(context: Context): Uri {

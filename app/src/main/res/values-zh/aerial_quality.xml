@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aerial_quality_4k_unavailable">设备未报告兼容的 4K 解码能力。自动和 1080p 均使用 1080p 片源。</string>
+    <string name="aerial_quality_hd_uhd">与航拍屏保共用。片源支持时，自动优先使用 4K。</string>
+</resources>

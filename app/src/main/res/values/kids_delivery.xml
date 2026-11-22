@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="kids_reminder_channel">Viewing time reminder</string>
+    <string name="kids_quiz_due_hint">Time for a quiz. Return to HaloTV to continue.</string>
+    <string name="kids_limit_due_hint">Viewing time is up. Return to HaloTV to see the details.</string>
+</resources>

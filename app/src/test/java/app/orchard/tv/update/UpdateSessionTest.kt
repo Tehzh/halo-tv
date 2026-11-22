@@ -57,6 +57,7 @@ class UpdateSessionTest {
         Updates.resetInstall()
         apk.parentFile!!.mkdirs()
         apk.writeBytes(byteArrayOf(1, 2, 3))
+        shadowOf(app.packageManager).setPackageArchiveInfo(apk.path, PackageInfo().apply { packageName = app.packageName })
         // Aerial installed itself last, so from Android 12 the update may go through silently.
         if (Build.VERSION.SDK_INT >= 31) shadowOf(app.packageManager).setInstallSourceInfo(app.packageName, app.packageName, app.packageName)
         Updates.onHomeResumed()
@@ -82,7 +83,7 @@ class UpdateSessionTest {
     @Test
     fun downloadAndCommitDoNotClaimTheInstallerIsAlreadyVisible() {
         shadowOf(app.packageManager).setCanRequestPackageInstalls(true)
-        val releaseSigner = android.content.pm.Signature(javaClass.getResourceAsStream("/halo-release-cert.der")!!.use { it.readBytes() })
+        val releaseSigner = android.content.pm.Signature(javaClass.getResourceAsStream("/halo-independent-cert.der")!!.use { it.readBytes() })
         val installed = app.packageManager.getPackageInfo(app.packageName, 0)
         @Suppress("DEPRECATION")
         installed.signatures = arrayOf(releaseSigner)
@@ -91,6 +92,8 @@ class UpdateSessionTest {
             @Suppress("DEPRECATION")
             signatures = arrayOf(releaseSigner)
             packageName = app.packageName
+            applicationInfo = android.content.pm.ApplicationInfo().apply { minSdkVersion = 21; metaData = android.os.Bundle().apply { putString("app.halotv.update.variant", BuildConfig.FLAVOR) } }
+            versionName = "3.1"
             setLongVersionCode(BuildConfig.VERSION_CODE + 1L)
         })
         Updates.testApk = File(app.cacheDir, "update-test.apk").apply { writeBytes(byteArrayOf(1, 2, 3)) }
@@ -223,6 +226,36 @@ class UpdateSessionTest {
         Updates.onHomeResumed()
         assertEquals(Updates.Install.Idle, Updates.install)
         advance(180_000)
+        assertNull(shadowOf(app).nextStartedActivity)
+    }
+
+    @Test
+    fun confirmationPageThatDiesAtOnceFallsBackToInstaller() {
+        // #1482: OBE C3 Ultra's installer threw in InstallStart.onCreate; Home was back 0.3 s later.
+        val id = commit()
+        requestConfirmation(id)
+        Updates.onHomePaused()
+        advance(300)
+        Updates.onHomeResumed()
+        advance(1_499)
+        assertNotNull(installer.getSessionInfo(id))
+        assertNull(shadowOf(app).nextStartedActivity)
+        advance(1)
+        assertNull(installer.getSessionInfo(id))
+        assertInstallerOpened()
+    }
+
+    @Test
+    fun quickCancelOnConfirmationPageDoesNotOpenInstaller() {
+        val id = commit()
+        requestConfirmation(id)
+        Updates.onHomePaused()
+        advance(300)
+        Updates.onHomeResumed()
+        advance(500)
+        answer(id, PackageInstaller.STATUS_FAILURE_ABORTED)
+        advance(5_000)
+        assertEquals(Updates.Install.Idle, Updates.install)
         assertNull(shadowOf(app).nextStartedActivity)
     }
 

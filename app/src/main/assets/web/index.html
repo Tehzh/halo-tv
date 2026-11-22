@@ -134,7 +134,7 @@
     flex: 1; min-width: 0; font: inherit; font-size: 17px; color: var(--label); background: none; border: 0; outline: none; padding: 0;
   }
   .field input::placeholder { color: var(--tertiary); }
-  .field .link { font-weight: 600; }
+  .field .link { font-weight: 600; min-height: 44px; min-width: 72px; padding: 8px 12px; border-radius: 12px; background: #eaf1ff; touch-action: manipulation; }
   .kids-arrows { justify-content: space-between; }
   .kids-arrows .dots { letter-spacing: 6px; font-size: 20px; color: var(--secondary); }
   .kids-arrows .link { font-size: 22px; font-weight: 600; min-width: 36px; }
@@ -322,14 +322,27 @@ nav{display:none!important}header.halo-header{display:flex;align-items:center;ga
 .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;padding:10px 0 16px}.wp .pic{border-radius:12px}.wp .t{font-size:12px;font-weight:600}.wp .c{font-size:11px}.wp{padding:0}.wp[aria-selected=true] .pic{outline:2px solid #4f8ff5;outline-offset:2px}
 #ss{margin-top:0}.tick{flex-shrink:0}.halo-help{font-size:12px;line-height:1.65;color:#7c899c;padding-top:14px}.halo-help summary{cursor:pointer;font-weight:600}.halo-help p{font-size:12px}.halo-checks{display:grid;grid-template-columns:1fr;gap:5px;padding:6px 0}.halo-checks label{display:flex;align-items:center;gap:10px;min-height:42px;padding:8px;border-radius:10px;background:#f4f7fc;font-size:13px}.halo-checks input{width:18px;height:18px;accent-color:#2e7aff;flex-shrink:0}
 .halo-pin-form input{font-size:24px;letter-spacing:8px;width:100%;min-height:52px;background:white;border:1px solid #d5dfee;border-radius:12px;text-align:center;color:#17243c;margin:12px 0}.halo-pin-form button[type=submit]{width:100%;margin-bottom:10px}
+.halo-diagnostic-actions{margin:12px 0}
+.halo-diagnostic-actions .btn{flex:1;min-height:44px;text-align:center}
+[data-tab=diagnostics] .diag{height:clamp(220px,42vh,360px)}
+[data-tab=diagnostics] .diag[hidden],[data-tab=diagnostics] [hidden]{display:none!important}
 .halo-donation{text-align:center;padding:25px 22px}.halo-donation>.halo-icon{width:34px;height:34px;margin:0 auto}.halo-donation h2{font-size:22px}.halo-donation h3{font-size:15px;margin:20px 0 10px}.halo-payment-qr{display:block;width:100%;max-width:300px;aspect-ratio:1;object-fit:contain;user-select:auto;-webkit-user-select:auto;margin:0 auto;border-radius:0}.halo-donation .halo-action{color:#fff;display:flex;width:100%;margin-top:18px}
 .halo-inline{display:flex;align-items:center;flex-wrap:wrap;gap:9px;padding:12px 0;font-size:13px}.halo-inline select,.halo-actions select{min-height:40px;background:#fff;color:#294c72;padding:8px;border:1px solid #e1e8f3;border-radius:10px;max-width:100%;font:inherit;font-size:13px}.halo-inline input{width:75px;min-height:40px;font:inherit;padding:8px;border:1px solid #dce4ef;border-radius:10px}
 .halo-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.halo-gallery button{padding:0;border:0;border-radius:12px;overflow:hidden;background:white;text-align:left;color:#273b56;cursor:pointer}.halo-gallery img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#e1e6ee}.halo-gallery span{display:block;font-size:12px;padding:8px;line-height:1.45}.halo-preview{display:block;width:100%;height:auto;max-height:45vh;object-fit:contain;border-radius:12px;background:#101d31}
 .sheet{background:#f3f5fc;border-radius:24px 24px 0 0}.sheet h2{font-size:19px;font-weight:700;color:#17243c}.sheet .halo-actions{flex-direction:column;align-items:stretch}.sheet .halo-actions button{width:100%}.sheet .halo-pin-form .halo-actions{flex-direction:row}.sheet .halo-pin-form .halo-actions button{width:auto;flex:1}.toast{font-size:13px;max-width:calc(100vw - 32px);white-space:normal;text-align:center}
-#ssTimeBox,#focus,#moreKids,#kidsBox{display:none!important}.halo-card #diag{max-width:100%}a,button,input,select,summary{-webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #94b8ff;outline-offset:3px}button:active{opacity:.8}
+#ssTimeBox,#focus,#moreKids,#kidsBox{display:none!important}a,button,input,select,summary{-webkit-tap-highlight-color:transparent}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #94b8ff;outline-offset:3px}button:active{opacity:.8}
 @media(max-width:350px){main{padding:14px 16px 24px}.halo-route{gap:9px}.halo-route-text b{font-size:14px}.halo-route-text small{font-size:11px}.halo-row{flex-wrap:wrap}.halo-row select{max-width:100%}.halo-header.home h1{font-size:28px}}
 @media(min-width:768px){main{max-width:520px;padding:28px 28px 40px}.halo-gallery{grid-template-columns:repeat(3,minmax(0,1fr))}body{background:#edf1fa}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+  .libscroll { max-height: 52vh; overflow-y: auto; overscroll-behavior: contain; margin: 0 -4px; padding: 2px 4px; }
+  .libgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: max-content; gap: 12px 8px; }
+  .libpic { padding: 0; border: 0; background: none; display: block; min-width: 0; text-align: center; cursor: pointer; }
+  .libpic img { width: 100%; aspect-ratio: 16 / 9; height: auto; object-fit: cover; display: block; border-radius: 8px; background: var(--fill); }
+  .libpic span { display: block; font-size: 11px; color: var(--secondary); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .libpic:active img { opacity: .6; }
+  .libsearch { background: var(--card); border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; }
+  @media (prefers-color-scheme: dark) { .libsearch { background: #2c2c2e; } }
+  .libsearch input { font-size: 16px; }
 </style>
 </head>
 <body>
@@ -407,10 +420,11 @@ nav{display:none!important}header.halo-header{display:flex;align-items:center;ga
     <div class="item wx"><b id="wxNow">—</b><span id="wxPlace"></span></div>
     <form class="item field" id="cityForm">
       <input id="city" type="text" data-i18n-placeholder="city_ph" enterkeyhint="done" autocomplete="off">
-      <button class="link" id="cityBtn" data-i18n="set" disabled></button>
+      <button type="submit" class="link" id="cityBtn" data-i18n="set"></button>
     </form>
   </div>
   <p class="foot" id="wxHint"></p>
+  <p class="foot" id="cityStatus" role="status" aria-live="polite"></p>
 
   <div id="moreKids"></div>
   <h2 data-i18n="this_tv"></h2>
@@ -419,14 +433,6 @@ nav{display:none!important}header.halo-header{display:flex;align-items:center;ga
     <div class="item"><span class="txt" data-i18n="language"></span><span class="val" id="langName"></span><svg class="chev" width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l6 6-6 6"/></svg><select id="lang" data-i18n-aria-label="language"></select></div>
   </div>
 
-  <h2 data-i18n="feedback_h"></h2>
-  <div class="list"><button class="item tint center" id="diagBtn" data-i18n="diag_show"></button></div>
-  <pre class="diag" id="diag" hidden></pre>
-  <div class="row" id="diagActions" hidden>
-    <button class="btn" id="diagCopy" data-i18n="diag_copy"></button>
-    <a class="btn plain" id="diagGithub" href="https://github.com/Null9797/halo-tv/issues" target="_blank" rel="noopener" data-i18n="diag_github"></a>
-  </div>
-  <p class="foot" data-i18n="feedback_hint"></p>
 </section>
 </main>
 
@@ -454,7 +460,7 @@ let state = null, stateJson = '';
 
 // The language: ?lang=ru in the address, else the one picked under More (kept on the phone), else the
 // first of the phone's preferred languages that has a table, else English. Keys are in KEYS, one array of texts per language.
-const KEYS = ["screensaver", "screensaver_short", "ss_aerial", "ss_photos", "ss_clock", "focus", "focus_high", "focus_standard", "weather", "city_ph", "set", "upload_label", "feedback_h", "feedback_hint", "diag_show", "diag_copy", "diag_github", "hint_aerial", "hint_photos", "hint_clock", "g_live", "g_live_sub", "g_daily", "g_daily_sub", "g_photo", "g_builtin", "g_auto", "toast_wallpaper", "aria_delete", "confirm_delete", "wx_clear", "wx_partlycloudy", "wx_cloudy", "wx_fog", "wx_rain", "wx_snow", "wx_thunder", "wx_chosen", "wx_auto_btn", "toast_auto", "wx_guessed", "wx_none", "tag_source", "aria_rename", "toast_renamed", "toast_name_reset", "toast_rename_fail", "aria_reset_icon", "toast_icon_reset", "focus_hint_standard", "focus_hint_high", "daily_title", "daily_caption", "rotate_title", "rotate_caption", "empty_photos", "add_second", "toast_tv_updated", "sending_n", "toast_added", "toast_no_photos", "toast_send_fail", "toast_city_set", "toast_city_nf", "toast_set_fail", "toast_sending_icon", "toast_icon_set", "toast_icon_bad", "diag_collecting", "toast_diag_fail", "toast_copied", "toast_copy_manual", "language", "hint_follows", "ss_videos", "hint_videos", "videos_h", "videos_upload", "videos_hint", "videos_empty", "confirm_video_delete", "toast_videos_added", "toast_video_bad", "sending_video", "hint_system", "tab_home", "tab_more", "current_wp", "cancel", "save", "name_ph", "rename_hint", "change_icon", "this_tv", "folder_count", "folder_ph", "inputs_h", "inputs_hint", "rename_hint_app", "was_named", "arrange_hint", "arrange_unready", "hidden_h", "hidden_none", "hidden_locked", "show_app", "hide_app", "to_folder", "new_folder", "out_of_folder", "ungroup", "ungroup_confirm", "folder_hint", "toast_hidden", "toast_shown", "toast_in_folder", "toast_out_folder", "toast_ungrouped", "tab_looks", "looks_title", "show_on_home", "source_device", "source_plain", "source_device_hint", "tv_model", "sw_always", "sw_always_sub", "sw_weather", "sw_saver_time", "sw_saver_time_sub", "g_source_sub", "icon_h", "icon_library", "icon_own", "icon_custom", "toast_icon_picked", "drop_hint", "drop_sub", "drop_none", "toast_diag_paste", "kids_h", "elders_h", "kids_used", "kids_left", "kids_nolimit", "kids_allowed", "kids_lock_day", "kids_lock_late", "kids_lock_break", "kids_pin_ph", "kids_unlock", "kids_wrong", "kids_need_pin", "kids_locked_foot", "kids_add", "kids_day", "kids_leave_k", "kids_leave_e", "kids_paused", "kids_resume", "kids_min", "kids_hm", "kids_erase", "kids_hr", "kids_both", "kids_off_line", "kids_settings", "kids_no_pin", "kids_pin_foot", "ks_meta", "ks_on", "ks_on_sub", "ks_block", "ks_block_sub", "ks_block_noguard", "ks_time_h", "ks_weekday", "ks_weekend", "ks_minutes", "ks_nolimit", "ks_window", "ks_from", "ks_to", "ks_break", "ks_break_every", "ks_break_len", "ks_time_foot", "ks_apps", "ks_apps_sub", "ks_input", "ks_save", "ks_saved", "ks_invalid", "ks_for", "ss_flip_clock", "hint_flip_clock"];
+const KEYS = ["screensaver", "screensaver_short", "ss_aerial", "ss_photos", "ss_clock", "focus", "focus_high", "focus_standard", "weather", "city_ph", "set", "upload_label", "feedback_h", "feedback_hint", "diag_show", "diag_copy", "diag_github", "hint_aerial", "hint_photos", "hint_clock", "g_live", "g_live_sub", "g_daily", "g_daily_sub", "g_photo", "g_builtin", "g_auto", "toast_wallpaper", "aria_delete", "confirm_delete", "wx_clear", "wx_partlycloudy", "wx_cloudy", "wx_fog", "wx_rain", "wx_snow", "wx_thunder", "wx_chosen", "wx_auto_btn", "toast_auto", "wx_guessed", "wx_none", "tag_source", "aria_rename", "toast_renamed", "toast_name_reset", "toast_rename_fail", "aria_reset_icon", "toast_icon_reset", "focus_hint_standard", "focus_hint_high", "daily_title", "daily_caption", "rotate_title", "rotate_caption", "empty_photos", "add_second", "toast_tv_updated", "sending_n", "toast_added", "toast_no_photos", "toast_send_fail", "toast_city_set", "toast_city_nf", "toast_set_fail", "toast_sending_icon", "toast_icon_set", "toast_icon_bad", "diag_collecting", "toast_diag_fail", "toast_copied", "toast_copy_manual", "language", "hint_follows", "ss_videos", "hint_videos", "videos_h", "videos_upload", "videos_hint", "videos_empty", "confirm_video_delete", "toast_videos_added", "toast_video_bad", "sending_video", "hint_system", "tab_home", "tab_more", "current_wp", "cancel", "save", "name_ph", "rename_hint", "change_icon", "this_tv", "folder_count", "folder_ph", "inputs_h", "inputs_hint", "rename_hint_app", "was_named", "arrange_hint", "arrange_unready", "hidden_h", "hidden_none", "hidden_locked", "show_app", "hide_app", "to_folder", "new_folder", "out_of_folder", "ungroup", "ungroup_confirm", "folder_hint", "toast_hidden", "toast_shown", "toast_in_folder", "toast_out_folder", "toast_ungrouped", "tab_looks", "looks_title", "show_on_home", "source_device", "source_plain", "source_device_hint", "tv_model", "sw_always", "sw_always_sub", "sw_weather", "sw_saver_time", "sw_saver_time_sub", "g_source_sub", "icon_h", "icon_library", "icon_own", "icon_custom", "toast_icon_picked", "drop_hint", "drop_sub", "drop_none", "toast_diag_paste", "kids_h", "elders_h", "kids_used", "kids_left", "kids_nolimit", "kids_allowed", "kids_lock_day", "kids_lock_late", "kids_lock_break", "kids_pin_ph", "kids_unlock", "kids_wrong", "kids_need_pin", "kids_locked_foot", "kids_add", "kids_day", "kids_leave_k", "kids_leave_e", "kids_paused", "kids_resume", "kids_min", "kids_hm", "kids_erase", "kids_hr", "kids_both", "kids_off_line", "kids_settings", "kids_no_pin", "kids_pin_foot", "ks_meta", "ks_on", "ks_on_sub", "ks_block", "ks_block_sub", "ks_block_noguard", "ks_time_h", "ks_weekday", "ks_weekend", "ks_minutes", "ks_nolimit", "ks_window", "ks_from", "ks_to", "ks_break", "ks_break_every", "ks_break_len", "ks_time_foot", "ks_apps", "ks_apps_sub", "ks_input", "ks_save", "ks_saved", "ks_invalid", "ks_for", "ss_flip_clock", "hint_flip_clock", "wx_temp", "request_outcome_unknown", "icon_more", "icon_more_hint", "icon_more_fail", "icon_search_ph", "icon_search_none"];
 const TEXTS = {
  "zh": [
   "屏幕保护程序",
@@ -652,7 +658,14 @@ const TEXTS = {
   "保存失败：时段的结束要晚于开始，分钟数在 0–1440 之间；开启时至少选一个 App。",
   "给谁用",
   "翻页时钟",
-  "数字翻页，日期和天气保持不动。"
+  "数字翻页，日期和天气保持不动。",
+  "{n}℃",
+  "电视响应超时，操作结果不确定；请稍后刷新查看。",
+  "从图标库选…",
+  "图标库里所有的图，任何一张都能给这个 App 用。图片从 Aerial 官网加载，手机要能上网。",
+  "图标库没加载出来：电视或手机连不上 Aerial 官网。",
+  "搜索 App 名称或包名",
+  "没有找到。换个叫法试试，或者输入包名。"
  ],
  "en": [
   "Screensaver",
@@ -850,7 +863,14 @@ const TEXTS = {
   "Not saved: the hours must end after they start, minutes must be 0–1440, and the mode needs at least one app to be on.",
   "For",
   "Flip Clock",
-  "Flipping digits with a steady date and weather."
+  "Flipping digits with a steady date and weather.",
+  "{n}°",
+  "The TV timed out. The result is unknown; refresh later to check.",
+  "Choose from the Icon Library…",
+  "Every picture in the icon library; any of them can be this app's. They load from Aerial's website, so the phone needs the internet.",
+  "The icon library did not load: the TV or the phone cannot reach Aerial's website.",
+  "Search an app name or package",
+  "Nothing found. Try another name for it, or its package name."
  ],
  "ru": [
   "Заставка",
@@ -1048,7 +1068,14 @@ const TEXTS = {
   "Не сохранено: конец должен быть позже начала, минуты — от 0 до 1440, а для включения нужно хотя бы одно приложение.",
   "Для кого",
   "Перекидные часы",
-  "Цифры перелистываются, дата и погода остаются на месте."
+  "Цифры перелистываются, дата и погода остаются на месте.",
+  "{n}°",
+  "Телевизор не ответил вовремя. Результат неизвестен; обновите страницу позже.",
+  "Выбрать из библиотеки значков…",
+  "Все картинки библиотеки значков; любую можно назначить этому приложению. Они загружаются с сайта Aerial, телефону нужен интернет.",
+  "Библиотека значков не загрузилась: телевизор или телефон не может связаться с сайтом Aerial.",
+  "Найти по названию или пакету",
+  "Ничего не найдено. Попробуйте другое название или имя пакета."
  ],
  "uk": [
   "Заставка",
@@ -1246,7 +1273,14 @@ const TEXTS = {
   "Не збережено: кінець має бути пізніше за початок, хвилини — від 0 до 1440, а для ввімкнення потрібен хоча б один застосунок.",
   "Для кого",
   "Перекидний годинник",
-  "Цифри перегортаються, дата й погода залишаються на місці."
+  "Цифри перегортаються, дата й погода залишаються на місці.",
+  "{n}°",
+  "Телевізор не відповів вчасно. Результат невідомий; оновіть сторінку пізніше.",
+  "Вибрати з бібліотеки значків…",
+  "Усі картинки бібліотеки значків; будь-яку можна призначити цьому застосунку. Вони завантажуються з сайту Aerial, телефону потрібен інтернет.",
+  "Бібліотека значків не завантажилася: телевізор або телефон не може з'єднатися із сайтом Aerial.",
+  "Знайти за назвою або пакетом",
+  "Нічого не знайдено. Спробуйте іншу назву або назву пакета."
  ],
  "kk": [
   "Экран қорғаушы",
@@ -1444,7 +1478,14 @@ const TEXTS = {
   "Сақталмады: соңы басынан кеш болуы керек, минуттар 0–1440 аралығында, ал қосу үшін кемінде бір қолданба керек.",
   "Кімге",
   "Аударылатын сағат",
-  "Сандар ауысады, күн мен ауа райы орнында қалады."
+  "Сандар ауысады, күн мен ауа райы орнында қалады.",
+  "{n}°",
+  "Теледидар уақытында жауап бермеді. Нәтиже белгісіз; кейін бетті жаңартып тексеріңіз.",
+  "Белгішелер кітапханасынан таңдау…",
+  "Белгішелер кітапханасындағы барлық сурет; кез келгенін осы қолданбаға беруге болады. Олар Aerial сайтынан жүктеледі, телефонға интернет керек.",
+  "Белгішелер кітапханасы жүктелмеді: теледидар не телефон Aerial сайтына қосыла алмайды.",
+  "Қолданба атауын не бумасын іздеу",
+  "Ештеңе табылмады. Басқа атауын не бума атауын жазып көріңіз."
  ]
 };
 const LANGS = Object.keys(TEXTS);
@@ -1499,21 +1540,29 @@ const ICON = {
   plus: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
 };
 
+let uncertainNoticeUntil = 0;
 function toast(msg, first) {
-  // The mode's refusal stays up over the "could not save" that follows it.
+  // Keep the explicit uncertainty visible over the generic failure that follows it.
+  if (Date.now() < uncertainNoticeUntil && msg !== t('request_outcome_unknown')) return;
   if (!first && Date.now() < kidsNoticeUntil) return;
   const box = $('#toast'); box.textContent = msg; box.classList.add('on');
-  clearTimeout(toast.timer); toast.timer = setTimeout(() => box.classList.remove('on'), 1800);
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => box.classList.remove('on'), Date.now() < uncertainNoticeUntil ? 6000 : 1800);
+}
+function noteUncertain(response) {
+  if (response.headers.get('X-Halo-Main-Outcome') !== 'unknown') return false;
+  uncertainNoticeUntil = Date.now() + 6000;
+  toast(t('request_outcome_unknown'), true);
+  return true;
 }
 
 /* Kids and Elders mode: the TV takes no change without the parental PIN, sent with each once entered. */
 let kidsPin = '';
 let kidsNoticeUntil = 0;
 function pinHeaders(more) { return Object.assign({}, more || {}, kidsPin ? { 'X-Aerial-Pin': kidsPin } : {}); }
-async function api(path, body) {
+async function api(path, body, signal) {
   const opts = body ? { method: 'POST', body: new URLSearchParams(body), headers: pinHeaders() } : {};
-  const r = await fetch(base + path, opts);
-  if (!r.ok) throw new Error(r.status);
+  const r = await fetch(base + path, Object.assign(opts, signal ? { signal } : {}));
+  if (!r.ok) { if (body) noteUncertain(r); throw new Error(r.status); }
   const next = await r.json();
   kidsRefused(next);
   return next;
@@ -1632,7 +1681,7 @@ function card(w) {
   const b = el('button', 'wp');
   b.setAttribute('aria-selected', w.id === state.selected ? 'true' : 'false');
   b.innerHTML = `<div class="pic"><img loading="lazy" alt=""><span class="check">${ICON.check}</span></div><div class="t"></div><div class="c"></div>`;
-  b.querySelector('img').src = `${base}thumb/${encodeURIComponent(w.id)}`;
+  b.querySelector('img').src = `${base}thumb/${encodeURIComponent(w.id)}?v=${w.version || 0}`;
   b.querySelector('.t').textContent = w.title;
   b.querySelector('.c').textContent = w.caption || '';
   b.onclick = async () => {
@@ -1644,7 +1693,7 @@ function card(w) {
     d.onclick = e => {
       e.stopPropagation();
       openSheet(body => {
-        const pic = el('div', 'pic'); const img = el('img'); img.src = `${base}thumb/${encodeURIComponent(w.id)}`; pic.appendChild(img); body.appendChild(pic);
+        const pic = el('div', 'pic'); const img = el('img'); img.src = `${base}thumb/${encodeURIComponent(w.id)}?v=${w.version || 0}`; pic.appendChild(img); body.appendChild(pic);
         body.appendChild(el('h3', '', t('confirm_delete')));
         body.appendChild(el('p', 'meta', w.title));
         const l = el('div', 'list'); body.appendChild(l);
@@ -1658,7 +1707,7 @@ function card(w) {
   return b;
 }
 function renderWallpapers() {
-  $('#heroImg').src = `${base}thumb/${encodeURIComponent(state.selected)}`;
+  $('#heroImg').src = `${base}thumb/${encodeURIComponent(state.selected)}?v=${state.wallpaperVersion || 0}`;
   $('#heroTitle').textContent = titleOf(state.selected);
   const root = $('#sections'); root.replaceChildren();
   for (const [kind, title, sub] of groups) {
@@ -1704,7 +1753,7 @@ async function sendPhotos(files) {
   try {
     const fd = new FormData(); files.forEach((f, i) => fd.append('photo' + i, f, f.name));
     const r = await fetch(base + 'api/upload', { method: 'POST', body: fd, headers: pinHeaders() });
-    if (!r.ok) throw new Error(r.status);
+    if (!r.ok) { noteUncertain(r); throw new Error(r.status); }
     const next = await r.json(); kidsRefused(next); uploading = 0; take(next);
     toast(next.added ? t('toast_added', { n: next.added }) : t('toast_no_photos'));
   } catch (err) { uploading = 0; stateJson = ''; render(); toast(t('toast_send_fail')); }
@@ -1768,39 +1817,92 @@ async function videoCover(file) {
   } finally { video.removeAttribute('src'); video.load(); URL.revokeObjectURL(url); }
 }
 const VIDEO_ERRORS = {
-  zh: { unsupported_type: '仅支持 MP4 或 MOV 文件。', empty_file: '视频文件为空。', too_large: '视频超过单个文件大小上限。', insufficient_room: '可用存储不足，或视频数量已达上限。', invalid_or_io: '视频无法读取，可能已损坏、格式不受支持或传输中断。', network: '上传连接中断，请检查网络后重试。' },
-  en: { unsupported_type: 'Only MP4 or MOV files are supported.', empty_file: 'The video file is empty.', too_large: 'The video exceeds the file size limit.', insufficient_room: 'Not enough available storage, or the video limit has been reached.', invalid_or_io: 'The video could not be read: it may be damaged, unsupported, or interrupted in transit.', network: 'Upload interrupted. Check your connection and try again.' },
-  ru: { unsupported_type: 'Поддерживаются только MP4 или MOV.', empty_file: 'Файл пуст.', too_large: 'Видео превышает лимит размера.', insufficient_room: 'Недостаточно места или достигнут лимит видео.', invalid_or_io: 'Видео не прочитано: файл повреждён, не поддерживается или передача прервалась.', network: 'Передача прервана. Проверьте сеть.' },
-  uk: { unsupported_type: 'Підтримуються лише MP4 або MOV.', empty_file: 'Файл порожній.', too_large: 'Відео перевищує ліміт розміру.', insufficient_room: 'Недостатньо місця або досягнуто ліміту відео.', invalid_or_io: 'Відео не прочитано: файл пошкоджений, не підтримується або передачу перервано.', network: 'Передачу перервано. Перевірте мережу.' },
-  kk: { unsupported_type: 'Тек MP4 немесе MOV қолдау табады.', empty_file: 'Файл бос.', too_large: 'Бейне өлшем шегінен асады.', insufficient_room: 'Орын жеткіліксіз немесе бейне санының шегіне жетті.', invalid_or_io: 'Бейне оқылмады: файл зақымдалған, қолдау жоқ немесе тасымал үзілді.', network: 'Жүктеу үзілді. Желіні тексеріңіз.' }
+  zh: { unsupported_type: '仅支持 MP4 或 MOV 文件。', empty_file: '视频文件为空。', too_large: '视频超过单个文件大小上限。', insufficient_room: '可用存储不足，或视频数量已达上限。', invalid_or_io: '视频无法读取，可能已损坏、格式不受支持或传输中断。', network: '上传连接中断，请检查网络后重试。', interrupted: "传输中断，请保持手机页面打开后重试。", invalid_video: "电视无法读取这段视频，请试试重新导出 MP4。", storage_error: "电视存储写入失败，请检查可用空间后重试。", outcome_unknown: "电视未返回上传结果，请先检查视频列表，再决定是否重试。", server: "电视暂时无法处理上传，请刷新页面后重试。" },
+  en: { unsupported_type: 'Only MP4 or MOV files are supported.', empty_file: 'The video file is empty.', too_large: 'The video exceeds the file size limit.', insufficient_room: 'Not enough available storage, or the video limit has been reached.', invalid_or_io: 'The video could not be read: it may be damaged, unsupported, or interrupted in transit.', network: 'Upload interrupted. Check your connection and try again.', interrupted: "Transfer interrupted. Keep this page open and try again.", invalid_video: "The TV could not read this video. Try exporting it again as MP4.", storage_error: "The TV could not write the video. Check available storage and try again.", outcome_unknown: "The TV did not confirm the upload. Check the video list before trying again.", server: "The TV could not process the upload. Refresh the page and try again." },
+  ru: { unsupported_type: 'Поддерживаются только MP4 или MOV.', empty_file: 'Файл пуст.', too_large: 'Видео превышает лимит размера.', insufficient_room: 'Недостаточно места или достигнут лимит видео.', invalid_or_io: 'Видео не прочитано: файл повреждён, не поддерживается или передача прервалась.', network: 'Передача прервана. Проверьте сеть.', interrupted: "Передача прервана. Оставьте страницу открытой и повторите попытку.", invalid_video: "Телевизор не смог прочитать видео. Попробуйте сохранить его в MP4.", storage_error: "Не удалось записать видео. Проверьте свободное место на телевизоре.", outcome_unknown: "Телевизор не подтвердил загрузку. Проверьте список видео перед повтором.", server: "Телевизор не обработал загрузку. Обновите страницу и повторите попытку." },
+  uk: { unsupported_type: 'Підтримуються лише MP4 або MOV.', empty_file: 'Файл порожній.', too_large: 'Відео перевищує ліміт розміру.', insufficient_room: 'Недостатньо місця або досягнуто ліміту відео.', invalid_or_io: 'Відео не прочитано: файл пошкоджений, не підтримується або передачу перервано.', network: 'Передачу перервано. Перевірте мережу.', interrupted: "Передавання перервано. Залиште сторінку відкритою та спробуйте знову.", invalid_video: "Телевізор не прочитав відео. Спробуйте зберегти його у форматі MP4.", storage_error: "Не вдалося записати відео. Перевірте вільне місце на телевізорі.", outcome_unknown: "Телевізор не підтвердив завантаження. Перевірте список відео перед повтором.", server: "Телевізор не обробив завантаження. Оновіть сторінку та спробуйте знову." },
+  kk: { unsupported_type: 'Тек MP4 немесе MOV қолдау табады.', empty_file: 'Файл бос.', too_large: 'Бейне өлшем шегінен асады.', insufficient_room: 'Орын жеткіліксіз немесе бейне санының шегіне жетті.', invalid_or_io: 'Бейне оқылмады: файл зақымдалған, қолдау жоқ немесе тасымал үзілді.', network: 'Жүктеу үзілді. Желіні тексеріңіз.', interrupted: "Тасымал үзілді. Бетті ашық қалдырып, қайта көріңіз.", invalid_video: "Теледидар бейнені оқи алмады. Оны MP4 ретінде қайта сақтап көріңіз.", storage_error: "Бейне жазылмады. Теледидардағы бос орынды тексеріңіз.", outcome_unknown: "Теледидар жүктеуді растаған жоқ. Қайталау алдында бейне тізімін тексеріңіз.", server: "Теледидар жүктеуді өңдей алмады. Бетті жаңартып, қайта көріңіз." }
 };
-async function sendVideos(files) {
-  const input = $('#videoFile'); if (!files.length || input.disabled) return;
-  const btn = $('#videoUploadBtn');
-  input.disabled = true; btn.setAttribute('disabled', '');
-  let added = 0, reason = '';
-  for (const [i, file] of files.entries()) {
-    sendingVideo = t('sending_video', { n: i + 1, total: files.length }); $('#videoUploadLabel').textContent = sendingVideo;
-    // The TV says how much room is left; a film that cannot fit is not sent at all.
-    if (!file.size) { reason = 'empty_file'; continue; }
-    if (file.size > 2000000000) { reason = 'too_large'; continue; }
-    try {
-      // The file itself as the body, so the TV writes it straight to its place (#1164).
-      const r = await fetch(base + 'api/videos/send?name=' + encodeURIComponent(file.name), { method: 'POST', body: file, headers: pinHeaders({ 'Content-Type': 'application/octet-stream' }) });
-      if (!r.ok) throw new Error(r.status);
-      const next = await r.json(); kidsRefused(next); if (next.saved) added++; else reason = next.error || 'invalid_or_io'; take(next);
-      if (next.saved && next.videoId) {
-        try {
-          const poster = await videoCover(file);
-          await fetch(base + 'api/videos/poster?id=' + encodeURIComponent(next.videoId), {
-            method: 'POST', body: poster, headers: pinHeaders({ 'Content-Type': 'image/jpeg' }),
-          });
-        } catch (err) { /* Playback and the uploaded video do not depend on a browser cover. */ }
+// Stream the Blob from the phone. Renew the deadline on progress so a slow but active upload
+// can finish. A missing receipt after the body was sent is ambiguous; never resend it automatically.
+function videoRequest(path, body, type, progress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    let timer, sent = false;
+    const fail = reason => { clearTimeout(timer); reject(new Error(reason)); };
+    const wait = ms => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { fail(sent ? 'outcome_unknown' : 'interrupted'); xhr.abort(); }, ms);
+    };
+    xhr.open('POST', base + path);
+    Object.entries(pinHeaders(type ? { 'Content-Type': type } : {})).forEach(([key, value]) => xhr.setRequestHeader(key, value));
+    xhr.upload.onprogress = event => {
+      wait(45_000);
+      if (progress && event.lengthComputable) progress(Math.min(100, Math.floor(event.loaded * 100 / event.total)));
+    };
+    xhr.upload.onload = () => { sent = true; wait(90_000); };
+    xhr.onerror = xhr.onabort = () => fail(sent ? 'outcome_unknown' : 'network');
+    xhr.onload = () => {
+      clearTimeout(timer);
+      if (xhr.status < 200 || xhr.status >= 300) {
+        const unknown = xhr.getResponseHeader("X-Halo-Main-Outcome") === "unknown";
+        fail(unknown ? 'outcome_unknown' : 'server');
+        return;
       }
-    } catch (err) { reason = 'network'; /* Continue with the remaining files. */ }
+      try { resolve(JSON.parse(xhr.responseText)); }
+      catch (err) { fail(sent ? 'outcome_unknown' : 'server'); }
+    };
+    try { wait(45_000); xhr.send(body); }
+    catch (err) { fail('network'); }
+  });
+}
+
+async function sendVideos(files) {
+  const input = $('#videoFile');
+  if (!files.length || input.disabled) return;
+  const btn = $('#videoUploadBtn');
+  input.disabled = true;
+  btn.setAttribute('disabled', '');
+  let added = 0, reason = '';
+  try {
+    for (const [i, file] of files.entries()) {
+      const label = t('sending_video', { n: i + 1, total: files.length });
+      const showProgress = value => {
+        sendingVideo = value === undefined ? label : `${label} · ${value}%`;
+        $('#videoUploadLabel').textContent = sendingVideo;
+      };
+      showProgress();
+      try {
+        const name = encodeURIComponent(file.name);
+        const check = await videoRequest('api/videos/check?name=' + name + '&size=' + file.size, null);
+        kidsRefused(check);
+        if (check.kidsLocked) break;
+        if (check.error) { reason = check.error; continue; }
+        const result = await videoRequest('api/videos/send?name=' + name, file, 'application/octet-stream', showProgress);
+        kidsRefused(result);
+        if (result.kidsLocked) break;
+        if (!result.saved) { reason = result.error || 'invalid_or_io'; continue; }
+        added++;
+        if (result.videoId && state?.halo?.edition !== 'Lite') {
+          try {
+            const poster = await videoCover(file);
+            await videoRequest('api/videos/poster?id=' + encodeURIComponent(result.videoId), poster, 'image/jpeg');
+          } catch (err) { /* A cover is optional; the video has already been saved. */ }
+        }
+      } catch (err) { reason = err.message; }
+    }
+  } finally {
+    sendingVideo = '';
+    input.disabled = false;
+    input.value = '';
+    btn.removeAttribute('disabled');
+    $('#videoUploadLabel').textContent = t('videos_upload');
+    // The lightweight save receipt never goes into the shared state renderer.
+    refresh();
   }
-  sendingVideo = ''; input.disabled = false; input.value = ''; btn.removeAttribute('disabled'); stateJson = ''; render();
-  toast(t('toast_videos_added', { n: added, failed: files.length - added }) + (reason ? ' ' + ((VIDEO_ERRORS[LANG] || VIDEO_ERRORS.en)[reason] || VIDEO_ERRORS.en[reason] || '') : ''));
+  const messages = VIDEO_ERRORS[LANG] || VIDEO_ERRORS.en;
+  const detail = reason ? messages[reason] || messages.server : '';
+  toast(t('toast_videos_added', { n: added, failed: files.length - added }) + (detail ? ' ' + detail : ''));
 }
 
 /* Files dropped anywhere on the page, as from a computer's folder: photos to the wallpapers, videos to the screensaver. */
@@ -1828,7 +1930,7 @@ function renderMore() {
   $('#swWeather').checked = state.showWeather !== false;
   document.querySelectorAll('#focus [data-style]').forEach(b => b.setAttribute('aria-checked', b.dataset.style === state.focusStyle ? 'true' : 'false'));
   const w = state.weather || {};
-  $('#wxNow').textContent = w.celsius !== undefined ? `${w.celsius}° ${weatherNames[w.kind] || ''}` : '—';
+  $('#wxNow').textContent = w.celsius !== undefined ? `${t('wx_temp', { n: w.celsius })} ${weatherNames[w.kind] || ''}` : '—';
   $('#wxPlace').textContent = w.place || '';
   const hint = $('#wxHint'); hint.replaceChildren();
   if (w.chosen) {
@@ -1874,17 +1976,38 @@ document.querySelectorAll('#focus [data-style]').forEach(b => b.onclick = async 
   if (b.dataset.style === state.focusStyle) return;
   try { take(await api('api/focus', { style: b.dataset.style })); toast(t('toast_tv_updated')); } catch (e) { toast(t('toast_set_fail')); }
 });
-$('#city').oninput = () => $('#cityBtn').disabled = !$('#city').value.trim();
+let weatherCityBusy = false;
+$('#city').maxLength = 96;
 $('#cityForm').onsubmit = async e => {
   e.preventDefault();
-  const name = $('#city').value.trim(); if (!name) return;
-  const btn = $('#cityBtn'); btn.disabled = true; $('#city').blur();
+  if (weatherCityBusy) return;
+  const name = $('#city').value.trim();
+  if (!name) { $('#city').focus(); return; }
+  weatherCityBusy = true;
+  const btn = $('#cityBtn'), status = $('#cityStatus');
+  btn.disabled = true; btn.textContent = '…';
+  $('#cityForm').setAttribute('aria-busy', 'true');
+  status.textContent = '…'; $('#city').blur();
+  let controller, timer;
+  const request = () => {
+    controller = typeof AbortController === 'function' ? new AbortController() : null;
+    clearTimeout(timer);
+    if (controller) timer = setTimeout(() => controller.abort(), 25000);
+    return api('api/weather/city', { name }, controller && controller.signal);
+  };
   try {
-    const next = await api('api/weather/city', { name }); take(next);
-    toast(next.found ? t('toast_city_set', { place: next.weather.place }) : t('toast_city_nf', { name }));
-    if (next.found) $('#city').value = '';
-  } catch (err) { toast(t('toast_set_fail')); }
-  btn.disabled = !$('#city').value.trim();
+    let next = await request();
+    if (next.kidsLocked && window.haloAuthorizeWeather && await window.haloAuthorizeWeather()) next = await request();
+    if (next.kidsLocked) throw new Error('parental authorization required');
+    take(next);
+    status.textContent = next.found ? t('toast_city_set', { place: next.weather.place }) : t('toast_city_nf', { name });
+    toast(status.textContent);
+    if (next.found && $('#city').value.trim() === name) $('#city').value = '';
+  } catch (err) { status.textContent = t('toast_set_fail'); toast(status.textContent, true); }
+  finally {
+    clearTimeout(timer); weatherCityBusy = false; btn.disabled = false;
+    btn.textContent = t('set'); $('#cityForm').removeAttribute('aria-busy');
+  }
 };
 
 let iconFor = null;
@@ -1895,64 +2018,11 @@ $('#iconFile').onchange = async e => {
   try {
     const fd = new FormData(); fd.append('app', a.key); fd.append('picture', f, f.name);
     const r = await fetch(base + 'api/icon', { method: 'POST', body: fd, headers: pinHeaders() });
-    if (!r.ok) throw new Error(r.status);
+    if (!r.ok) { noteUncertain(r); throw new Error(r.status); }
     const next = await r.json(); kidsRefused(next); take(next);
     toast(t(next.saved ? 'toast_icon_set' : 'toast_icon_bad'));
   } catch (err) { toast(t('toast_send_fail')); }
 };
-
-/* More tab: diagnostics. */
-$('#diagBtn').onclick = async () => {
-  const b = $('#diagBtn'); b.disabled = true; b.textContent = t('diag_collecting');
-  try {
-    const r = await fetch(base + 'api/diagnostics');
-    if (!r.ok) throw new Error(r.status);
-    $('#diag').textContent = await r.text();
-    $('#diag').hidden = false; $('#diagActions').hidden = false; b.parentElement.hidden = true;
-    // Bring the Copy button out from under the tab bar.
-    // (Safari ignores scroll-margin in scrollIntoView, so measured by hand.)
-    const over = $('#diagActions').getBoundingClientRect().bottom - (innerHeight - $('nav').offsetHeight - 16);
-    if (over > 0) window.scrollBy({ top: over, behavior: scrollBehavior() });
-  } catch (e) { toast(t('toast_diag_fail')); b.textContent = t('diag_show'); }
-  b.disabled = false;
-};
-// The page is plain HTTP on the LAN, where browsers offer no navigator.clipboard. So the text is
-// copied from a field off screen: 16px so iOS does not zoom, and the scroll put back after, since
-// focusing it can still move the page.
-$('#diagCopy').onclick = () => toast(t(copyDiag() ? 'toast_copied' : 'toast_copy_manual'));
-// The issue form opens with what fits in its address filled in (GitHub fills form fields named in
-// the query): the model, the version and the TV's own input corrections. The diagnostics are too
-// long for an address, so they go to the clipboard for the owner to paste.
-$('#diagGithub').onclick = (e) => {
-  const text = $('#diag').textContent, q = new URLSearchParams({ template: 'device.yml' });
-  const model = (text.match(/^Device +(.+?) \(device /m) || [])[1]?.split(' / ').pop();
-  const version = (text.match(/^(?:Halo TV|HaloTV|Aerial) +(\S+) \(/m) || [])[1];
-  const profile = (text.match(/\*\*Device profile\*\* \(ThisTv\)\n```json\n(.+)\n```/) || [])[1];
-  if (model) { q.set('title', '[机型] ' + model); q.set('model', model); }
-  if (version) q.set('version', 'HaloTV ' + version);
-  if (profile) q.set('profile', profile);
-  e.currentTarget.href = 'https://github.com/Null9797/halo-tv/issues/new?' + q;
-  toast(t(copyDiag() ? 'toast_diag_paste' : 'toast_copy_manual'));
-};
-function copyDiag() {
-  const text = $('#diag').textContent, x = window.scrollX, y = window.scrollY;
-  const tmp = document.createElement('textarea');
-  tmp.value = text; tmp.setAttribute('aria-hidden', 'true');
-  tmp.style.cssText = 'position:fixed;top:0;left:-9999px;width:1px;height:1px;opacity:0;font-size:16px';
-  document.body.appendChild(tmp);
-  let ok = false;
-  try {
-    tmp.focus({ preventScroll: true }); tmp.select(); tmp.setSelectionRange(0, text.length);
-    ok = document.execCommand('copy');
-  } catch (e) {}
-  tmp.remove(); window.scrollTo(x, y);
-  if (!ok) {
-    // Select the text in the box so the system's Copy is one tap away.
-    const sel = window.getSelection(); sel.removeAllRanges();
-    const range = document.createRange(); range.selectNodeContents($('#diag')); sel.addRange(range);
-  }
-  return ok;
-}
 
 /*
  * The Home Screen tab: the TV's tiles in a grid as on the TV, dragged into place. A tap on a tile
@@ -2121,8 +2191,8 @@ function tileSheet(e, inFolder, hidden) {
       const lib = `${base}library/${encodeURIComponent(a.key)}`;
       const from = by => (by && (by[LANG] || by.name)) || '';
       const library = (a.choices && a.choices.length ? a.choices : [{ id: '', on: a.icon === 'library' }]).map(c => ({
-        pick: 'library', choice: c.id, on: c.on, label: t('icon_library'), by: from(c.by),
-        src: c.id ? `${lib}?c=${encodeURIComponent(c.id)}&v=${a.stamp}` : `${lib}?v=${a.stamp}`,
+        pick: 'library', choice: c.id, from: c.from || '', on: c.on, label: t('icon_library'), by: from(c.by),
+        src: c.id ? `${lib}?c=${encodeURIComponent(c.id)}&from=${encodeURIComponent(c.from || "")}&v=${a.stamp}` : `${lib}?v=${a.stamp}`,
       }));
       const choices = [...library,
         { pick: 'own', on: a.icon === 'own', label: t('icon_own'), src: `${base}tile/${encodeURIComponent(a.key)}?art=own&v=${a.stamp}` },
@@ -2140,7 +2210,7 @@ function tileSheet(e, inFolder, hidden) {
           closeSheet();
           if (c.on) return;
           try {
-            const next = await api('api/icon/pick', { app: a.key, pick: c.pick, choice: c.choice || '' });
+            const next = await api('api/icon/pick', { app: a.key, pick: c.pick, choice: c.choice || '', from: c.from || '' });
             if (!next.saved) throw new Error('not saved');
             take(next); toast(t('toast_icon_picked'));
           } catch (err) { toast(t('toast_set_fail')); }
@@ -2148,6 +2218,7 @@ function tileSheet(e, inFolder, hidden) {
         cl.appendChild(b);
       }
     }
+    if (!a.source) action(il, t('icon_more'), 'tint', () => libraryChooser(a));
     // The picker opens from this tap, so iOS treats it as the user's own gesture.
     action(il, t('change_icon'), 'tint', () => { iconFor = a; $('#iconFile').click(); closeSheet(); });
     if (a.custom) action(il, t('aria_reset_icon'), 'tint', async () => {
@@ -2169,6 +2240,62 @@ function tileSheet(e, inFolder, hidden) {
   });
 }
 /* The device on an input: its mark and colours on the tile, its name on the caption (as on the TV). */
+/*
+ * The whole icon library, as a grid of its pictures, each with its app's name: the one on this TV,
+ * else the index's (an older index has none; those apps are found by package). The phone loads the
+ * pictures from the website; the TV fetches only the one picked.
+ */
+async function libraryChooser(a) {
+  const body = $('#sheetBody'); body.replaceChildren();
+  body.appendChild(el('h3', '', t('icon_more'))); body.appendChild(el('p', 'meta', a.label));
+  // 16px keeps iOS from zooming the page when the field is focused.
+  const search = el('label', 'field libsearch'); const q = el('input');
+  q.type = 'search'; q.placeholder = t('icon_search_ph'); q.setAttribute('aria-label', q.placeholder); q.autocomplete = 'off'; q.enterKeyHint = 'search';
+  q.setAttribute('autocapitalize', 'off'); q.spellcheck = false;
+  search.appendChild(q); body.appendChild(search);
+  const scroll = el('div', 'libscroll'); const grid = el('div', 'libgrid'); scroll.appendChild(grid); body.appendChild(scroll);
+  const none = el('p', 'empty', t('icon_search_none')); none.hidden = true; body.appendChild(none);
+  const foot = body.appendChild(el('p', 'foot', t('icon_more_hint'))); foot.style.marginBottom = '12px';
+  const c = el('div', 'list'); body.appendChild(c);
+  action(c, t('cancel'), 'tint', closeSheet).style.fontWeight = '600';
+  let lib;
+  try { lib = await api('api/library/all'); } catch (err) { foot.textContent = t('icon_more_fail'); return; }
+  if (!grid.isConnected) return;
+  // The apps on this TV by the names the owner sees; the rest by the index's names.
+  const names = new Map((state.apps || []).map(x => [x.key, [x.label, x.default, x.name].filter(Boolean)]));
+  const named = n => n ? (LANG === 'zh' ? [n.zh, n.en] : [n.en, n.zh]).filter(Boolean) : [];
+  // This app's own pictures first, then the other apps on this TV, then the rest.
+  const rank = x => x.app === a.key ? 0 : names.has(x.app) ? 1 : 2;
+  const apps = (lib.apps || []).slice().sort((x, y) => rank(x) - rank(y));
+  for (const app of apps) for (const pic of app.choices) {
+    const label = (names.get(app.app) || [])[0] || named(app.name)[0] || app.app;
+    const b = el('button', 'libpic'); b.setAttribute('aria-label', label || app.app);
+    b.dataset.find = [app.app, ...(names.get(app.app) || []), ...named(app.name), (app.name || {}).also || ''].join(' ').toLowerCase();
+    const img = el('img'); img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; img.src = lib.base + pic.p;
+    img.onerror = () => b.remove();
+    b.appendChild(img);
+    if (label) b.appendChild(el('span', '', label));
+    b.onclick = async () => {
+      closeSheet(); toast(t('toast_sending_icon'));
+      try {
+        const next = await api('api/icon/pick', { app: a.key, pick: 'library', choice: pic.id, from: app.app === a.key ? '' : app.app });
+        if (!next.saved) throw new Error('not saved');
+        take(next); toast(t('toast_icon_picked'));
+      } catch (err) { toast(t('toast_set_fail')); }
+    };
+    grid.appendChild(b);
+  }
+  if (!grid.children.length) { foot.textContent = t('icon_more_fail'); return; }
+  q.oninput = () => {
+    const words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    let shown = 0;
+    for (const b of grid.children) {
+      const on = words.every(w => b.dataset.find.includes(w));
+      b.hidden = !on; if (on) shown++;
+    }
+    none.hidden = shown > 0; scroll.hidden = shown === 0; scroll.scrollTop = 0;
+  };
+}
 function deviceChooser(a, e) {
   const body = $('#sheetBody'); body.replaceChildren();
   body.appendChild(el('h3', '', t('source_device'))); body.appendChild(el('p', 'meta', a.port || e.label));

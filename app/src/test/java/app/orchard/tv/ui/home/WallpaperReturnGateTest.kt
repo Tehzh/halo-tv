@@ -5,6 +5,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class WallpaperReturnGateTest {
+    @Test fun repeatedFrameCallbacksDoNotRestartTheRevealAnimation() {
+        val gate = WallpaperReturnGate()
+        assertTrue(gate.reveal(gate.rendered()))
+        assertFalse(gate.reveal(gate.rendered()))
+        gate.cover()
+        assertTrue(gate.reveal(gate.rendered()))
+    }
+
     @Test fun returningWindowWaitsForItsOwnSubmittedVideoFrame() {
         val gate = WallpaperReturnGate()
         val beforeStop = gate.token()

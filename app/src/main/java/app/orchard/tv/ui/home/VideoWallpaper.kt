@@ -6,6 +6,8 @@ import app.orchard.tv.R
 
 import android.graphics.Bitmap
 import android.view.SurfaceView
+import android.view.TextureView
+import android.view.View
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,6 +20,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.key
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -45,6 +48,7 @@ import app.orchard.tv.wallpaper.Wallpapers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -67,6 +71,13 @@ class HomeVideo {
     internal var player: ExoPlayer? = null
     /** Whether this surface contains a real frame, including when its player is paused. */
     var frameReady by mutableStateOf(false); internal set
+
+    internal var handoff: (() -> Unit)? = null
+    fun letDecoderGo() {
+        handoff?.let { it(); return }
+        frameReady = false
+        player?.run { pause(); stop() }
+    }
 
     fun skip(step: Int) {
         val p = player ?: return
@@ -128,14 +139,30 @@ fun VideoWallpaper(
     home: HomeVideo,
     /** Nothing over Home that blurs it: the stopped film may stand in for its picture (as LiveWallpaper). */
     standIn: Boolean,
-    lastInputAt: Long,
+    lastInputAt: () -> Long,
+    gridSettled: () -> Boolean = { true },
     cover: Animatable<Float, *>,
     /** Home has gone behind an app (not a screensaver): the frame may hold the decoder a moment (leaveOnPicture). */
     behindApp: Boolean = false,
+    releaseForPicker: Boolean = false,
 ) {
+    val gridSettledNow by rememberUpdatedState(gridSettled)
     val context = LocalContext.current
     var player by remember { mutableStateOf<ExoPlayer?>(null) }
-    var surface by remember { mutableStateOf<SurfaceView?>(null) }
+    var surface by remember { mutableStateOf<View?>(null) }
+    val textureCandidate = remember { LocalVideoSurfacePolicy.candidate(context) }
+    val libraryKey = Wallpapers.items.mapNotNull { it.id.takeIf { id -> id.startsWith(Wallpapers.VIDEO_PREFIX) } }
+    var outputReady by remember(Wallpapers.selectedId, libraryKey) { mutableStateOf(!textureCandidate) }
+    var textureOutput by remember(Wallpapers.selectedId, libraryKey) { mutableStateOf(false) }
+    LaunchedEffect(Wallpapers.selectedId, libraryKey) {
+        if (textureCandidate) {
+            textureOutput = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
+                LocalVideoSurfacePolicy.choose(Wallpapers.videoFilms())
+            }
+            outputReady = true
+            DiagLog.i("local video output: ${if (textureOutput) "SDR TextureView compatibility" else "SurfaceView (HDR/4K/unknown retained)"}")
+        }
+    }
     var showing by remember { mutableStateOf(false) }
     var returnShield by remember { mutableStateOf<WallpaperReturnShield?>(null) }
     LaunchedEffect(Wallpapers.backdrop, returnShield) {
@@ -148,13 +175,23 @@ fun VideoWallpaper(
     var recoveryAttempts by remember { mutableIntStateOf(0) }
     var lastFailureNotice by remember { mutableStateOf(0L) }
     var playbackRequestedAt by remember { mutableStateOf(0L) }
-    LaunchedEffect(lastInputAt, moving) {
+    val inputNow by rememberUpdatedState(lastInputAt)
+    val resumePolicy = remember { WallpaperResumePolicy() }
+    LaunchedEffect(moving, AerialSettings.wallpaperAlwaysMoves) {
+        val returning = resumePolicy.movingChanged(moving)
         idle = false
         if (!moving) return@LaunchedEffect
-        delay(START_AFTER_MS)
-        idle = true
+        if (AerialSettings.wallpaperAlwaysMoves) { idle = true; return@LaunchedEffect }
+        var first = true
+        snapshotFlow { inputNow() }.collectLatest {
+            val resume = first && returning
+            first = false
+            idle = resume
+            if (!resume) delay(START_AFTER_MS)
+            idle = true
+        }
     }
-    val play = moving && (idle || AerialSettings.wallpaperAlwaysMoves) || hold
+    val play = !releaseForPicker && (moving && (idle || AerialSettings.wallpaperAlwaysMoves) || hold)
     val keepNow by rememberUpdatedState(keep)
     val behindAppNow by rememberUpdatedState(behindApp)
     val standInNow by rememberUpdatedState(standIn)
@@ -173,6 +210,7 @@ fun VideoWallpaper(
     // file enumeration, player construction and discarded buffer setup on every return.
     fun parkForApp() {
         val p = player ?: return
+        if (p.playbackState == Player.STATE_IDLE) return
         coverReturn()
         p.currentMediaItem?.mediaId?.let { Wallpapers.leaveVideoFilm(it, p.currentPosition) }
         frames.invalidate()
@@ -217,6 +255,7 @@ fun VideoWallpaper(
         val spot = Wallpapers.videoSpot()
         val first = films.indexOfFirst { it.id == spot?.first }
         var rendered = false
+        val playbackRecovery = VideoPlaybackRecovery()
         // The first film's shape, where it has played before: the view and the scaling are right
         // from its first frame, not after it (TCL MT5879 showed a turned film squeezed for a moment).
         if (first >= 0) filmShapes[films[first].id]?.let { shape = it }
@@ -224,7 +263,9 @@ fun VideoWallpaper(
         val load = DefaultLoadControl.Builder().setTargetBufferBytes(24 * 1024 * 1024)
             .setBufferDurationsMs(2_000, 8_000, 0, 250).build()
         return ExoPlayer.Builder(context).setLoadControl(load).build().apply {
+            setSeekParameters(androidx.media3.exoplayer.SeekParameters.CLOSEST_SYNC)
             home.player = this
+            setAudioAttributes(androidx.media3.common.AudioAttributes.DEFAULT, false)
             volume = if (AerialSettings.videoWallpaperMuted) 0f else 1f
             repeatMode = Player.REPEAT_MODE_ALL
             // Filled to the edges whatever its shape: a wallpaper has no bars.
@@ -232,9 +273,18 @@ fun VideoWallpaper(
             // Home is drawn over it: the display keeps its rate (see LiveWallpaper).
             videoChangeFrameRateStrategy = C.VIDEO_CHANGE_FRAME_RATE_STRATEGY_OFF
             addListener(object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    if (player === this@apply && playbackState == Player.STATE_IDLE) {
+                        rendered = false
+                        home.frameReady = false
+                        showing = false
+                    }
+                }
                 override fun onRenderedFirstFrame() {
                     if (player !== this@apply) return
                     home.frameReady = true
+                    resumePolicy.frameRendered()
+                    playbackRecovery.frameRendered()
                     if (playbackRequestedAt > 0L) {
                         DiagLog.i("video wallpaper first frame in ${android.os.SystemClock.elapsedRealtime() - playbackRequestedAt} ms")
                         playbackRequestedAt = 0L
@@ -255,6 +305,7 @@ fun VideoWallpaper(
                     val now = FilmShape(videoSize.width * videoSize.pixelWidthHeightRatio / videoSize.height, turned)
                     if (now != shape) DiagLog.i("video wallpaper film ${videoSize.width}x${videoSize.height}${if (turned) ", turned" else ""}")
                     shape = now
+                    (surface as? TextureView)?.let { fitLocalTexture(it, videoSize, AerialSettings.videoWallpaperFit) }
                     currentMediaItem?.mediaId?.let { filmShapes[it] = now }
                     videoScalingMode = scalingFor(now, AerialSettings.videoWallpaperFit)
                 }
@@ -272,7 +323,7 @@ fun VideoWallpaper(
                     if (reason != Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED || Wallpapers.backdrop == null) stagePoster(id)
                     shape = filmShapes[id]
                     videoScalingMode = scalingFor(shape, AerialSettings.videoWallpaperFit)
-                    if (copyGlassPossible || reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) return
+                    if (surface is TextureView || copyGlassPossible || reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED) return
                     val token = frames.current()
                     scope.launch {
                         val poster = withContext(Dispatchers.IO) { Wallpapers.videoPoster(id, Wallpapers.screenW, Wallpapers.screenH) } ?: return@launch
@@ -305,8 +356,11 @@ fun VideoWallpaper(
                         }
                         android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
                     }
-                    // One film this TV cannot decode; the others may still play.
-                    if (mediaItemCount > 1) {
+                    // Retry transient decoder errors before skipping this playlist entry.
+                    // This only changes the in-memory playlist; the owner's files are untouched.
+                    if (playbackRecovery.retryCurrent()) {
+                        prepare()
+                    } else if (mediaItemCount > 1) {
                         removeMediaItem(currentMediaItemIndex)
                         prepare()
                     } else {
@@ -327,7 +381,7 @@ fun VideoWallpaper(
                 first.coerceAtLeast(0),
                 if (first >= 0) spot?.second ?: 0L else 0L,
             )
-            surface?.let { setVideoSurfaceView(it) }
+            surface?.let { bindLocalVideoSurface(it) }
             prepare()
         }
     }
@@ -335,6 +389,7 @@ fun VideoWallpaper(
     LaunchedEffect(player, shape, AerialSettings.videoWallpaperMuted, AerialSettings.videoWallpaperFit) {
         player?.volume = if (AerialSettings.videoWallpaperMuted) 0f else 1f
         player?.videoScalingMode = scalingFor(shape, AerialSettings.videoWallpaperFit)
+        (surface as? TextureView)?.let { view -> player?.let { fitLocalTexture(view, it.videoSize, AerialSettings.videoWallpaperFit) } }
     }
 
     /**
@@ -404,7 +459,7 @@ fun VideoWallpaper(
         // Keep Halo's short decoder handoff budget. Never hold another app's decoder for a
         // retriever/software read; a slower capture catches up after release in letGo().
         val frame = surface?.takeIf { screenShaped(shape?.shape ?: 0f) }
-            ?.let { withTimeoutOrNull(350) { copyFrame(it) } } ?: return false
+            ?.let { withTimeoutOrNull(350) { copyWallpaperTransition(it) } } ?: return false
         if (player !== p || !frames.accepts(epoch) || keepNow) { frame.recycle(); return false }
         Wallpapers.showLiveFrame(frame)
         cover.snapTo(0f)
@@ -421,22 +476,36 @@ fun VideoWallpaper(
         return true
     }
 
-    // The plate's glass over the moving video, where PixelCopy reads it. Not from the file: an
-    // owner's video may be 4K HEVC, and a second decoder beside the player's may not be there.
+    // Prefer the player's surface, especially when the hardware decoder is already busy.
+    val softwarePosterAttempts = remember { HashSet<String>() }
     LaunchedEffect(play, showing) {
         if (!play || !showing) return@LaunchedEffect
-        // Once per playback start for an older upload without a poster. This reads the existing
-        // player surface, not the file, and never opens another decoder on TCL televisions.
+        // Older uploads may have no poster. A software key frame is a one-time fallback
+        // on firmware where the player surface can't supply a useful frame.
         val id = player?.currentMediaItem?.mediaId
         if (id != null && !withContext(Dispatchers.IO) { Wallpapers.hasVideoPoster(id) }) {
             delay(1000)
             if (player?.currentMediaItem?.mediaId == id) {
-                surface?.let { copyVideoPoster(it) }?.let { Wallpapers.keepPlayingVideoPoster(id, it) }
+                val captured = surface?.let { copyVideoPoster(it) }
+                val poster = captured ?: if ((Wallpapers.filmGlassless || fileFramesJam(context)) && softwarePosterAttempts.add(id)) {
+                    // A software key frame avoids the vendor retriever and supplies a still on TCL MT5879 (#1622).
+                    keyFrameOfVideo(context, id, 0, 480, 270)?.first
+                } else null
+                poster?.let {
+                    try {
+                        if (player?.currentMediaItem?.mediaId == id) Wallpapers.keepPlayingVideoPoster(id, it)
+                    } finally { it.recycle() }
+                }
             }
         }
+    }
+    LaunchedEffect(play, showing) {
+        if (!play || !showing) return@LaunchedEffect
         // Keep the previous glass through the short page/decoder transition.
         delay(1_200)
-        sampleGlass({ player }, canTake = { copyGlassPossible }) {
+        sampleGlass({ player }, canTake = { surface is TextureView || copyGlassPossible },
+            awaitCapture = { snapshotFlow { gridSettledNow() }.first { it } },
+        ) {
             surface?.let { copyGlass(it) }
         }
     }
@@ -452,7 +521,9 @@ fun VideoWallpaper(
         true
     }
 
-    LaunchedEffect(play, stops, keep, restart, retainPaused) {
+    LaunchedEffect(play, stops, keep, restart, retainPaused, releaseForPicker, outputReady) {
+        if (!outputReady) { release(); cover.snapTo(0f); return@LaunchedEffect }
+        if (releaseForPicker) { release(); cover.snapTo(0f); return@LaunchedEffect }
         // Losing Home or entering a screensaver must cancel an in-flight frame capture and free
         // the decoder even if playback was already paused. Several TVs have only one video path.
         if (!keep) {
@@ -513,8 +584,8 @@ fun VideoWallpaper(
                 return@LaunchedEffect
             }
             p.pause()
-            // Photo/clock savers need no video decoder. Retain a paused, prepared surface;
-            // waking resumes immediately, without background decode or frame recapture.
+            // Keep the prepared frame during a transient pause or a Home panel. A separate
+            // screensaver has already taken the !keepNow release path above.
             if (retainPaused) return@LaunchedEffect
             DiagLog.i("video wallpaper stops at ${p.currentPosition} ms")
             if (cover.value > 0f) {
@@ -526,7 +597,7 @@ fun VideoWallpaper(
                 // read as Control Center opens or its keys stop and start the film, which on Hisense
                 // VIDAA_TV MTK9652 failed the decoder and left Home black (issue #1251). It gives way
                 // under a frosted panel, into an app, or once no key has come for KEEP_STOPPED_MS.
-                val quiet = if (standInNow && film != null) untilQuietOrLeft({ standInNow && keepNow }, { lastInputNow }) else false
+                val quiet = if (standInNow && film != null) untilQuietOrLeft({ standInNow && keepNow }, { lastInputNow() }) else false
                 if (!keepNow) {
                     // Into an app: on its frame if one comes in time, else let go at once and the
                     // picture catches up behind it.
@@ -535,6 +606,7 @@ fun VideoWallpaper(
                     letGo(reuseForApp = behindAppNow)
                     return@LaunchedEffect
                 }
+                snapshotFlow { gridSettledNow() }.first { it }
                 val frame = film?.let { frameOf(it, at, held = true) }
                 if (frame != null) Wallpapers.useLiveFrame(frame.first, film, frame.second)
                 if (quiet) DiagLog.i("video wallpaper picture takes over from the stopped film")
@@ -555,34 +627,81 @@ fun VideoWallpaper(
         // Home in sight again: on the screensaver's last picture, if one of these videos played there.
         if (keep && player == null) VideoSaverFrames.apply()
     }
-    DisposableEffect(Unit) { onDispose { release() } }
+    DisposableEffect(home) {
+        home.handoff = { parkForApp() }
+        onDispose { home.handoff = null; release() }
+    }
+    LaunchedEffect(keep, player) {
+        val parked = player
+        if (!keep && parked != null) {
+            delay(60_000)
+            if (!keepNow && player === parked && parked.playbackState == Player.STATE_IDLE) release()
+        }
+    }
 
-    AndroidView(
-        modifier = Modifier.fillMaxSize().coverShape(if (AerialSettings.videoWallpaperFit) 0f else shape?.view ?: 0f),
-        factory = { ctx ->
-            val slot = FilmSlot(ctx)
-            WallpaperReturnShield(ctx, slot).also { shield ->
-            returnShield = shield
-            shield.fallback(Wallpapers.backdrop?.asAndroidBitmap())
-            surface = slot.surface
-            slot.surface.holder.addCallback(object : android.view.SurfaceHolder.Callback {
-                override fun surfaceCreated(holder: android.view.SurfaceHolder) = Unit
-                override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) = Unit
-                override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
-                    if (surface === slot.surface) {
-                        coverReturn()
-                        home.frameReady = false; showing = false
-                        scope.launch { cover.snapTo(0f) }
+    if (outputReady) key(textureOutput) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize().coverShape(if (AerialSettings.videoWallpaperFit) 0f else shape?.view ?: 0f),
+            factory = { ctx ->
+                val content: View
+                val output: View
+                if (textureOutput) {
+                    output = object : TextureView(ctx) {
+                        override fun onWindowVisibilityChanged(visibility: Int) {
+                            super.onWindowVisibilityChanged(visibility)
+                            if (visibility != View.VISIBLE && surface === this) {
+                                coverReturn(); home.frameReady = false; showing = false
+                                scope.launch { cover.snapTo(0f) }
+                            }
+                        }
+                    }.apply {
+                        addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                            player?.let { fitLocalTexture(this, it.videoSize, AerialSettings.videoWallpaperFit) }
+                        }
                     }
+                    content = output
+                } else {
+                    val slot = FilmSlot(ctx)
+                    output = slot.surface
+                    content = slot
+                    slot.surface.holder.addCallback(object : android.view.SurfaceHolder.Callback {
+                        override fun surfaceCreated(holder: android.view.SurfaceHolder) = Unit
+                        override fun surfaceChanged(holder: android.view.SurfaceHolder, format: Int, width: Int, height: Int) = Unit
+                        override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
+                            if (surface === slot.surface) {
+                                coverReturn(); home.frameReady = false; showing = false
+                                scope.launch { cover.snapTo(0f) }
+                            }
+                        }
+                    })
                 }
-            })
-            player?.setVideoSurfaceView(slot.surface)
-        } },
-        onRelease = {
-            surface?.let { player?.clearVideoSurfaceView(it) }
-            home.frameReady = false; showing = false; surface = null; returnShield = null
-        },
-    )
+                WallpaperReturnShield(
+                    ctx, content, keepPosterUntilFirstFrame = !textureOutput &&
+                        android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.N,
+                    protectInitialSurface = !textureOutput && android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.N,
+                ).also { shield ->
+                    returnShield = shield
+                    shield.fallback(Wallpapers.backdrop?.asAndroidBitmap())
+                    surface = output
+                    player?.bindLocalVideoSurface(output)
+                }
+            },
+            update = { shield ->
+                if (shield.awaitingInitialFrame()) shield.fallback(Wallpapers.backdrop?.asAndroidBitmap())
+            },
+            onRelease = { oldShield ->
+                // A keyed output replacement may attach before the previous AndroidView releases.
+                // Its late disposal must not clear the new player output or first-frame state.
+                if (returnShield === oldShield) {
+                    when (val old = surface) {
+                        is TextureView -> player?.clearVideoTextureView(old)
+                        is SurfaceView -> player?.clearVideoSurfaceView(old)
+                    }
+                    home.frameReady = false; showing = false; surface = null; returnShield = null
+                }
+            },
+        )
+    }
 }
 
 /** Whether a film of [shape] (width over height, 0 unknown) is the screen's shape, near enough. */
@@ -628,7 +747,7 @@ private const val SHAPE_SLACK = 0.02f
 
 /**
  * The key frame of the owner's video [id] nearest [atMs] at [w]×[h], with its own moment, decoded
- * in the app (AerialStream.keyFrameOfFile); null where it cannot be (not MP4, not H.264 or HEVC,
+ * in the app (AerialStream.keyFrameOfFile); null where it cannot be (unsupported container or codec,
  * no software decoder, a green frame).
  */
 internal suspend fun keyFrameOfVideo(context: android.content.Context, id: String, atMs: Long, w: Int, h: Int): Pair<Bitmap, Long>? {
@@ -650,6 +769,7 @@ internal suspend fun keyFrameOfVideo(context: android.content.Context, id: Strin
     // of a night film is the film's own.
     if (unreadable(frame.bitmap) == "green") {
         DiagLog.i("video wallpaper decoded frame is green; not used")
+        frame.bitmap.recycle()
         return null
     }
     return frame.bitmap to frame.timeMs
@@ -657,3 +777,20 @@ internal suspend fun keyFrameOfVideo(context: android.content.Context, id: Strin
 
 /** The longest a key frame of the owner's video may take to decode in the app (a 4K HEVC one on a slow TV): then the next way. */
 private const val VIDEO_KEY_FRAME_MS = 4_000L
+
+private fun ExoPlayer.bindLocalVideoSurface(view: View) {
+    when (view) {
+        is TextureView -> setVideoTextureView(view)
+        is SurfaceView -> setVideoSurfaceView(view)
+    }
+}
+
+private fun fitLocalTexture(view: TextureView, video: VideoSize, fit: Boolean) {
+    if (view.width <= 0 || view.height <= 0 || video.width <= 0 || video.height <= 0) return
+    val videoShape = video.width * video.pixelWidthHeightRatio / video.height
+    val viewShape = view.width.toFloat() / view.height
+    val ratio = videoShape / viewShape
+    val x = if (fit) minOf(1f, ratio) else maxOf(1f, ratio)
+    val y = if (fit) minOf(1f, 1f / ratio) else maxOf(1f, 1f / ratio)
+    view.setTransform(android.graphics.Matrix().apply { setScale(x, y, view.width / 2f, view.height / 2f) })
+}

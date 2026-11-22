@@ -26,18 +26,8 @@ import kotlin.random.Random
  * The screensaver, in the full app's look (ui/home/Screensaver.kt), over everything with Home
  * hidden beneath it.
  *
- * Aerial: Apple's films in the system player (VideoView) through [FilmProxy], a little shade at
- * the top and bottom, the time top left and the place bottom left; both drift a few units every
- * two minutes so nothing sits on the same pixels all night. Three failures in a row and it is the
- * clock.
- *
- * Photos: the owner's photos (else the daily ones, else the built-ins), each for 18 seconds,
- * slowly zooming from 1.04 to 1.12 and drifting up to 40 units across (Ken Burns, as the full
- * app), the next fading in over 2 seconds; still pictures where there is no GPU.
- *
- * My videos: the films sent from the phone page, one after another, from the TV's own storage.
- *
- * Clock: the large clock (date, time, weather) over the wallpaper at 75%, somewhere new each minute.
+ * Photos and online pictures reuse the same slideshow, with still images on low-end devices.
+ * Local videos use the system player. Missing or unplayable media falls back to the flip clock.
  *
  * The time shows over the films and photos when Personalize says so.
  */
@@ -51,15 +41,16 @@ class SaverView(context: Context, mode: ScreensaverMode, private val wallpaper: 
     private var next = 0
     private var failures = 0
     @Volatile private var released = false
-    private var clockOnly = mode == ScreensaverMode.Clock
-    private var clock: ClockView? = null
     /** Films from the phone page, played from a file rather than through the proxy. */
-    private val photos = mode == ScreensaverMode.Photos
-    private val flip = mode == ScreensaverMode.FlipClock
+    private val photos = mode == ScreensaverMode.Photos || mode == ScreensaverMode.OnlinePictures
     private var flipView: FlipClockView? = null
     private val showTime = LiteSettings.screensaverClock && photos
 
-    private val pictures = Wallpapers.saverPictures()
+    private val pictures = when (mode) {
+        ScreensaverMode.Photos -> Wallpapers.saverPictures()
+        ScreensaverMode.OnlinePictures -> Wallpapers.onlineSaverPictures()
+        else -> emptyList()
+    }
     private val frames = arrayOfNulls<ImageView>(2)
     private var front = 0
     private var kenBurns: android.animation.Animator? = null
@@ -80,21 +71,25 @@ class SaverView(context: Context, mode: ScreensaverMode, private val wallpaper: 
                 val lunar = if (LiteSettings.showLunarDate) Lunar.text(java.util.Calendar.getInstance()) else null
                 val second = java.text.SimpleDateFormat("ss", java.util.Locale.ROOT).format(now)
                 it.setContents(digits, listOfNotNull(date, lunar, weather).joinToString("    ·    "),
-                    if (LiteSettings.flipClockSeconds) second else null)
+                    if (LiteSettings.flipClockSeconds) second else null, LiteSettings.flipClockSecondsStyle)
             }
-            clock?.let { it.refresh(); it.weather = Weather.line(context); moveClock() }
             val now = System.currentTimeMillis()
             // Every two minutes the words wander a little.
-            if (!clockOnly && now / 120_000 != driftSlot) {
+            if (now / 120_000 != driftSlot) {
                 driftSlot = now / 120_000
-                if (flip) {
+                if (flipView != null) {
                     flipView?.translationX = Ui.px((Random.nextFloat() - 0.5f) * 12f)
                     flipView?.translationY = Ui.px((Random.nextFloat() - 0.5f) * 8f)
                 } else drift()
             }
-            val interval = if (flip && LiteSettings.flipClockSeconds) 1_000L else 60_000L
+            val interval = if (flipView != null && LiteSettings.flipClockSeconds) 1_000L else 60_000L
             handler.postDelayed(this, interval - now % interval + 50)
         }
+    }
+
+    fun refreshTime() {
+        handler.removeCallbacks(tick)
+        tick.run()
     }
 
     init {
@@ -117,55 +112,32 @@ class SaverView(context: Context, mode: ScreensaverMode, private val wallpaper: 
             ScreensaverMode.Videos -> films = LocalSaverSelection.filter(context, true, ScreensaverVideos.all(context).shuffled()) { it.id }.map { it.file.toURI().toString() }
             else -> Unit
         }
-        if (!clockOnly && !photos && !flip && films.isEmpty()) clockOnly = true
         when {
-            flip -> { flipView = FlipClockView(context); addView(flipView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)) }
-            clockOnly -> showClock()
             photos -> showPhotos()
-            else -> showFilms()
+            films.isNotEmpty() -> showFilms()
+            else -> showFlipClock()
         }
-        tick.run()
+        if (flipView == null) refreshTime()
     }
 
-    private fun showClock() {
-        if (released || clock != null) return
-        clockOnly = true
+    private fun showFlipClock() {
+        if (released || flipView != null) return
         handler.removeCallbacks(stalled)
-        video?.let { it.stopPlayback(); removeView(it) }
-        video = null
-        removeView(shade); removeView(caption); removeView(time)
-        // The wallpaper's light under the clock, at 75% over black.
-        if (wallpaper != null) addView(ImageView(context).apply {
-            setImageBitmap(wallpaper)
-            scaleType = ImageView.ScaleType.FIT_XY
-            alpha = 0.75f
-        }, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        val c = ClockView(context).apply { large = true; refresh(); weather = Weather.line(context) }
-        clock = c
-        addView(c, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.TOP or Gravity.START))
-        moveClock()
-    }
-
-    /** The full app's ClockSaver: anywhere in the screen less a margin and the clock's own size; faded across on a GPU. */
-    private fun moveClock() {
-        val c = clock ?: return
-        val x = Ui.px(64f + (960f - 128f - 420f) * Random.nextFloat())
-        val y = Ui.px(56f + (Ui.canvasH - 112f - 170f) * Random.nextFloat())
-        if (c.isHardwareAccelerated && c.alpha > 0f && c.translationX != 0f) {
-            c.animate().alpha(0f).setDuration(1200).withLayerCompat().setListener(object : android.animation.AnimatorListenerAdapter() {
-                override fun onAnimationEnd(animation: android.animation.Animator) {
-                    c.animate().setListener(null)
-                    if (released) return
-                    c.translationX = x; c.translationY = y
-                    c.animate().alpha(1f).setDuration(1200).start()
-                }
-            }).start()
-        } else {
-            c.translationX = x; c.translationY = y
+        video?.apply {
+            setOnPreparedListener(null)
+            setOnCompletionListener(null)
+            setOnErrorListener(null)
+            stopPlayback()
         }
+        video = null
+        kenBurns?.cancel()
+        kenBurns = null
+        removeAllViews()
+        flipView = FlipClockView(context).also {
+            addView(it, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        }
+        refreshTime()
     }
-
-    private fun android.view.ViewPropertyAnimator.withLayerCompat() = if (Build.VERSION.SDK_INT >= 16) withLayer() else this
 
     private fun showFilms() {
         val v = VideoView(context)
@@ -214,7 +186,7 @@ class SaverView(context: Context, mode: ScreensaverMode, private val wallpaper: 
 
 
     private fun showPhotos() {
-        if (pictures.isEmpty()) { showClock(); return }
+        if (pictures.isEmpty()) { showFlipClock(); return }
         for (i in 0..1) {
             val f = ImageView(context).apply { scaleType = ImageView.ScaleType.CENTER_CROP; alpha = 0f }
             frames[i] = f
@@ -237,7 +209,7 @@ class SaverView(context: Context, mode: ScreensaverMode, private val wallpaper: 
                 if (released) { b?.recycle(); return@post }
                 if (b == null) {
                     failures++
-                    if (failures >= pictures.size) { showClock(); return@post }
+                    if (failures >= pictures.size) { showFlipClock(); return@post }
                     handler.postDelayed(::nextPhoto, 1000); return@post
                 }
                 failures = 0
@@ -296,10 +268,10 @@ class SaverView(context: Context, mode: ScreensaverMode, private val wallpaper: 
     }
 
     private fun fail() {
-        if (released || clockOnly) return
+        if (released || flipView != null) return
         handler.removeCallbacks(stalled)
         failures++
-        if (failures >= 3) showClock() else play()
+        if (failures >= 3) showFlipClock() else play()
     }
 
 
@@ -314,7 +286,6 @@ class SaverView(context: Context, mode: ScreensaverMode, private val wallpaper: 
         video = null
         loader.shutdownNow()
         kenBurns?.cancel(); kenBurns = null
-        clock?.animate()?.setListener(null)?.cancel()
         caption.animate().setListener(null).cancel()
         time.animate().cancel()
         for (f in frames) f?.let { frame ->

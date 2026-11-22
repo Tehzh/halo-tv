@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lite_system_settings_unavailable">Системные настройки недоступны. Откройте их кнопкой настроек на пульте или с исходного рабочего стола телевизора.</string>
+    <string name="lite_system_network_unavailable">Настройки сети недоступны. Откройте Wi-Fi с исходного рабочего стола или кнопкой настроек на пульте.</string>
+    <string name="lite_system_uninstall_unavailable">Системное удаление недоступно или заблокировано. Удалите приложение с исходного рабочего стола или в диспетчере приложений телевизора.</string>
+    <string name="lite_system_app_info_hint">Запросите удаление здесь и подтвердите его на телевизоре. Для очистки кеша и других действий откройте системные сведения о приложении.</string>
+    <string name="lite_system_app_details">Системные сведения о приложении</string>
+    <string name="lite_system_app_details_unavailable">Системные сведения недоступны. Используйте кнопку удаления на этой странице.</string>
+</resources>

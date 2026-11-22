@@ -3,6 +3,10 @@ package app.orchard.tv.lite
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
+import android.util.Log
 import android.view.KeyEvent
 import android.net.Uri
 import android.os.Build
@@ -10,12 +14,12 @@ import android.os.SystemClock
 import android.provider.Settings
 
 /**
- * The TV's own pages, found as the full app's SystemProbe finds them (each line verified on the
- * TV it names there): the first that answers wins, the standard action last.
+ * The TV's own pages. Keep known OEM routes, then discover public system settings entries when
+ * a firmware omits standard Android settings actions. Only a successful start ends the search.
  */
 object SystemIntents {
-    fun settings(context: Context): Intent = first(
-        context,
+    private fun settingsCandidates(context: Context): List<Intent> = listOf(
+        *TclMs901Pages.settings(context),
         // Letv (S40 Air and other eUI sets): its own settings, the only one some stripped Letv
         // firmwares ship — com.android.settings is absent there, so the standard action resolved to
         // nothing and the panel's gear did nothing (S40 Air, Android 4.3, 2026-11-02).
@@ -25,6 +29,10 @@ object SystemIntents {
         Intent(Intent.ACTION_MAIN).setComponent(ComponentName("com.konka.tvsettings", "com.konka.settingcenter.settings.view.MainSettingsActivity")),
         // Hisense VIDAA_TV: its own page before AOSP's, as in the full app (#1085).
         Intent(Settings.ACTION_SETTINGS).setComponent(ComponentName("com.android.tv.settings", "com.hisense.systemsettings.MainActivity")),
+        // Baofeng AML_T962 exposes its settings by component (#1339).
+        Intent(Intent.ACTION_MAIN).setComponent(ComponentName("com.baofengtv.settings", "com.baofengtv.settings.MainActivity")),
+        // LeTV Max4-55 (Android 6): its own settings before AOSP's empty page, as in the full app (#1528).
+        Intent(Intent.ACTION_MAIN).setComponent(ComponentName("com.stv.globalsetting", "com.stv.globalsetting.activity.SettingActivity")),
         Intent(Settings.ACTION_SETTINGS),
         Intent(Intent.ACTION_MAIN).setComponent(ComponentName("com.konka.systemsetting", "com.konka.systemsetting.MainActivity")),
         Intent(Intent.ACTION_MAIN).setComponent(ComponentName("com.tcl.settings", "com.tcl.settings.ui.MainActivity")),
@@ -34,8 +42,8 @@ object SystemIntents {
         Intent(Intent.ACTION_VIEW, Uri.parse("Settings://com.xgimi.misckey.main/mainPage")),
     )
 
-    fun network(context: Context, ethernet: Boolean): Intent = first(
-        context,
+    private fun networkCandidates(context: Context, ethernet: Boolean): List<Intent> = listOf(
+        *TclMs901Pages.network(context),
         // Letv: the network page is a tab inside its own settings, and com.android.settings is not
         // installed at all, so Settings.ACTION_WIFI_SETTINGS went nowhere (S40 Air, Android 4.3).
         // openNetworkPanel shows that page itself where the TV has it.
@@ -45,6 +53,8 @@ object SystemIntents {
         Intent("com.xiaomi.mitv.settings.WIFI_SETTINGS").setComponent(ComponentName("com.xiaomi.mitv.settings", "com.xiaomi.mitv.settings.wifi.MitvWifiActivity")),
         Intent(Intent.ACTION_MAIN).setComponent(ComponentName("com.android.tv.settings", "com.android.tv.settings.connectivity.NetworkActivity")),
         Intent(Settings.ACTION_WIFI_SETTINGS),
+        Intent(Settings.ACTION_WIRELESS_SETTINGS),
+        Intent(Intent.ACTION_MAIN).setComponent(ComponentName("com.baofengtv.settings", "com.baofengtv.settings.MainActivity")),
         Intent("com.pptv.intent.action.WIFI_ACTIVITY").setComponent(ComponentName("com.pptv.setting", "com.pptv.setting.wifi.WifiWorkActivity")),
         Intent(Settings.ACTION_SETTINGS),
         Intent(Intent.ACTION_MAIN).setComponent(ComponentName("com.tcl.settings", "com.tcl.settings.ui.MainActivity")),
@@ -73,6 +83,7 @@ object SystemIntents {
      */
     fun xiaomiInputs(context: Context): List<Pair<String, Intent>> {
         if (Build.VERSION.SDK_INT >= 21) return emptyList()
+        TclMs901Sources.inputs(context).takeIf { it.isNotEmpty() }?.let { return it }
         val player = ComponentName("com.xiaomi.mitv.tvplayer", "com.xiaomi.mitv.tvplayer.ExternalSourceActivity")
         if (runCatching { context.packageManager.getActivityInfo(player, 0) }.isFailure) return emptyList()
         val traits = runCatching {
@@ -130,11 +141,9 @@ object SystemIntents {
         if (runCatching { pm.getActivityInfo(letv, 0) }.getOrNull()?.exported == true &&
             runCatching { context.startActivity(Intent(Intent.ACTION_MAIN).setComponent(letv).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
         ) return true
-        // Sharp's Foxconn-built MStar source panel (CVTM648, Android 6, the full app's issue #1048).
-        val sharp = ComponentName("com.mstar.tvsetting", "com.foxconn.etvg.inputsource.FxcInputSourceActitvity")
-        if (runCatching { pm.getActivityInfo(sharp, 0) }.getOrNull()?.exported == true &&
-            runCatching { context.startActivity(Intent(Intent.ACTION_MAIN).setComponent(sharp).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
-        ) return true
+        // Keep the known Foxconn route in its original order relative to other OEM panels.
+        if (systemFirmware(context, MSTAR_PACKAGES[0]) &&
+            tryStart(context, listOf(Intent(Intent.ACTION_MAIN).setComponent(FOXCONN_SOURCE)))) return true
         // Skyworth 42X5 (8S40, Android 4.4.4, issue #1419): the framework turns the remote's input
         // key into a "com.android.sky.SendHotKey" broadcast that ccosservice's exported HotKeyReceiver
         // answers with the input panel, the key in an int extra "specialKey" (the reporter read it
@@ -151,6 +160,12 @@ object SystemIntents {
         if (runCatching { pm.queryBroadcastReceivers(baofeng, 0) }.getOrNull().orEmpty().any { it.activityInfo.exported } &&
             runCatching { context.sendBroadcast(baofeng) }.isSuccess
         ) return true
+        // Baofeng AML_T962 has no BFTVSourceSwitch. Its FUI source bar has a public component (#1339).
+        val bftvRow = ComponentName("com.bftv.fui.biu", "com.bftv.fui.biu.views.activity.FRowActivity")
+        val bftvInfo = runCatching { pm.getActivityInfo(bftvRow, 0) }.getOrNull()
+        if (bftvInfo?.exported == true && bftvInfo.enabled && bftvInfo.applicationInfo.enabled &&
+            runCatching { context.startActivity(Intent(Intent.ACTION_MAIN).setComponent(bftvRow).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
+        ) return true
         // Older Coocaa (Skyworth 8S61, MStar, Android 4.4.2) has none of the above: on the remote's
         // input key the system starts its launcher's HomeService with the key, which shows the
         // input page ("HomeService onStartCommand ##, keyCode=178"; issue #1272, the reporter's
@@ -162,14 +177,61 @@ object SystemIntents {
                 .putExtra(Intent.EXTRA_KEY_EVENT, KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_TV_INPUT))
             if (runCatching { context.startService(key) }.getOrNull() != null) return true
         }
-        // MStar's own TV player keeps a source panel behind a custom action (Sharp
-        // LCD_xxSFFOC470A, MStar mooney, Android 6, the full app's issue #1342, opened with adb);
-        // not verified on MStar's Android 4.x. Last, so no TV that opened one above changes.
-        val mstar = Intent("com.mstar.tv.tvplayer.ui.intent.action.SOURCE_INFO").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        if (runCatching { pm.resolveActivity(mstar, 0)?.activityInfo }.getOrNull()?.exported == true &&
-            runCatching { context.startActivity(mstar) }.isSuccess
-        ) return true
-        return false
+        // Preserve the priority of working Skyworth/Coocaa routes on MStar-based televisions.
+        return openMstarInputPicker(context, includeFoxconn = false)
+    }
+
+    private val MSTAR_PACKAGES = listOf("com.mstar.tvsetting", "com.mstar.tv.tvplayer.ui")
+    private const val MSTAR_SOURCE_INFO = "com.mstar.tv.tvplayer.ui.intent.action.SOURCE_INFO"
+    private val FOXCONN_SOURCE = ComponentName("com.mstar.tvsetting", "com.foxconn.etvg.inputsource.FxcInputSourceActitvity")
+    private fun systemFirmware(context: Context, pkg: String): Boolean {
+        val info = runCatching { context.packageManager.getApplicationInfo(pkg, 0) }.getOrNull() ?: return false
+        return info.enabled && info.flags and (ApplicationInfo.FLAG_SYSTEM or ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+    }
+
+    /** Capability detection, not a brand/model guess. Keep a settings fallback visible on these TVs. */
+    fun hasMstarInputFirmware(context: Context): Boolean = MSTAR_PACKAGES.any { systemFirmware(context, it) }
+
+    internal fun openMstarInputPicker(context: Context, includeFoxconn: Boolean = true): Boolean {
+        val known = ArrayList<Intent>()
+        if (includeFoxconn && systemFirmware(context, MSTAR_PACKAGES[0])) {
+            // Confirmed by the upstream reporter on Sharp CVTM648 / Android 6 (#1048).
+            known += Intent(Intent.ACTION_MAIN).setComponent(FOXCONN_SOURCE)
+        }
+        if (systemFirmware(context, MSTAR_PACKAGES[0])) {
+            // Upstream #1580: the actual input list, before the SOURCE_INFO banner.
+            known += Intent(Intent.ACTION_MAIN).setComponent(ComponentName(MSTAR_PACKAGES[0],
+                "com.mstar.tvsetting.hotkey.InputSourceListViewActivity"))
+        }
+        if (systemFirmware(context, MSTAR_PACKAGES[1])) {
+            known += Intent(MSTAR_SOURCE_INFO).setPackage(MSTAR_PACKAGES[1])
+            // SourceInfoActivity is documented on Sharp LCD_xxSFFOC470A (#1342). Some ROMs
+            // remove its action filter; an explicit public component does not need that filter.
+            known += Intent(MSTAR_SOURCE_INFO).setComponent(ComponentName(MSTAR_PACKAGES[1],
+                "com.mstar.tv.tvplayer.ui.channel.SourceInfoActivity"))
+        }
+        if (tryStart(context, known)) return true
+
+        // A small, bounded firmware-only scan handles renamed public source-picker activities.
+        // Never open service/factory/test pages or infer HDMI port numbers from their names.
+        val discovered = ArrayList<Intent>()
+        val attempted = known.mapNotNull { it.component }.toSet() + FOXCONN_SOURCE
+        for (pkg in MSTAR_PACKAGES) {
+            if (!systemFirmware(context, pkg)) continue
+            val activities = runCatching { context.packageManager.getPackageInfo(pkg, PackageManager.GET_ACTIVITIES).activities }
+                .getOrNull().orEmpty()
+            for (info in activities) {
+                if (!accessible(context, info)) continue
+                val name = info.name.lowercase(java.util.Locale.ROOT)
+                if (listOf("factory", "engineer", "calibrat", "test", "debug", "reset", "upgrade").any { name.contains(it) }) continue
+                val leaf = name.substringAfterLast('.')
+                if (!listOf("inputsource", "sourceinfo", "sourceselect", "sourcepicker").any { leaf.contains(it) }) continue
+                val component = ComponentName(pkg, info.name)
+                if (component in attempted) continue
+                discovered += Intent(if (pkg == MSTAR_PACKAGES[1]) MSTAR_SOURCE_INFO else Intent.ACTION_MAIN).setComponent(component)
+            }
+        }
+        return tryStart(context, discovered)
     }
 
     private fun sendSkyHotKey(context: Context): Boolean {
@@ -184,7 +246,7 @@ object SystemIntents {
     /**
      * Letv's own network page — 无线网络 / 有线网络 — shown as its remote's network key shows it
      * (S40 Air, Android 4.3, verified). False where the TV has no such panel, which is where
-     * [network] is the answer.
+     * [openNetwork] tries activity routes.
      */
     fun openNetworkPanel(context: Context): Boolean = letvPanel(context, "com.letv.action.network")
 
@@ -249,10 +311,97 @@ object SystemIntents {
     /** LeTV eUI's settings app, which holds the panels its remote's keys show ([letvPanel]). */
     private const val LETV_SETTINGS = "com.stv.t2.globalsetting"
 
-    /** Not Intent.resolveActivity: it returns an explicit component unchecked. */
-    private fun first(context: Context, vararg intents: Intent): Intent {
+    /** Try the actual start, not only resolution: OEM activities can reject a resolved intent. */
+    fun openSettings(context: Context): Boolean = openSettingsPanel(context) ||
+        tryStart(context, settingsCandidates(context)) || tryStart(context, discoveredSettings(context))
+
+    fun openNetwork(context: Context, ethernet: Boolean = false): Boolean = openNetworkPanel(context) ||
+        tryStart(context, networkCandidates(context, ethernet)) || openSettings(context)
+
+    fun openApplicationDetails(context: Context, pkg: String): Boolean = tryStart(context, listOf(
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + pkg)),
+    ))
+
+    /** Always asks the system uninstaller to confirm; never deletes app data or shells out. */
+    fun requestUninstall(context: Context, pkg: String): Boolean {
+        val info = runCatching { context.packageManager.getApplicationInfo(pkg, 0) }.getOrNull() ?: return false
+        if (info.flags and ApplicationInfo.FLAG_SYSTEM != 0) return false
+        val uri = Uri.parse("package:" + pkg)
+        return tryStart(context, listOf(Intent(Intent.ACTION_DELETE, uri), Intent(Intent.ACTION_UNINSTALL_PACKAGE, uri)))
+    }
+
+    /**
+     * Some old TV firmwares omit DEFAULT from their settings/installer filters. Resolve normally
+     * first, then explicitly target exported matching activities; do not guess private components.
+     */
+    internal fun tryStart(context: Context, intents: List<Intent>): Boolean {
         val pm = context.packageManager
-        return (intents.firstOrNull { runCatching { pm.resolveActivity(it, 0) }.getOrNull() != null } ?: intents.last())
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val attempted = HashSet<String>()
+        for (intent in intents) {
+            val direct = intent.component
+            val candidates = if (direct != null) {
+                listOfNotNull(runCatching { pm.getActivityInfo(direct, 0) }.getOrNull())
+            } else {
+                val preferred = runCatching { pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo }.getOrNull()
+                val matches = runCatching { pm.queryIntentActivities(intent, 0) }
+                    .getOrNull().orEmpty().mapNotNull { it.activityInfo }
+                // The resolver chooser is not a settings page and must not be pinned explicitly.
+                listOfNotNull(preferred?.takeIf { chosen -> matches.any {
+                    it.packageName == chosen.packageName && it.name == chosen.name
+                } }) + matches
+            }
+            for (info in candidates) {
+                if (!accessible(context, info)) continue
+                val target = Intent(intent).setComponent(ComponentName(info.packageName, info.name))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (!attempted.add(target.toUri(0))) continue
+                try {
+                    context.startActivity(target)
+                    noteSettingsOpened(target)
+                    return true
+                } catch (e: RuntimeException) {
+                    Log.w("HaloLiteSettings", "Cannot open " + target.component?.flattenToShortString(), e)
+                }
+            }
+        }
+        return false
+    }
+
+    private fun accessible(context: Context, info: ActivityInfo): Boolean {
+        if (!info.enabled || !info.applicationInfo.enabled || !info.exported) return false
+        val permission = info.permission
+        return permission.isNullOrEmpty() || context.checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+    /**
+     * Firmware settings can have neither a standard action nor one of our known component names
+     * (reported on Baofeng Android 4.4; not yet verified on that TV). Discover only advertised MAIN
+     * entry points in system settings packages. Never start factory/test pages or third-party apps
+     * merely because their names contain "settings". This runs only when the normal routes fail.
+     */
+    private fun discoveredSettings(context: Context): List<Intent> {
+        val pm = context.packageManager
+        val result = ArrayList<Intent>()
+        val seen = HashSet<ComponentName>()
+        val probes = listOf(
+            Intent(Intent.ACTION_MAIN).addCategory("android.intent.category.LEANBACK_SETTINGS"),
+            Intent(Intent.ACTION_MAIN).addCategory(AppEntry.CATEGORY_LEANBACK_LAUNCHER),
+            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
+            Intent(Intent.ACTION_MAIN),
+        )
+        for (probe in probes) {
+            for (match in runCatching { pm.queryIntentActivities(probe, 0) }.getOrNull().orEmpty()) {
+                val info = match.activityInfo ?: continue
+                if (info.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM == 0 || !accessible(context, info)) continue
+                val pkg = info.packageName.lowercase(java.util.Locale.ROOT)
+                val name = info.name.lowercase(java.util.Locale.ROOT)
+                val settingsCategory = probe.hasCategory("android.intent.category.LEANBACK_SETTINGS")
+                if (!settingsCategory && !pkg.split('.').any { it.contains("setting") }) continue
+                if (listOf("factory", "engineer", "calibrat", "test", "fallbackhome").any { name.contains(it) || pkg.contains(it) }) continue
+                val component = ComponentName(info.packageName, info.name)
+                if (seen.add(component)) result.add(Intent(probe).setComponent(component))
+            }
+        }
+        return result
     }
 }

@@ -8,10 +8,11 @@ import android.graphics.Typeface
 import android.os.Build
 import android.os.Environment
 import android.os.StatFs
+import android.text.TextPaint
+import android.text.TextUtils
 import android.text.format.Formatter
 import android.view.View
 import java.util.Calendar
-import java.util.Locale
 
 /** Halo's home header, drawn once per minute in a single lightweight View. */
 class HaloClockView(context: Context) : View(context) {
@@ -32,7 +33,7 @@ class HaloClockView(context: Context) : View(context) {
     private var greeting = ""
     private var lunar: String? = null
     private var capacity = ""
-    private val text = Paint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG)
+    private val text = TextPaint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG)
     private val outfit: Typeface? by lazy { runCatching { Typeface.createFromAsset(context.assets, "outfit.ttf") }.getOrNull() }
     private val headerFaces = HashMap<Int, Typeface>()
     private fun headerFont(weight: Int): Typeface = headerFaces.getOrPut(weight) {
@@ -43,7 +44,6 @@ class HaloClockView(context: Context) : View(context) {
         else if (weight <= 300) outfit ?: Ui.font(weight) else Ui.font(weight)
     }
     private val icon = Paint(Paint.FILTER_BITMAP_FLAG)
-    private val rule = Paint(Paint.ANTI_ALIAS_FLAG)
     private val scale get() = when (sizeMode) { 1 -> 1.2f; 2 -> 1.4f; else -> 1f }
     private val ink get() = when (LiteSettings.desktopTextColor) {
         1 -> 0xFF252A30.toInt()
@@ -62,7 +62,15 @@ class HaloClockView(context: Context) : View(context) {
             in 17..21 -> R.string.home_good_evening
             else -> R.string.home_good_night
         })
-        capacity = if (LiteSettings.showDeviceCapacity) runCatching {
+        invalidate()
+    }
+
+    fun updateCapacity(value: String) {
+        if (capacity != value) { capacity = value; invalidate() }
+    }
+
+    companion object {
+        fun readCapacity(context: Context): String = if (LiteSettings.showDeviceCapacity) runCatching {
             val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             val memory = ActivityManager.MemoryInfo().also(manager::getMemoryInfo)
             val fs = StatFs(Environment.getDataDirectory().path)
@@ -71,17 +79,16 @@ class HaloClockView(context: Context) : View(context) {
                 Formatter.formatShortFileSize(context, memory.availMem),
                 Formatter.formatShortFileSize(context, storage))
         }.getOrDefault("") else ""
-        invalidate()
     }
 
     override fun hasOverlappingRendering() = false
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         setMeasuredDimension(minOf((Ui.screenW - Ui.pxi(112f)).coerceAtLeast(1), Ui.pxi((if (compactStatus) 520f else 450f) * scale)),
-            Ui.pxi(if (compactStatus) 40f * scale else ((if (alignEnd || alignCenter) 150f else 126f) + if (LiteSettings.showLunarDate && lunar != null) 22f else 0f) * scale))
+            Ui.pxi((if (compactStatus) 40f else 148f) * scale))
     }
 
-    private fun style(size: Float, weight: Int, alpha: Int = 255, light: Boolean = false) {
+    private fun style(size: Float, weight: Int, alpha: Int = 255) {
         text.textSize = Ui.px(size * scale)
         text.typeface = headerFont(if (sizeMode == 2) 700 else weight)
         text.color = (ink and 0x00FFFFFF) or (alpha shl 24)
@@ -95,64 +102,38 @@ class HaloClockView(context: Context) : View(context) {
     }
 
     private fun label(canvas: Canvas, value: String, size: Float, weight: Int, y: Float,
-                      alpha: Int = 255, light: Boolean = false, x: Float? = null): Float {
-        style(size, weight, alpha, light)
-        val width = text.measureText(value)
-        canvas.drawText(value, x ?: start(width), Ui.px(y * scale), text)
-        return width
+                      alpha: Int = 255) {
+        style(size, weight, alpha)
+        canvas.drawText(value, start(text.measureText(value)), Ui.px(y * scale), text)
     }
 
     override fun onDraw(canvas: Canvas) {
         if (time.isEmpty()) refresh()
-        if (compactStatus) {
-            drawCompact(canvas)
-        } else if (alignEnd || alignCenter) {
-            drawStacked(canvas)
-        } else {
-            drawLeft(canvas)
-        }
+        if (compactStatus) drawCompact(canvas) else drawHeader(canvas)
     }
 
-    private fun drawLeft(c: Canvas) {
-        val greetingHeight = if (LiteSettings.showHomeGreeting) 22f else 0f
-        if (LiteSettings.showHomeGreeting) label(c, greeting, 13f, 500, 12f, 200)
-        var y = greetingHeight
-        if (LiteSettings.showHomeTime) {
-            style(54f, 300, light = true)
-            val timeWidth = text.measureText(time)
-            y += 46f
-            val baseline = Ui.px(y * scale)
-            c.drawText(time, 0f, baseline, text)
-            if (LiteSettings.showHomeDate) {
-                val x = timeWidth + Ui.px(14f * scale)
-                rule.color = (ink and 0x00FFFFFF) or 0x88000000.toInt()
-                rule.strokeWidth = Ui.px(1f)
-                c.drawLine(x, baseline - Ui.px(22f * scale), x, baseline, rule)
-                label(c, date, 16f, 400, y, 220, x = x + Ui.px(14f * scale))
-            }
-        } else if (LiteSettings.showHomeDate) {
+    private fun drawHeader(c: Canvas) {
+        var y = 0f
+        if (LiteSettings.showHomeGreeting) {
+            label(c, greeting, 13f, 500, 12f, 200)
             y += 22f
-            label(c, date, 16f, 400, y, 220)
         }
-        if (LiteSettings.showLunarDate && lunar != null) {
+        if (LiteSettings.showHomeTime) {
+            y += 46f
+            label(c, time, 54f, 300, y)
+        }
+        val civilDate = date.takeIf { LiteSettings.showHomeDate }
+        val lunarDate = lunar?.takeIf { LiteSettings.showLunarDate }?.let { context.getString(R.string.lunar_date_value, it) }
+        if (civilDate != null || lunarDate != null) {
             y += 22f
-            label(c, context.getString(R.string.lunar_date_value, lunar), 14f, 400, y, 225)
+            style(14f, 400, 225)
+            val dateLine = TextUtils.ellipsize(
+                listOfNotNull(civilDate, lunarDate).joinToString(" · "), text, (width - if (alignEnd) Ui.px(2f) else 0f).coerceAtLeast(0f), TextUtils.TruncateAt.END,
+            ).toString()
+            c.drawText(dateLine, start(text.measureText(dateLine)), Ui.px(y * scale), text)
         }
         if (LiteSettings.showWeather && weather != null) { y += 27f; drawWeather(c, y) }
         if (capacity.isNotEmpty()) label(c, capacity, 12f, 500, y + 21f, 210)
-    }
-
-    private fun drawStacked(c: Canvas) {
-        var y = 0f
-        if (LiteSettings.showHomeGreeting) { y = 12f; label(c, greeting, 13f, 500, y, 200); y += 12f }
-        if (LiteSettings.showHomeTime) { y += 46f; label(c, time, 54f, 300, y, light = true) }
-        if (LiteSettings.showHomeDate) { y += 24f; label(c, date, 16f, 400, y, 220) }
-        if (LiteSettings.showLunarDate && lunar != null) {
-            y += 22f
-            label(c, context.getString(R.string.lunar_date_value, lunar), 14f, 400, y, 225)
-        }
-        if (LiteSettings.showWeather && weather != null) { y += 26f; drawWeather(c, y) }
-        if (capacity.isNotEmpty()) label(c, capacity, 12f, 500, y + 22f, 210)
     }
 
     private fun drawWeather(c: Canvas, baseline: Float) {

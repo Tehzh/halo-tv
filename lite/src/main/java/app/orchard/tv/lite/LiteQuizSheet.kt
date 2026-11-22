@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 
@@ -20,6 +21,8 @@ internal class LiteQuizSheet(
     private var index = 0
     private var correct = 0
     private var reward = 0
+    private var finished = false
+    private var inputEnabled = true
     private val chosen = mutableSetOf<Int>()
     private val ink = 0xFF34274F.toInt()
 
@@ -83,6 +86,8 @@ internal class LiteQuizSheet(
         help.addView(android.view.View(context), LinearLayout.LayoutParams(1, 0, 1f))
         help.addView(parentButton, LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, Ui.pxi(47f)))
         val question = questions.getOrNull(index)
+        val options = mutableListOf<QuizButton>()
+        lateinit var next: QuizButton
         if (question == null) {
             main.addView(label(context.getString(R.string.quiz_score, correct, 5), 31f, 700))
             main.addView(label(context.getString(if (correct >= 4) R.string.quiz_pass else R.string.quiz_retry), 19f))
@@ -97,8 +102,11 @@ internal class LiteQuizSheet(
                         action = {
                             if (question.answers.size == 1) { chosen.clear(); chosen += n }
                             else if (!chosen.remove(n)) chosen += n
-                            render(position)
+                            // Selection never rebuilds the page or its remote focus graph.
+                            options.forEach { it.invalidate() }
+                            next.text = context.getString(if (chosen.isEmpty()) R.string.quiz_pick_before_submit else R.string.quiz_submit)
                         }
+                        options += this
                         line.addView(this, LinearLayout.LayoutParams(0, Ui.pxi(49f), 1f).apply {
                             topMargin = Ui.pxi(6f)
                             if (n % 2 == 1) leftMargin = Ui.pxi(8f)
@@ -110,14 +118,16 @@ internal class LiteQuizSheet(
             }
         }
         main.addView(android.view.View(context), LinearLayout.LayoutParams(1, 0, 1f))
-        val next = action(context.getString(when {
+        next = action(context.getString(when {
             question == null && correct >= 4 -> R.string.quiz_continue
             question == null -> R.string.quiz_again
             chosen.isEmpty() -> R.string.quiz_pick_before_submit
             else -> R.string.quiz_submit
         })) {
             if (question == null) {
-                if (correct >= 4) finish(reward)
+                if (correct >= 4) {
+                    if (!finished) { finished = true; finish(reward) }
+                }
                 else { questions = Kids.questions(); index = 0; correct = 0; reward = 0; render() }
             } else if (chosen.isNotEmpty()) {
                 if (chosen == question.answers) { correct++; reward += question.difficulty }
@@ -131,29 +141,47 @@ internal class LiteQuizSheet(
         focusFirst(focus.first, focus.second)
     }
 
-    override fun onKey(e: KeyEvent) = if (e.keyCode == KeyEvent.KEYCODE_BACK) true else super.onKey(e)
+    fun setInteractionEnabled(enabled: Boolean) {
+        if (inputEnabled == enabled) return
+        inputEnabled = enabled
+        // focusFirst also cancels any press that began before a modal covered the quiz.
+        focusFirst(position.first, position.second)
+        focused?.focusedLook = enabled
+    }
+
+    override fun dispatchTouchEvent(e: MotionEvent): Boolean = if (!inputEnabled) true else super.dispatchTouchEvent(e)
+
+    override fun onKey(e: KeyEvent) = when {
+        !inputEnabled -> false
+        e.keyCode == KeyEvent.KEYCODE_BACK -> true
+        else -> super.onKey(e)
+    }
 }
 
 private class QuizButton(
-    context: Context, private val text: String, private val color: Int, private val ink: Int,
+    context: Context, text: String, private val color: Int, private val ink: Int,
     private val selected: () -> Boolean,
 ) : Control(context) {
     override val focusScale = 1f
-    private val label = Ui.text(18f, 700, ink)
+    var text: String = text
+        set(value) { field = value; invalidate() }
+    private val label = android.text.TextPaint(Ui.text(18f, 700, ink))
     override fun onDraw(canvas: Canvas) {
         val radius = Ui.px(14f)
         rect.set(0f, 0f, width.toFloat(), height.toFloat())
-        bg.color = color
+        bg.color = if (focusedLook) 0xFFFFE6A6.toInt() else color
         canvas.drawRoundRect(rect, radius, radius, bg)
         if (focusedLook || selected()) {
             bg.color = 0xFF423473.toInt()
             bg.style = android.graphics.Paint.Style.STROKE
-            bg.strokeWidth = Ui.px(3f)
+            bg.strokeWidth = Ui.px(if (focusedLook) 4f else 2f)
             rect.inset(bg.strokeWidth / 2f, bg.strokeWidth / 2f)
             canvas.drawRoundRect(rect, radius, radius, bg)
             bg.style = android.graphics.Paint.Style.FILL
         }
-        val fitted = android.text.TextUtils.ellipsize(text, android.text.TextPaint(label), width - Ui.px(14f), android.text.TextUtils.TruncateAt.END).toString()
+        label.color = if (focusedLook) 0xFF30234F.toInt() else ink
+        val display = if (selected()) "✓" + text.drop(1) else text
+        val fitted = android.text.TextUtils.ellipsize(display, label, width - Ui.px(14f), android.text.TextUtils.TruncateAt.END).toString()
         canvas.drawText(fitted, (width - label.measureText(fitted)) / 2f, baseline(label, height / 2f), label)
     }
 }

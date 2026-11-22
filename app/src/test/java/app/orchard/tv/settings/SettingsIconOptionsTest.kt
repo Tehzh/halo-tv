@@ -21,6 +21,7 @@ class SettingsIconOptionsTest {
         assertEquals(0, AerialSettings.settingsIconPosition)
         assertEquals(1, AerialSettings.settingsIconVisibility)
         val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        AerialSettings.chooseShowLunarDate(false)
         AerialSettings.chooseShowLunarDate(true)
         assertTrue(prefs.getBoolean("show_lunar_date", false))
         AerialSettings.chooseShowLunarDate(false)

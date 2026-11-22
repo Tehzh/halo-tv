@@ -94,6 +94,27 @@ class CecHomeDirectBootTest {
     }
 
     @Test
+    fun lateLockedBindingDoesNotReadBootOpenCredentialPreferences() {
+        shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(
+            "${context.packageName}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION",
+        )
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMinutes(6))
+        shadowOf(context.getSystemService(Context.POWER_SERVICE) as android.os.PowerManager).setIsInteractive(true)
+        shadowOf(userManager).setUserUnlocked(false)
+        val controller = Robolectric.buildService(HomeGuardService::class.java)
+        val service = controller.get()
+        ReflectionHelpers.setField(service, "mBase", credentialContext)
+        try {
+            controller.create()
+            ReflectionHelpers.callInstanceMethod<Unit>(service, "onServiceConnected")
+            assertTrue(HomeGuardService.isRunning)
+        } finally {
+            controller.destroy()
+            shadowOf(userManager).setUserUnlocked(true)
+        }
+    }
+
+    @Test
     fun unlockedFeatureKeepsItsDefaultInputSetting() {
         shadowOf(userManager).setUserUnlocked(true)
         assertNull(CecHome.inputSettingKey(credentialContext))

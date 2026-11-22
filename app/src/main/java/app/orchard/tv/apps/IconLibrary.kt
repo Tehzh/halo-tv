@@ -33,6 +33,11 @@ import java.net.URL
  *
  * Only this object writes files/library, and it removes a file only when the index names a newer
  * picture or drops it, or the app is gone.
+ *
+ * The phone page can also give an app a picture of another app in the library (issue #1486: an
+ * international or modified build under another package name, as Tencent Video's
+ * com.tencent.qqlivei18n). Kept as "borrow:<package>" = "<other package>/<id>", and fetched when
+ * picked and on each refresh like the app's own.
  */
 object IconLibrary {
     private const val TAG = "AerialIcons"
@@ -59,6 +64,8 @@ object IconLibrary {
     @Volatile private var index: Map<String, List<Choice>> = emptyMap()
     /** Source key → {"name": …, "<language>": …}, from the last index read. */
     @Volatile var credits: JSONObject = JSONObject(); private set
+    /** Package → its names, for the phone page's picker to show and search apps not on this TV. */
+    @Volatile var names: JSONObject = JSONObject(); private set
     private val refreshing = Mutex()
     @Volatile private var lastAttempt = 0L
     /** Pictures that failed to download (by file name), and when: not tried on every reload. */
@@ -68,9 +75,10 @@ object IconLibrary {
         if (::dir.isInitialized) return
         dir = File(context.filesDir, "library").apply { mkdirs() }
         prefs = context.applicationContext.getSharedPreferences("icon_library", Context.MODE_PRIVATE)
-        val saved = read(runCatching { File(dir, "index.json").takeIf { it.isFile }?.readText() }.getOrNull())
+        val text = runCatching { File(dir, "index.json").takeIf { it.isFile }?.readText() }.getOrNull()
+        val saved = read(text)
         if (saved != null) {
-            index = saved.first; credits = saved.second
+            index = saved.first; credits = saved.second; names = names(text)
         } else {
             // An interrupted/unreadable cache must neither stop Home nor defer its repair for 12 h.
             prefs.edit { remove("checked_at"); remove("checked_by") }
@@ -79,12 +87,26 @@ object IconLibrary {
 
     private fun here(c: Choice): File? = File(dir, c.fileName).takeIf { it.exists() }
 
+    /** Every app the library has pictures of, for the phone page's whole-library picker. */
+    fun catalog(): Map<String, List<Choice>> = index
+
+    /** The site's address of the pictures, which the phone page shows the whole library from. */
+    const val PICTURES = BASE
+
+    /** Another app's picture given to [pkg] on the phone page, as the index names it: (its app, it). */
+    fun borrowed(pkg: String): Pair<String, Choice>? {
+        if (!::prefs.isInitialized) return null
+        val (from, id) = prefs.getString("borrow:$pkg", null)?.split('/', limit = 2)?.takeIf { it.size == 2 } ?: return null
+        return index[from]?.firstOrNull { it.id == id }?.let { from to it }
+    }
+
     /** The pictures of [pkg] that are on this TV, the default first. */
     fun choices(pkg: String): List<Choice> =
         if (::dir.isInitialized) index[pkg].orEmpty().filter { here(it) != null } else emptyList()
 
     /** The picture [pkg]'s tile uses from the library: the phone page's pick, else the default. */
     fun chosen(pkg: String): Choice? {
+        borrowed(pkg)?.second?.takeIf { here(it) != null }?.let { return it }
         val here = choices(pkg)
         val id = if (::prefs.isInitialized) prefs.getString("choice:$pkg", null) else null
         return here.firstOrNull { it.id == id } ?: here.firstOrNull()
@@ -94,8 +116,10 @@ object IconLibrary {
     fun has(pkg: String, label: String? = null): Boolean = chosen(pkg) != null
 
     /** The library's picture of [pkg] as stored, for the phone page: [id]'s, or the chosen one. */
-    fun file(pkg: String, id: String? = null): File? {
+    fun file(pkg: String, id: String? = null, from: String? = null): File? {
+        if (from != null) return borrowed(pkg)?.takeIf { it.first == from && it.second.id == id }?.second?.let(::here)
         val c = if (id == null) chosen(pkg) else choices(pkg).firstOrNull { it.id == id }
+            ?: borrowed(pkg)?.second?.takeIf { it.id == id }
         return c?.let(::here)
     }
 
@@ -120,13 +144,19 @@ object IconLibrary {
      * From the phone page; the caller calls [changed] on the main thread after. [choice] is the
      * library picture picked with [Pick.Library] (null: the default).
      */
-    fun choose(pkg: String, pick: Pick?, choice: String? = null) {
+    fun choose(pkg: String, pick: Pick?, choice: String? = null, from: String? = null) {
         val library = prefs.getStringSet("use_library", emptySet())!! - pkg
         val own = prefs.getStringSet("use_own", emptySet())!! - pkg
         val default = index[pkg]?.firstOrNull()?.id
         prefs.edit {
             putStringSet("use_library", if (pick == Pick.Library) library + pkg else library)
             putStringSet("use_own", if (pick == Pick.Own) own + pkg else own)
+            // Any other pick takes back a picture borrowed from another app.
+            if (pick == Pick.Library && from != null && from != pkg && choice != null) {
+                putString("borrow:$pkg", "$from/$choice")
+                return@edit
+            }
+            remove("borrow:$pkg")
             if (pick == Pick.Own) return@edit
             if (choice == null || choice == default) remove("choice:$pkg") else putString("choice:$pkg", choice)
         }
@@ -140,6 +170,19 @@ object IconLibrary {
         when (pick(pkg)) { Pick.Own -> 1L; Pick.Library -> 2L; null -> 0L }
 
     private fun usable(pkg: String): File? = file(pkg)?.takeIf { uses(pkg) }
+
+    /**
+     * Fetches [c] now, if it is not here: the phone page waits for a picture borrowed from
+     * another app, so the tile changes at once. True when it is here. Off the main thread.
+     */
+    fun fetchPicture(c: Choice): Boolean {
+        if (!::dir.isInitialized) return false
+        val file = File(dir, c.fileName)
+        if (file.exists() && file.setLastModified(System.currentTimeMillis())) return true
+        return runCatching { download(BASE + c.path, file) }
+            .onFailure { Log.w(TAG, "could not fetch ${c.path}", it) }
+            .isSuccess
+    }
 
     /** The app's picture, or null. Off the main thread. */
     fun load(pkg: String, label: String? = null): Bitmap? {
@@ -186,6 +229,7 @@ object IconLibrary {
                             changed = fresh.mapValues { e -> e.value.map { it.path } } != index.mapValues { e -> e.value.map { it.path } }
                             index = fresh
                             credits = c
+                            names = names(text)
                             prefs.edit { putLong("checked_at", now); putInt("checked_by", app.orchard.tv.BuildConfig.VERSION_CODE) }
                             Log.i(TAG, "icon index: ${fresh.size} apps, ${fresh.values.sumOf { it.size }} pictures")
                         }
@@ -193,7 +237,7 @@ object IconLibrary {
             }
             val keep = HashSet<String>()
             for (pkg in installed) {
-                for (c in index[pkg].orEmpty()) {
+                for (c in index[pkg].orEmpty() + listOfNotNull(borrowed(pkg)?.second)) {
                     val file = File(dir, c.fileName)
                     keep += file.name
                     if (file.exists() || now - (failedAt[file.name] ?: 0L) < RETRY_MS) continue
@@ -203,12 +247,16 @@ object IconLibrary {
                 }
             }
             // Pictures replaced by newer ones, or of apps no longer installed.
-            dir.listFiles()?.forEach { if (it.name != "index.json" && it.name !in keep) it.delete() }
+            dir.listFiles()?.forEach { if (it.name != "index.json" && it.name !in keep && now - it.lastModified() >= RETRY_MS) it.delete() }
             changed
         } finally {
             refreshing.unlock()
         }
     }
+
+    /** The apps' names in the index ({"<package>": {"zh": …, "en": …, "also": …}}), empty when it has none. */
+    internal fun names(text: String?): JSONObject =
+        runCatching { JSONObject(text ?: return JSONObject()).optJSONObject("names") }.getOrNull() ?: JSONObject()
 
     /** The index's pictures and credits; null when [text] is not an index. */
     @androidx.annotation.VisibleForTesting
@@ -259,17 +307,19 @@ object IconLibrary {
 
     /** Into a temporary file first, so a broken download never stands as the picture. */
     private fun download(url: String, to: File) {
-        val tmp = File(dir, to.name + ".part")
-        val c = connect(url)
+        val tmp = File.createTempFile(to.name.padEnd(3, '_'), ".part", dir)
         try {
-            c.inputStream.use { input -> tmp.outputStream().use { input.copyTo(it) } }
+            val c = connect(url)
+            try {
+                c.inputStream.use { input -> tmp.outputStream().use { input.copyTo(it) } }
+            } finally {
+                c.disconnect()
+            }
+            val ok = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                .also { BitmapFactory.decodeFile(tmp.path, it) }.outWidth > 0
+            check(ok && tmp.renameTo(to)) { "Could not publish icon picture" }
         } finally {
-            c.disconnect()
-        }
-        val ok = BitmapFactory.Options().apply { inJustDecodeBounds = true }.also { BitmapFactory.decodeFile(tmp.path, it) }.outWidth > 0
-        if (!ok || !tmp.renameTo(to)) {
             tmp.delete()
-            error("not a picture")
         }
     }
 }

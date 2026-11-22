@@ -17,4 +17,14 @@
     <string name="lite_contact_xhs">小红书</string>
     <string name="lite_contact_enlarge">选择二维码后按确认键可放大查看。</string>
     <string name="lite_contact_scan">扫码联系</string>
+    <string name="lite_online_saver">在线图片</string>
+    <string name="lite_online_saver_hint">轮播已缓存的在线图片。首次加载完成前，使用内置图片。</string>
+    <string name="lite_guard_title">Halo TV Lite 桌面守护</string>
+    <string name="lite_guard_description">按主页键时尝试回到 Halo TV Lite。开机进入原桌面时可尝试恢复，不读取屏幕内容。</string>
+    <string name="lite_guard_open">开启或关闭桌面守护</string>
+    <string name="lite_guard_hint">在无障碍设置中开启或关闭「Halo TV Lite 桌面守护」。重启后服务一直未连接，可在电视的应用设置里查看自启动权限。</string>
+    <string name="lite_guard_unsupported">桌面守护 · 需要 Android 5.0 或更高版本</string>
+    <string name="lite_guard_off">桌面守护 · 已关闭</string>
+    <string name="lite_guard_waiting">桌面守护 · 已授权，服务未连接</string>
+    <string name="lite_guard_connected">桌面守护 · 服务已连接</string>
 </resources>

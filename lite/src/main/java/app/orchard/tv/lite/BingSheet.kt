@@ -103,30 +103,22 @@ internal class BingSheet(context: Context, close: () -> Unit, private val applie
         worker.execute {
             for ((view, item) in cells) {
                 if (generation != request) break
-                val thumb = runCatching {
-                    if (android.os.Build.VERSION.SDK_INT < 18) {
-                        val bytes = PhoneOnlineLibrary.legacyThumbnail(item.getString("date"))
-                        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-                        var sample = 1
-                        while (bounds.outWidth / sample > 640 || bounds.outHeight / sample > 360) sample *= 2
-                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply {
-                            inSampleSize = sample; inPreferredConfig = Bitmap.Config.RGB_565
-                        })
+                val primary = runCatching {
+                    val bytes = if (android.os.Build.VERSION.SDK_INT < 18) {
+                        PhoneOnlineLibrary.legacyThumbnail(item.getString("date"))
                     } else {
-                    val conn = Net.open(item.getString("thumbnail"))
-                    try { conn.inputStream.use { BitmapFactory.decodeStream(it) } } finally { conn.disconnect() }
+                        Net.bytes(item.getString("thumbnail"), THUMBNAIL_BYTES)
                     }
-                }.getOrNull() ?: runCatching {
-                    val bytes = PhoneOnlineLibrary.legacyThumbnail(item.getString("date"))
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
-                    var sample = 1
-                    while (bounds.outWidth / sample > 640 || bounds.outHeight / sample > 360) sample *= 2
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply {
-                        inSampleSize = sample; inPreferredConfig = Bitmap.Config.RGB_565
-                    })
+                    decodeThumbnail(bytes)
                 }.getOrNull()
+                if (generation != request || Thread.currentThread().isInterrupted) {
+                    primary?.recycle()
+                    break
+                }
+                val thumb = primary ?: runCatching {
+                    decodeThumbnail(PhoneOnlineLibrary.legacyThumbnail(item.getString("date")))
+                }.getOrNull()
+
                 main.post { if (request == generation) view.picture = thumb else thumb?.recycle() }
             }
         }
@@ -158,19 +150,45 @@ internal class BingSheet(context: Context, close: () -> Unit, private val applie
                     control(context.getString(label)) {
                         if (!image.isEnabled) return@control
                         image.isEnabled = false
+                        val intent = Wallpapers.beginOnlineRequest()
                         worker.execute {
-                            val id = runCatching { Wallpapers.storeOnline(picture.first) }.getOrNull()
+                            val temp = runCatching { Wallpapers.prepareOnline(picture.first) }.getOrNull()
                             main.post {
+                                try {
                                 if (generation != request) return@post
                                 image.isEnabled = true
+                                val id = temp?.let { Wallpapers.commitOnline(it, intent) }
                                 if (id != null) applied(id)
                                 else Toast.makeText(context, R.string.lite_bing_write_failed, Toast.LENGTH_SHORT).show()
+                                } finally { temp?.delete(); Wallpapers.finishOnlineRequest(intent) }
                             }
                         }
                     }.also { bar.addView(it) }
                 }
                 col.addView(bar); row(*actions.toTypedArray())
             }
+        }
+    }
+
+    companion object {
+        private const val THUMBNAIL_BYTES = 4_000_000L
+
+        internal fun thumbnailSample(width: Int, height: Int): Int {
+            if (width <= 0 || height <= 0) return 0
+            var sample = 1
+            while (width / sample > 640 || height / sample > 360) sample *= 2
+            return sample
+        }
+
+        internal fun decodeThumbnail(bytes: ByteArray): Bitmap? {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+            val sample = thumbnailSample(bounds.outWidth, bounds.outHeight)
+            if (sample == 0) return null
+            return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply {
+                inSampleSize = sample
+                inPreferredConfig = Bitmap.Config.RGB_565
+            })
         }
     }
 

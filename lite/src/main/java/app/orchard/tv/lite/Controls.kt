@@ -46,6 +46,8 @@ abstract class Control(context: Context) : View(context) {
 class MenuRow(context: Context, private val glyph: Glyph, var text: String, var trailing: String? = null, private val destructive: Boolean = false, private val plate: Boolean = false) : Control(context) {
     private val label = TextPaint(Ui.text(14f, 500))
     private val value = TextPaint(Ui.text(13f, 500))
+    var unreadDot = false
+        set(value) { if (field != value) { field = value; invalidate() } }
     var selectedLook = false
         set(value) { field = value; invalidate() }
 
@@ -74,6 +76,10 @@ class MenuRow(context: Context, private val glyph: Glyph, var text: String, var 
         }
         label.color = fg
         canvas.drawText(fit(text, label, right - x), x, baseline(label, h / 2), label)
+        if (unreadDot) {
+            bg.color = Ui.RED
+            canvas.drawCircle(w - Ui.px(10f), Ui.px(9f), Ui.px(3f), bg)
+        }
     }
 }
 
@@ -313,7 +319,22 @@ open class Sheet(context: Context, protected val close: () -> Unit) : FrameLayou
 
     fun row(vararg controls: Control): List<Control> {
         rows += controls.toMutableList()
+        for (control in controls) control.setOnClickListener { tapped(control) }
         return controls.toList()
+    }
+
+    private fun tapped(control: Control) {
+        if (control.visibility != View.VISIBLE || !control.isEnabled) return
+        val at = rows.indexOfFirst { control in it }
+        if (at < 0) return
+        // A remote press started before a pointer click must not fire on the newly focused item.
+        press.reset()
+        focused?.focusedLook = false
+        r = at
+        c = rows[at].indexOf(control)
+        control.focusedLook = true
+        onFocusMoved(control)
+        control.click()
     }
 
     /** Conditional single-control rows keep their place without becoming an invisible focus stop. */
@@ -333,6 +354,7 @@ open class Sheet(context: Context, protected val close: () -> Unit) : FrameLayou
 
     /** Forgets every row, for a sheet that makes its rows again (Personalize when a row comes or goes). */
     protected fun clearRows() {
+        press.reset()
         focused?.focusedLook = false
         rows.clear()
         leftAt.clear()
@@ -355,6 +377,7 @@ open class Sheet(context: Context, protected val close: () -> Unit) : FrameLayou
     }
 
     fun focusFirst(row: Int = 0, col: Int = 0) {
+        press.reset()
         unclip()
         focused?.focusedLook = false
         r = row.coerceIn(0, (rows.size - 1).coerceAtLeast(0))
@@ -371,6 +394,7 @@ open class Sheet(context: Context, protected val close: () -> Unit) : FrameLayou
     private fun View.isLaidOutCompat() = width > 0 && height > 0
 
     open fun onKey(e: KeyEvent): Boolean {
+        if (e.action == KeyEvent.ACTION_DOWN && !Press.isOk(e.keyCode)) press.reset()
         if (press.onKey(e, click = { focused?.click() })) return true
         if (e.keyCode == KeyEvent.KEYCODE_BACK) {
             if (e.action == KeyEvent.ACTION_UP) close()

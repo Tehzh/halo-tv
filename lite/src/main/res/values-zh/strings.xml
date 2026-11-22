@@ -16,4 +16,7 @@
     <string name="halo_lite_clock_weather">时钟与天气</string>
     <string name="halo_lite_interaction">操作与交互</string>
     <string name="halo_lite_security">安全</string>
+    <string name="st_sounds_soft">Soft</string>
+    <string name="halo_auto_clean_idle">空闲时自动清理后台</string>
+    <string name="lite_auto_clean_hint">桌面无操作 2 分钟后尝试清理缓存进程；播放音频或使用 VPN 时跳过。实际效果由系统决定。</string>
 </resources>

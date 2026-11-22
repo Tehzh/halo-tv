@@ -24,12 +24,15 @@ class FlipClockView(context: Context) : View(context) {
     private var initialized = false
     private var info = ""
     private var seconds: String? = null
+    private var secondsStyle = 0
     private var progress = 1f
     private var animator: ValueAnimator? = null
 
-    fun setContents(time: String, newInfo: String, newSeconds: String? = null) {
-        val secondChanged = seconds != newSeconds
+    fun setContents(time: String, newInfo: String, newSeconds: String? = null, style: Int = 0) {
+        val nextStyle = style.coerceIn(0, 1)
+        val secondChanged = seconds != newSeconds || secondsStyle != nextStyle
         seconds = newSeconds
+        secondsStyle = nextStyle
         if (!initialized) {
             current = time
             previous = time
@@ -62,7 +65,7 @@ class FlipClockView(context: Context) : View(context) {
         val h = height.toFloat()
         if (w <= 0f || h <= 0f) return
 
-        // Match the original ClockView's 83% width and centered vertical rhythm.
+        // Keep the clock within 83% of the canvas and centered vertically.
         val cardSize = minOf(w * 0.22f, h * 0.42f, w * 0.90f / 2.14f)
         val infoMax = h * 0.038f
         val infoSize = (cardSize * 0.070f).coerceIn(minOf(18f, infoMax), infoMax)
@@ -84,7 +87,13 @@ class FlipClockView(context: Context) : View(context) {
             x += digitWidth + if (index == 1) middleGap else smallGap
         }
 
-        seconds?.let {
+        if (secondsStyle == 1 && seconds?.toIntOrNull()?.rem(2) == 0) {
+            paint.color = Color.rgb(244, 244, 244)
+            val radius = middleGap * 0.105f
+            canvas.drawCircle(w * 0.5f, digitCenterY - (bottom - top) * 0.13f, radius, paint)
+            canvas.drawCircle(w * 0.5f, digitCenterY + (bottom - top) * 0.13f, radius, paint)
+        }
+        seconds?.takeIf { secondsStyle == 0 }?.let {
             paint.typeface = digitTypeface
             paint.color = Color.rgb(204, 204, 212)
             paint.textSize = cardSize * 0.17f

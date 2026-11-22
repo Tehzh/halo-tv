@@ -7,4 +7,10 @@
     <string name="halo_ann_later">Напомнить завтра</string>
     <string name="halo_ann_stop">Больше не напоминать</string>
     <string name="halo_ann_ack">Понятно</string>
+    <string name="halo_ann_fullscreen">Читать на весь экран</string>
+    <string name="halo_ann_compact">Свернуть</string>
+    <string name="halo_ann_read_hint">↑↓ Листать · → Кнопки · Можно делать снимки экрана</string>
+    <string name="halo_ann_progress">Прочитано: %1$d%%</string>
+    <string name="halo_update_compatible">Установить через систему</string>
+    <string name="halo_update_compatible_hint">Файл загружен, но окно установки не появилось? Повторите через системный установщик без новой загрузки. Подтвердите на ТВ.</string>
 </resources>

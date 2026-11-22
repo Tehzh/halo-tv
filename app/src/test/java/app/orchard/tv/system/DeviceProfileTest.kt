@@ -48,6 +48,15 @@ class DeviceProfileTest {
         assertEquals(mapOf(7 to 23, 6 to 24, 5 to 25), DeviceProfile.match(json, "MiTV4-ANSM0", 22, 11)!!.xiaomiSourceIds)
         assertEquals("HDMI 1", DeviceProfile.match(json, "MiTV4-ANSM0", 23, 0)!!.labels[7])
     }
+    @Test fun localTextureCompatibilityDoesNotChangeOtherDeviceDefaults() {
+        assertTrue(DeviceProfile.match(json, "MiTV-ASTR0", 0)!!.localVideoTexture)
+        assertEquals(setOf(7, 8), DeviceProfile.match(json, "MiTV-ASTR0", 0)!!.hiddenHardware)
+        assertFalse(DeviceProfile.match(json, "MiTV-MFTR0", 0)!!.localVideoTexture)
+        assertFalse(DeviceProfile.parse(JSONObject("{}")).localVideoTexture)
+        val profile = DeviceProfile(localVideoTexture = true)
+        assertFalse(profile.isEmpty)
+        assertTrue(DeviceProfile.parse(profile.toJson()).localVideoTexture)
+    }
 
     @Test fun jsonRoundTrips() {
         val p = DeviceProfile(setOf(8, 3), mapOf(6 to "HDMI 1"), mapOf(6 to 23), mapOf(7 to 25), true)

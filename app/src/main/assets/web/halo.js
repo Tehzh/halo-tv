@@ -25,6 +25,19 @@ const extraLabels={
 };
 for(const[key,pair]of Object.entries(extraLabels)){const k='halo_'+key;KEYS.push(k);for(const l of LANGS){const value=l==='zh'?pair[0]:pair[1];TEXTS[l].push(value);I18N[l][k]=value;}}
 const updateLabels = {
+ dockSize: ['Dock 与图标大小','Dock and icon size','Размер Dock и значков','Розмір Dock і значків','Dock пен белгішелер өлшемі'],
+ dockSmall: ['小','Small','Малый','Малий','Кіші'],
+ dockDefault: ['默认','Default','По умолчанию','Типовий','Әдепкі'],
+ dockLarge: ['大','Large','Большой','Великий','Үлкен'],
+ nameStyle: ['应用名称','App names','Названия приложений','Назви застосунків','Қолданба атаулары'],
+ focusedName: ['只显示选中','Focused only','Только выбранное','Лише вибране','Тек таңдалған'],
+ allNames: ['全部显示','Show all','Показать все','Показати всі','Барлығын көрсету'],
+ largeTitle: ['大标题','Large title','Крупный заголовок','Великий заголовок','Үлкен тақырып'],
+ classicSlide: ['经典玻璃滑动','Classic glass slide','Классическое стекло','Класичне скло','Классикалық әйнек'],
+ secondsStyle: ['秒钟样式','Seconds style','Вид секунд','Вигляд секунд','Секундтар көрінісі'],
+ numericSeconds: ['数字秒钟','Numeric seconds','Цифры секунд','Цифри секунд','Секунд сандары'],
+ blinkingColon: ['跳动冒号','Blinking colon','Мигающее двоеточие','Миготливе двокрапка','Жыпылықтайтын қос нүкте'],
+
  greetingShown: ['显示问候语', 'Show greeting', 'Приветствие', 'Привітання', 'Сәлемдесу'],
  timeShown: ['显示时间', 'Show time', 'Время', 'Час', 'Уақыт'],
  dateShown: ['显示日期', 'Show date', 'Дата', 'Дата', 'Күн'],
@@ -48,6 +61,11 @@ const updateLabels = {
  updateApkRestricted: ['请先在电视上退出儿童或长辈模式。','Exit Kids or Elders mode on the TV first.','Сначала выйдите из детского или упрощённого режима на телевизоре.','Спочатку вийдіть із дитячого або спрощеного режиму на телевізорі.','Алдымен теледидарда балалар немесе қарттар режимінен шығыңыз.'],
  updateApkFailed: ['传输失败，请检查连接后重试。','Transfer failed. Check the connection and try again.','Передача не удалась. Проверьте подключение.','Передавання не вдалося. Перевірте підключення.','Тасымал сәтсіз аяқталды. Байланысты тексеріңіз.']
 };
+Object.assign(updateLabels, {
+ diagnosticsPage: ['诊断与反馈', 'Diagnostics & feedback', 'Диагностика и отзывы', 'Діагностика та відгуки', 'Диагностика және пікірлер'],
+ diagnosticsHelp: ['显示诊断后，可复制报告。点「去 GitHub 反馈」会同时复制报告并打开 HaloTV 问题表单。请把报告粘贴到「截图、录屏或日志」，补充复现步骤，并检查是否含个人信息。', 'Show diagnostics to read the report. “Report on GitHub” copies it and opens the HaloTV issue form. Paste under “Screenshots or logs”, add steps to reproduce, and check for personal information.', 'Откройте диагностику, чтобы прочитать отчёт. Кнопка GitHub скопирует его и откроет форму HaloTV. Вставьте отчёт в поле для журналов, добавьте шаги и проверьте личные данные.', 'Відкрийте діагностику, щоб прочитати звіт. Кнопка GitHub скопіює його й відкриє форму HaloTV. Вставте звіт у поле для журналів, додайте кроки та перевірте особисті дані.', 'Есепті оқу үшін диагностиканы ашыңыз. GitHub түймесі есепті көшіріп, HaloTV пішінін ашады. Есепті журналдар өрісіне қойыңыз, қайталау қадамдарын қосып, жеке деректерді тексеріңіз.'],
+ diagnosticsPaste: ['诊断信息已复制，请粘贴到 GitHub 表单的「截图、录屏或日志」一栏。', 'Diagnostics copied. Paste them under “Screenshots or logs” on GitHub.', 'Диагностика скопирована. Вставьте её в поле для журналов на GitHub.', 'Діагностику скопійовано. Вставте її в поле для журналів на GitHub.', 'Диагностика көшірілді. Оны GitHub-тағы журналдар өрісіне қойыңыз.'],
+});
 const updateLanguages = ['zh','en','ru','uk','kk'];
 for (const [key, translations] of Object.entries(updateLabels)) {
  const entry = 'halo_' + key;
@@ -60,7 +78,7 @@ for (const [key, translations] of Object.entries(updateLabels)) {
 }
 const iconFiles={dashboard:'television',home:'squares-four',desktop:'sliders-horizontal',clock:'clock',looks:'image',family:'users',performance:'lightning',more:'gear',about:'info',donate:'coffee',upload:'cloud-arrow-up',updateApk:'arrow-clockwise',back:'caret-left',next:'caret-right',refresh:'arrow-clockwise',personalize:'clock',static:'image',live:'play',saver:'television'};
 function icon(name){const i=el('img','halo-icon');i.src=base+'icons/'+(iconFiles[name]||'gear')+'.svg';i.alt='';i.width=24;i.height=24;return i;}
-const pageIds=['dashboard','home','personalize','desktop','clock','looks','static','live','saver','gallery','family','performance','more','about','donate','upload','updateApk'];
+const pageIds=['dashboard','home','personalize','desktop','clock','looks','static','live','saver','gallery','family','performance','more','about','donate','upload','updateApk','diagnostics'];
 const page=id=>document.querySelector(`section[data-tab="${id}"]`);
 for(const id of pageIds){if(!TABS.includes(id))TABS.push(id);if(!page(id)){const s=el('section');s.dataset.tab=id;s.hidden=true;$('main').append(s);}TITLES[id]='halo_'+({home:'apps',looks:'wallpapers',gallery:'browse',more:'moreSettings',upload:'uploadChoose'}[id]||id);}
 $('nav').hidden=true;
@@ -87,7 +105,6 @@ pushButton.onclick = () => show('updateApk');
 const lite = window.haloLite === true;
 if (lite) {
  const wording = {
-  simpleClock: ['时钟', 'Clock', 'Часы', 'Годинник', 'Сағат'],
   live: ['本地视频屏保', 'Local video screensaver', 'Локальное видео', 'Локальне відео', 'Жергілікті бейне'],
   wallpapersHint: ['必应图片、本地照片与屏保', 'Bing, local photos and screensavers', 'Bing, фото и заставка', 'Bing, фото й заставка', 'Bing, фото және экран сақтағыш'],
   moreHint: ['声音、诊断与关于', 'Sound, diagnostics and about', 'Звук, диагностика и сведения', 'Звук, діагностика й відомості', 'Дыбыс, диагностика және ақпарат'],
@@ -101,28 +118,131 @@ uploadActions.append(pushButton);
 dashboard.append(previewHeading,previewButton,previewNote,uploadActions,el('h2','halo-section-label',H('manageTv')),group(routeRow('personalize','personalize','personalizeHint'),routeRow('looks','wallpapers','wallpapersHint'),routeRow('home','apps','appsHint'),routeRow('family','family','familyHint')),group(routeRow('more','moreSettings','moreHint')),group(routeRow('donate','donate','donateHint')));
 page('personalize').append(group(routeRow('desktop','desktop','plate'),routeRow('clock','clock','personalizeHint')),el('p','halo-note',H('savedHint')));
 page('more').append(group(routeRow('performance','performance','moreHint'),routeRow('about','about','shortAttribution')));
+page('more').append(group(routeRow('diagnostics','diagnosticsPage',null,'about')));
 const langRow=$('#lang').closest('.list');if(langRow){const oldModel=langRow.firstElementChild;oldModel.hidden=true;page('more').append(langRow);}page('more').append(el('p','halo-note',H('privacy')));
 // Keep weather geocoding, diagnosis, arrangement, and upload handlers from the existing engine.
 const weatherSwitch=$('#swWeather');weatherSwitch.closest('label').hidden=true;
-const weatherBox=weatherSwitch.closest('.list');const weatherTitle=weatherBox.previousElementSibling;weatherTitle.textContent=H('weatherCity');weatherTitle.className='halo-section-label';page('clock').append(weatherTitle,weatherBox,$('#wxHint'));
-const diagTitle=$('#diagBtn').closest('.list').previousElementSibling;diagTitle.textContent=H('diagnostics');diagTitle.className='halo-section-label';page('performance').append(diagTitle,$('#diagBtn').closest('.list'),$('#diag'),$('#diagActions'));
-const about=card();about.append(el('p','',H('attribution')),el('p','',H('free')),el('h2','',H('gallerySource')),el('p','',H('bingNotice')));if(!lite)about.append(el('p','',H('videoNotice')));for(const url of ['https://github.com/Null9797/halo-tv','https://github.com/pengchujin/aerial-tv','https://github.com/ygnstudio/bing_wallpaper_archive',...(!lite?['https://github.com/theothernt/AerialViews']:[])]){const a=el('a','',url);a.href=url;a.target='_blank';a.rel='noopener';const p=el('p');p.append(a);about.append(p);}page('about').append(about);
+const weatherBox=weatherSwitch.closest('.list');const weatherTitle=weatherBox.previousElementSibling;weatherTitle.textContent=H('weatherCity');weatherTitle.className='halo-section-label';page('clock').append(weatherTitle,weatherBox,$('#wxHint'),$('#cityStatus'));window.haloAuthorizeWeather=()=>authorize();
+const showDiagnostics = el('button', 'item tint center', t('diag_show'));
+showDiagnostics.type = 'button';
+const diagnosticsButtonRow = el('div', 'list');
+diagnosticsButtonRow.append(showDiagnostics);
+const diagnosticReport = el('pre', 'diag');
+diagnosticReport.hidden = true;
+const diagnosticCopy = el('button', 'btn', t('diag_copy'));
+diagnosticCopy.type = 'button';
+const diagnosticGithub = el('a', 'btn plain', t('diag_github'));
+const issueForm = 'https://github.com/Null9797/halo-tv/issues/new?template=bug_report.yml';
+diagnosticGithub.href = issueForm;
+diagnosticGithub.target = '_blank';
+diagnosticGithub.rel = 'noopener noreferrer';
+const diagnosticActions = el('div', 'row halo-diagnostic-actions');
+diagnosticActions.hidden = true;
+diagnosticActions.append(diagnosticCopy, diagnosticGithub);
+page('diagnostics').append(diagnosticsButtonRow, diagnosticReport, diagnosticActions,
+  el('p', 'halo-note', H('diagnosticsHelp')));
+
+// Match Aerial's on-demand report and copy flow with HaloTV's public form fields.
+function diagnosticIssueUrl(text) {
+  const url = new URL(issueForm);
+  const modelLine = text.match(/^Device +(.+?) \(device /m)?.[1];
+  const model = modelLine?.split(' / ').pop();
+  const build = text.match(/^Halo TV +(\S+) \(\d+\) (standard|guard|lite),/m);
+  const android = text.match(/^Android +(.*?\(SDK \d+\))/m)?.[1];
+  const edition = build?.[2];
+  for (const [field, value, limit] of [
+    ['model', model, 80], ['version', build?.[1], 40], ['android', android, 48],
+    ['edition', edition && edition[0].toUpperCase() + edition.slice(1), 16],
+  ]) {
+    if (value) url.searchParams.set(field, value.slice(0, limit));
+  }
+  const summary = ['Screen', 'Home Guard', 'Weather'].flatMap(key => {
+    const value = text.match(new RegExp('^' + key + ' +(.+)$', 'm'))?.[1];
+    return value ? [key + ': ' + value.slice(0, 160)] : [];
+  }).join('\n');
+  if (summary) {
+    url.searchParams.set('evidence', summary.slice(0, 320));
+    if (url.href.length > 2600) url.searchParams.delete('evidence');
+  }
+  return url.href;
+}
+
+showDiagnostics.onclick = async () => {
+  showDiagnostics.disabled = true;
+  showDiagnostics.textContent = t('diag_collecting');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  try {
+    const response = await fetch(base + 'api/diagnostics', { cache: 'no-store', signal: controller.signal });
+    if (!response.ok) throw Error('diagnostics');
+    const text = await response.text();
+    if (!text.trim()) throw Error('diagnostics');
+    diagnosticReport.textContent = text;
+    diagnosticGithub.href = diagnosticIssueUrl(text);
+    diagnosticReport.hidden = false;
+    diagnosticActions.hidden = false;
+    diagnosticsButtonRow.hidden = true;
+  } catch (_) {
+    toast(t('toast_diag_fail'));
+  } finally {
+    clearTimeout(timeout);
+    showDiagnostics.disabled = false;
+    showDiagnostics.textContent = t('diag_show');
+  }
+};
+
+// Match Aerial's synchronous copy while the click is active, including plain HTTP phone pages.
+function copyDiagnosticReport() {
+  const text = diagnosticReport.textContent;
+  const x = window.scrollX, y = window.scrollY;
+  const temporary = document.createElement('textarea');
+  temporary.value = text;
+  temporary.readOnly = true;
+  temporary.setAttribute('aria-hidden', 'true');
+  temporary.style.cssText = 'position:fixed;top:0;left:-9999px;width:1px;height:1px;opacity:0;font-size:16px';
+  document.body.append(temporary);
+  let copied = false;
+  try {
+    temporary.focus({ preventScroll: true });
+    temporary.select();
+    temporary.setSelectionRange(0, text.length);
+    copied = document.execCommand('copy');
+  } catch (_) {
+  } finally {
+    temporary.remove();
+    if (window.scrollX !== x || window.scrollY !== y) window.scrollTo(x, y);
+  }
+  if (!copied) {
+    const selection = window.getSelection();
+    if (selection) {
+      const range = document.createRange();
+      range.selectNodeContents(diagnosticReport);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  }
+  return copied;
+}
+
+diagnosticCopy.onclick = () => toast(t(copyDiagnosticReport() ? 'toast_copied' : 'toast_copy_manual'));
+diagnosticGithub.onclick = () => toast(copyDiagnosticReport() ? H('diagnosticsPaste') : t('toast_copy_manual'));
+
+const about=card();about.append(el('p','',H('attribution')),el('p','',H('free')),el('h2','',H('gallerySource')),el('p','',H('bingNotice')));if(!lite)about.append(el('p','',H('videoNotice')));for(const url of ['https://github.com/Null9797/halo-tv','https://halo-tv.pages.dev/','https://pan.quark.cn/s/a14e3ab2dd41','https://github.com/pengchujin/aerial-tv','https://github.com/ygnstudio/bing_wallpaper_archive',...(!lite?['https://github.com/theothernt/AerialViews']:[])]){const a=el('a','',url);a.href=url;a.target='_blank';a.rel='noopener';const p=el('p');p.append(a);about.append(p);}page('about').append(about);
 const settingRoots={};for(const id of ['desktop','clock','saver','live','performance']){const root=card();root.id='halo-settings-'+id;settingRoots[id]=root;page(id).prepend(root);}
 const opt=(v,k)=>[v,H(k)];
-const fields={desktop:[['oneRowHome','layout',[opt(true,'single'),opt(false,'double')]],['homeColumns','columns',[[4,'4'],[5,'5'],[6,'6']]],['peekNextRow','peek'],['showAllNames','names'],['plateStyle','plate',[opt(0,'frosted'),opt(1,'liquid'),opt(2,'none')]],['focusStyle','focus',[opt('high_contrast','contrast'),opt('standard','standard'),opt('liquid_slide','slide')]],['clockTextColor','color',[opt(0,'white'),opt(1,'gray'),opt(2,'black')]],['settingsIconPosition','iconPosition',[opt(0,'leftCorner'),opt(1,'right'),opt(2,'corner')]],['settingsIconVisibility','visibility',[opt(0,'always'),opt(1,'fade'),opt(2,'hidden')]]],clock:[['clockPosition','clockPosition',[opt(0,'left'),opt(1,'right'),opt(2,'center'),opt(3,'statusbar')]],['clockSizeMode','clockSize',[opt(0,'normal'),opt(1,'large'),opt(2,'bold')]],['clock24Hour','format',[opt(true,'h24'),opt(false,'h12')]],['showHomeGreeting','greetingShown'],['showHomeTime','timeShown'],['showHomeDate','dateShown'],['showWeather','weatherShown'],['showLunarDate','lunar'],['showDeviceCapacity','capacity']],saver:[['screensaverMinutes','saverStart',[opt(0,'never'),...[2,5,10,20].map(n=>[n,n+' '+H('min')])]],['backStartsScreensaver','backSaver'],['flipClock24Hour','flipFormat',[opt(true,'h24'),opt(false,'h12')]],['flipClockSeconds','seconds'],['screensaverClock','saverClock'],['aerialQuality','quality',[opt('auto','auto'),['1080p','1080p'],['4k','4K'],['dolby_vision','4K Dolby Vision']]]],live:[['videoWallpaperMuted','mute'],['videoWallpaperFit','fit'],['wallpaperAlwaysMoves','motion']],performance:[['effects','effects',[opt('lite','smooth'),opt('auto','balanced'),opt('full','visual')]],['uiSounds','sound',[opt('tv','tv'),opt('aerial','halo'),opt('soft','soft'),opt('crystal','crystal'),opt('off','off')]],['autoCleanIdle','idleClean']]};
+const fields={desktop:[['oneRowHome','layout',[opt(true,'single'),opt(false,'double')]],['homeColumns','columns',[[4,'4'],[5,'5'],[6,'6']]],['peekNextRow','peek'],['appNameStyle','nameStyle',[opt(0,'focusedName'),opt(1,'allNames'),opt(2,'largeTitle')]],['plateStyle','plate',[opt(0,'frosted'),opt(1,'liquid'),opt(2,'none')]],['dockSize','dockSize',[opt(0,'dockSmall'),opt(1,'dockDefault'),opt(2,'dockLarge')]],['focusStyle','focus',[opt('high_contrast','contrast'),opt('standard','standard'),opt('liquid_slide','slide'),opt('classic_glass_slide','classicSlide')]],['clockTextColor','color',[opt(0,'white'),opt(1,'gray'),opt(2,'black')]],['settingsIconPosition','iconPosition',[opt(0,'leftCorner'),opt(1,'right'),opt(2,'corner')]],['settingsIconVisibility','visibility',[opt(0,'always'),opt(1,'fade'),opt(2,'hidden')]]],clock:[['clockPosition','clockPosition',[opt(0,'left'),opt(1,'right'),opt(2,'center'),opt(3,'statusbar')]],['clockSizeMode','clockSize',[opt(0,'normal'),opt(1,'large'),opt(2,'bold')]],['clock24Hour','format',[opt(true,'h24'),opt(false,'h12')]],['showHomeGreeting','greetingShown'],['showHomeTime','timeShown'],['showHomeDate','dateShown'],['showWeather','weatherShown'],['showLunarDate','lunar'],['showDeviceCapacity','capacity']],saver:[['screensaverMinutes','saverStart',[opt(0,'never'),...[2,5,10,20].map(n=>[n,n+' '+H('min')])]],['backStartsScreensaver','backSaver'],['flipClock24Hour','flipFormat',[opt(true,'h24'),opt(false,'h12')]],['flipClockSeconds','seconds'],['flipClockSecondsStyle','secondsStyle',[opt(0,'numericSeconds'),opt(1,'blinkingColon')]],['screensaverClock','saverClock'],['aerialQuality','quality',[opt('auto','auto'),['1080p','1080p'],['4k','4K'],['dolby_vision','4K Dolby Vision']]]],live:[['videoWallpaperMuted','mute'],['videoWallpaperFit','fit'],['wallpaperAlwaysMoves','motion']],performance:[['effects','effects',[opt('lite','smooth'),opt('auto','balanced'),opt('full','visual')]],['uiSounds','sound',[opt('tv','tv'),opt('aerial','halo'),opt('soft','soft'),opt('crystal','crystal'),opt('off','off')]],['autoCleanIdle','idleClean']]};
 if (lite) {
-  fields.desktop = fields.desktop.filter(([key]) => !key.startsWith('settingsIcon'));
   fields.desktop.find(([key]) => key === 'plateStyle')[2] = [opt(0,'frosted'), opt(2,'none')];
-  fields.desktop.find(([key]) => key === 'focusStyle')[2] = [opt('high_contrast','contrast'), opt('standard','standard')];
+  fields.desktop.find(([key]) => key === 'focusStyle')[2] = [opt('high_contrast','contrast'), opt('standard','standard'), opt('classic_glass_slide','classicSlide')];
   fields.clock.find(([key]) => key === 'clock24Hour').splice(0, 3, 'clockHours', 'format', [opt('system','auto'), opt('24','h24'), opt('12','h12')]);
   fields.saver = fields.saver.filter(([key]) => key !== 'aerialQuality');
-  fields.performance = [['uiSounds','sound',[opt('tv','tv'),opt('aerial','halo'),opt('off','off')]]];
+  fields.performance = [['uiSounds','sound',[opt('tv','tv'),opt('aerial','halo'),opt('soft','soft'),opt('off','off')]],['autoCleanIdle','idleClean']];
   fields.live = [];
 }
 let saving=false;
 async function save(path,body){if(saving)return false;saving=true;try{let result=await api(path,body);if(result.kidsLocked&&await authorize())result=await api(path,body);if(result.saved===false||result.kidsLocked){take(result);toast(H('failed'),true);return false;}take(result);toast(H('saved'));return true;}catch(e){toast(H('failed'),true);return false;}finally{saving=false;}}
 function settingRow(key,label,options){const row=el('label','halo-row');row.append(el('span','',H(label)));const input=el(options?'select':'input');input.dataset.haloKey=key;if(options){for(const [value,text]of options){const o=el('option','',text);o.value=String(value);input.append(o);}input.value=String(state.halo[key]);}else{input.type='checkbox';input.checked=state.halo[key]===true;}input.onchange=async()=>{input.disabled=true;const value=options?input.value:String(input.checked);const ok=await save('api/halo/settings',{key,value});if(!ok){if(options)input.value=String(state.halo[key]);else input.checked=!!state.halo[key];}input.disabled=false;};row.append(input);return row;}
-let settingsStamp='';function renderSettings(){if(!state||!state.halo)return;apkBuild.textContent=H('updateApkCurrent')+': Halo TV '+(state.halo.version||'')+' · '+(state.halo.edition||(lite?'Lite':''));const stamp=JSON.stringify(state.halo)+state.screensaver;if(stamp===settingsStamp)return;settingsStamp=stamp;for(const [id,defs] of Object.entries(fields)){const root=settingRoots[id];root.querySelectorAll('.halo-row').forEach(n=>n.remove());for(const f of defs){if(id==='saver'&&((f[0].startsWith('flipClock')&&state.screensaver!=='flip_clock')||(f[0]==='aerialQuality'&&state.screensaver!=='aerial')))continue;root.append(settingRow(...f));}}status.textContent=H('deviceConnected');status.classList.remove('offline');}
+let settingsStamp='';function renderSettings(){if(!state||!state.halo)return;apkBuild.textContent=H('updateApkCurrent')+': Halo TV '+(state.halo.version||'')+' · '+(state.halo.edition||(lite?'Lite':''));const stamp=JSON.stringify(state.halo)+state.screensaver;if(stamp===settingsStamp)return;settingsStamp=stamp;for(const [id,defs] of Object.entries(fields)){const root=settingRoots[id];root.querySelectorAll('.halo-row').forEach(n=>n.remove());for(const f of defs){if(id==='saver'&&((f[0].startsWith('flipClock')&&state.screensaver!=='flip_clock')||(f[0]==='aerialQuality'&&state.screensaver!=='aerial')||(f[0]==='flipClockSecondsStyle'&&!state.halo.flipClockSeconds)))continue;root.append(settingRow(...f));}}status.textContent=H('deviceConnected');status.classList.remove('offline');}
 // The original family form predates HaloTV quizzes and elders' independent app list.
 renderKids=()=>{};
 let familyKind='kids',familyStamp='',familyDirty=false;const familyRoot=card('family');familyRoot.oninput=()=>{familyDirty=true;};page('family').append(familyRoot);
@@ -156,13 +276,15 @@ const photoInput=el('input');photoInput.type='file';photoInput.accept='image/*';
 function photoUpload(){const b=el('button','halo-action');b.append(icon('upload'),el('span','',H('addPhotos')));b.onclick=()=>photoInput.click();return b;}
 page('static').insertBefore(photoUpload(),localPhotoRoot);
 const saverTitle=$('#ss').previousElementSibling;saverTitle.hidden=true;page('saver').prepend($('#ss'));page('saver').append($('#ssFoot'));$('#ssTimeBox').hidden=true;
-if(!lite){const bingButton=$('#ss [data-mode="photos"]').cloneNode(true);bingButton.dataset.mode='bing_online';bingButton.querySelector('.txt').replaceChildren(el('span','',H('onlineImages')));bingButton.onclick=async()=>{await save('api/screensaver',{mode:'bing_online'});};$('#ss').append(bingButton);for(const[mode,label]of [['aerial','onlineVideo'],['photos','localPhotos'],['videos','localVideos']]){const b=$('#ss [data-mode="'+mode+'"]');b.querySelector('.txt>span').textContent=H(label);}}else {
- $('#ss [data-mode="aerial"]').remove();
- const clockButton = $('#ss [data-mode="flip_clock"]').cloneNode(true);
- clockButton.dataset.mode = 'clock';
- clockButton.querySelector('.txt>span').textContent = (lite ? H('simpleClock') : t('ss_clock'));
- $('#ss').append(clockButton);
-}document.querySelectorAll('#ss [data-mode]').forEach(b=>b.onclick=()=>save('api/screensaver',{mode:b.dataset.mode}));
+const bingButton=$('#ss [data-mode="photos"]').cloneNode(true);
+bingButton.dataset.mode='bing_online';
+bingButton.querySelector('.txt').replaceChildren(el('span','',H('onlineImages')));
+$('#ss').append(bingButton);
+if(lite)$('#ss [data-mode="aerial"]').remove();
+for(const[mode,label]of [['aerial','onlineVideo'],['photos','localPhotos'],['videos','localVideos']]){
+ const b=$('#ss [data-mode="'+mode+'"]');if(b)b.querySelector('.txt>span').textContent=H(label);
+}
+document.querySelectorAll('#ss [data-mode]').forEach(b=>b.onclick=()=>save('api/screensaver',{mode:b.dataset.mode}));
 page('live').append($('#videos'));
 const uploadGroup=group();const choosePhotos=routeRow('static','addPhotos','photoHint','static');choosePhotos.onclick=()=>photoInput.click();const chooseVideo=routeRow('live','addVideo','videoHint','live');chooseVideo.onclick=()=>$('#videoFile').click();uploadGroup.append(choosePhotos,chooseVideo);page('upload').append(uploadGroup,el('p','halo-note',H('mediaHint')));
 const apkCard = card();
@@ -179,7 +301,7 @@ const apkStatus = el('p','halo-note');
 apkStatus.setAttribute('role','status');
 apkForm.append(apkInput, apkSend);
 const apkBuild = el('p','halo-note');
-apkCard.append(apkBuild, el('p','',H('updateApkHelp')), apkForm, apkStatus);
+const apkHelp=el('p','',H('updateApkHelp'));apkCard.append(apkBuild,apkHelp,apkForm,apkStatus);
 page('updateApk').append(apkCard);
 const apkResults = {
  ready:'updateApkReady', busy:'updateApkBusy', invalid_size:'updateApkSize',
@@ -203,6 +325,10 @@ apkForm.onsubmit = async event => {
    headers:{'Content-Type':'application/vnd.android.package-archive', 'X-Halo-Update':'1'},
    body:file
   });
+  if (!response.ok && noteUncertain(response)) {
+   apkStatus.textContent = t('request_outcome_unknown');
+   return;
+  }
   const {result} = await response.json();
   apkStatus.textContent = H(apkResults[result] || 'updateApkFailed');
   if (result === 'ready') apkForm.reset();
@@ -216,9 +342,9 @@ const donation=card();donation.classList.add('halo-donation');donation.append(ic
 let previewAt=0,previewUrl='',previewPending=false;
 async function refreshPreview(force=false){if(previewPending||document.hidden||tab!=='dashboard'||(!force&&Date.now()-previewAt<30000))return;previewPending=true;previewButton.setAttribute('aria-busy','true');try{const response=await fetch(base+'api/halo/home-preview.jpg',{cache:'no-store'});if(!response.ok)throw Error('preview');const blob=await response.blob();const next=URL.createObjectURL(blob);if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=next;preview.src=next;preview.hidden=false;previewAt=Date.now();previewNote.hidden=response.headers.get('X-Halo-Preview')==='desktop';previewNote.textContent=H('previewHint');}catch(e){previewNote.hidden=false;previewNote.textContent=H('retry');}finally{previewPending=false;previewButton.removeAttribute('aria-busy');}}
 function renderPhotos(){localPhotoGrid.replaceChildren();const photos=(state.wallpapers||[]).filter(w=>w.kind==='photo'||w.kind==='auto'||w.id==='auto');for(const wp of photos)localPhotoGrid.append(window.card(wp));if(!photos.length)localPhotoGrid.append(el('p','empty',t('empty_photos')));}
-const parents={home:'dashboard',personalize:'dashboard',desktop:'personalize',clock:'personalize',looks:'dashboard',static:'looks',live:'looks',saver:'looks',family:'dashboard',more:'dashboard',performance:'more',about:'more',donate:'dashboard',upload:'dashboard',updateApk:'dashboard'};
+const parents={home:'dashboard',personalize:'dashboard',desktop:'personalize',clock:'personalize',looks:'dashboard',static:'looks',live:'looks',saver:'looks',family:'dashboard',more:'dashboard',performance:'more',about:'more',diagnostics:'more',donate:'dashboard',upload:'dashboard',updateApk:'dashboard'};
 function goBack(){if(!sheet.hidden){closeSheet();return;}if(tab==='home'&&arrView!==null){arrView=null;renderArrange('back');return;}show(tab==='gallery'?(galleryType==='bing'?'static':'live'):(parents[tab]||'dashboard'));}
-show=function(next,keepScroll=false,fromHistory=false){if(!pageIds.includes(next))next='dashboard';if(tab&&tab!==next)scrolls[tab]=window.scrollY;if(tab==='gallery'&&next!=='gallery'){galleryGeneration++;galleryHost.replaceChildren();}tab=next;document.querySelectorAll('section[data-tab]').forEach(s=>s.hidden=s.dataset.tab!==next);const isHome=next==='dashboard';back.hidden=isHome;subtitle.hidden=!isHome;status.hidden=!isHome;header.classList.toggle('home',isHome);title.textContent=isHome?'HaloTV':H(({home:'apps',looks:'wallpapers',more:'moreSettings',gallery:galleryType==='bing'?'onlineImages':'onlineVideos',upload:'uploadChoose'}[next]||next));legacyBack.hidden=true;footer.hidden=!isHome;if(!fromHistory){const url='#'+next;if(keepScroll)history.replaceState({halo:next},'',url);else if(location.hash!==url)history.pushState({halo:next},'',url);}window.scrollTo(0,keepScroll?(scrolls[next]||0):0);stateJson='';render();if(next==='dashboard')refreshPreview();};
+show=function(next,keepScroll=false,fromHistory=false){if(!pageIds.includes(next))next='dashboard';if(tab&&tab!==next)scrolls[tab]=window.scrollY;if(tab==='gallery'&&next!=='gallery'){galleryGeneration++;galleryHost.replaceChildren();}tab=next;document.querySelectorAll('section[data-tab]').forEach(s=>s.hidden=s.dataset.tab!==next);const isHome=next==='dashboard';back.hidden=isHome;subtitle.hidden=!isHome;status.hidden=!isHome;header.classList.toggle('home',isHome);title.textContent=isHome?'HaloTV':H(({home:'apps',looks:'wallpapers',more:'moreSettings',gallery:galleryType==='bing'?'onlineImages':'onlineVideos',upload:'uploadChoose',diagnostics:'diagnosticsPage'}[next]||next));legacyBack.hidden=true;footer.hidden=!isHome;if(!fromHistory){const url='#'+next;if(keepScroll)history.replaceState({halo:next},'',url);else if(location.hash!==url)history.pushState({halo:next},'',url);}window.scrollTo(0,keepScroll?(scrolls[next]||0):0);stateJson='';render();if(next==='dashboard')refreshPreview();};
 window.addEventListener('popstate',()=>{if(!sheet.hidden)closeSheet();show(location.hash.slice(1)||'dashboard',true,true);});
 render=function(){if(!state)return;const json=JSON.stringify(state);if(json===stateJson)return;stateJson=json;if(tab==='home'){renderInputs();renderArrange(false);legacyBack.hidden=true;}if(tab==='static')renderPhotos();if(tab==='live'||tab==='saver')renderScreensaver();if(tab==='clock')renderMore();renderSettings();if(tab==='family')renderFamily(false);status.textContent=H('deviceConnected');status.classList.remove('offline');};
 let refreshing=false;

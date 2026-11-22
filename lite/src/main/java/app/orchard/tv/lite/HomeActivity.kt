@@ -32,6 +32,12 @@ import java.util.concurrent.Executors
  * hidden apps, the first run's order) over the apps with the names typed on the phone page.
  */
 class HomeActivity : Activity(), HomeView.Host {
+    @Suppress("DEPRECATION")
+    override fun onLowMemory() {
+        super.onLowMemory()
+        Shapes.trimMemory()
+    }
+
     private lateinit var root: FrameLayout
     private lateinit var home: HomeView
     private lateinit var layout: LayoutStore
@@ -55,12 +61,13 @@ class HomeActivity : Activity(), HomeView.Host {
     @Volatile private var destroyed = false
     @Volatile private var backdropGeneration = 0
     private val handler = Handler(Looper.getMainLooper())
-    private var resumed = false
+    @Volatile private var resumed = false
     /** The key whose press woke the screensaver: its repeats and release are not for Home. */
     private var swallow = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         Ui.init(this)
         TileFactory.useScreen()
         LiteSettings.init(this)
@@ -104,6 +111,10 @@ class HomeActivity : Activity(), HomeView.Host {
         })
         @Suppress("DEPRECATION")
         registerReceiver(connectivity, IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION))
+        registerReceiver(clockSet, IntentFilter().apply {
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+        })
         if (welcome == null && savedInstanceState == null && SystemClock.elapsedRealtime() < 3 * 60 * 1000L) openBootApp()
     }
 
@@ -115,6 +126,7 @@ class HomeActivity : Activity(), HomeView.Host {
     }
 
     override fun onDestroy() {
+        if (!::home.isInitialized) { destroyed = true; work.shutdownNow(); network.shutdownNow(); handler.removeCallbacksAndMessages(null); super.onDestroy(); return }
         destroyed = true
         Announcements.removeObserver(announcementChanged)
         backdropGeneration++
@@ -122,6 +134,7 @@ class HomeActivity : Activity(), HomeView.Host {
         Kids.onNotice = {}
         unregisterReceiver(packages)
         unregisterReceiver(connectivity)
+        unregisterReceiver(clockSet)
         hideSaver()
         PhoneServer.stop()
         work.shutdownNow()
@@ -152,6 +165,8 @@ class HomeActivity : Activity(), HomeView.Host {
 
     override fun onResume() {
         super.onResume()
+        if (!::home.isInitialized) return
+        LiteHomeGuard.noteHomeVisible(this)
         LiteOnlineUpdates.homeResumed()
         resumed = true
         home.setIconActive(true)
@@ -162,15 +177,21 @@ class HomeActivity : Activity(), HomeView.Host {
         showNetwork()
         showWeather()
         refreshDaily()
-        Weather.refreshIfStale({ network.execute(it) }) { handler.post { if (!destroyed) showWeather() } }
+        weatherTick.run()
         resetIdle()
+        work.execute { if (resumed && !destroyed) TclMs901Sources.backToStorage(applicationContext) }
         if (SystemIntents.settingsBounced(this)) handler.postDelayed({
             if (resumed && hasWindowFocus()) SystemIntents.showXiaomiSettingsPopup(this)
         }, 400)
     }
 
     override fun onPause() {
+        if (!::home.isInitialized) { super.onPause(); return }
+        cleanupEpoch++
+        handler.removeCallbacks(idleCleanup)
+        handler.removeCallbacks(weatherTick)
         resumed = false
+        home.pauseClock()
         home.setIconActive(false)
         Kids.homeInFront = false
         handler.removeCallbacks(idle)
@@ -183,6 +204,25 @@ class HomeActivity : Activity(), HomeView.Host {
         super.onPause()
     }
 
+    private val weatherTick = object : Runnable {
+        override fun run() {
+            if (!resumed || destroyed) return
+            if (LiteSettings.showWeather) {
+                Weather.refreshIfStale({ network.execute(it) }) { handler.post { if (!destroyed && resumed) showWeather() } }
+            }
+            handler.postDelayed(this, 60_000L)
+        }
+    }
+
+    private val clockSet = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            if (!resumed || destroyed) return
+            home.refreshClock()
+            saver?.refreshTime()
+            panels.forEach { (it as? ControlCenter)?.refreshTime() }
+        }
+    }
+
     private fun showWeather() {
         home.clock.weather = if (LiteSettings.showWeather) Weather.line(this) else null
     }
@@ -190,7 +230,14 @@ class HomeActivity : Activity(), HomeView.Host {
     /** The Home key while Home is in front: back to the first tile, as the full app does. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.hasCategory(Intent.CATEGORY_HOME)) {
+        if (!::home.isInitialized) return
+        // Some Skyworth/Coocaa firmwares answer Home by starting the home component themselves,
+        // with no action and no category (7S77_M2, Android 8.0, issue #1508, the full app; not
+        // tried on a Lite TV). Lite's own starts of this activity carry ACTION_MAIN.
+        val homeByComponent = intent.action == null && intent.component?.packageName == packageName
+        if (intent.hasCategory(Intent.CATEGORY_HOME) || homeByComponent) {
+            TclMs901Sources.homeRequested()
+            work.execute { if (resumed && !destroyed) TclMs901Sources.backToStorage(applicationContext) }
             hideSaver()
             closeAll()
             home.reset()
@@ -230,7 +277,21 @@ class HomeActivity : Activity(), HomeView.Host {
     // ---- loading ----
 
     /** "My Photos, in turn" on to its next photo when due: on coming back to Home and each minute while up. */
-    override fun minute() { if (resumed && Wallpapers.rotationDue()) loadBackdrop() }
+    private var capacityPending = false
+    override fun minute() {
+        if (!resumed || destroyed) return
+        panels.forEach { (it as? ControlCenter)?.refreshTime() }
+        if (Wallpapers.rotationDue()) loadBackdrop()
+        if (capacityPending) return
+        capacityPending = true
+        work.execute {
+            val value = HaloClockView.readCapacity(applicationContext)
+            handler.post {
+                capacityPending = false
+                if (!destroyed && resumed) home.clock.updateCapacity(value)
+            }
+        }
+    }
 
     private fun loadBackdrop() {
         if (destroyed) return
@@ -408,9 +469,14 @@ class HomeActivity : Activity(), HomeView.Host {
     override fun launch(app: AppEntry) {
         // Kids and Elders mode opens only its own tiles, and none while locked.
         if (Kids.active && (app.key !in Kids.allowed || Kids.lock != null)) return
-        // The TV's settings sit behind the parental PIN, as in the full app.
-        if (LiteSettings.locked && isSettingsApp(app.component.packageName)) { whenUnlocked { launch(app) }; return }
         try {
+            // Keep vendor route discovery inside the launch recovery boundary as well.
+            // The TV's settings sit behind the parental PIN, as in the full app.
+            if (Kids.active && LiteSettings.locked && (AppCatalog.isSettingsTile(app.key) || isSettingsApp(app.component.packageName))) { whenUnlocked { launch(app) }; return }
+            if (app.folder == null && AppCatalog.isSettingsTile(app.key)) {
+                if (!SystemIntents.openSettings(this)) Toast.makeText(this, R.string.unavailable, Toast.LENGTH_SHORT).show()
+                return
+            }
             startActivity(app.launchIntent())
             if (Kids.active && Kids.kind == KidsKind.Kids) lastKidsApp = app.key
         } catch (t: Throwable) {
@@ -501,7 +567,7 @@ class HomeActivity : Activity(), HomeView.Host {
                 }
                 add(Glyph.Info, R.string.menu_info) {
                     closeAll()
-                    open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + app.component.packageName)))
+                    showPanel(AppInfoSheet(this, ::closePanel, app.label, app.component.packageName))
                 }
                 // What the TV starts on, for homes that switch it on to watch something.
                 val boots = LiteSettings.bootApp == app.key
@@ -511,7 +577,10 @@ class HomeActivity : Activity(), HomeView.Host {
                 }
                 if (app.removable) add(Glyph.Trash, R.string.menu_uninstall, destructive = true) {
                     closeAll()
-                    open(Intent(Intent.ACTION_DELETE, Uri.parse("package:" + app.component.packageName)))
+                    if (!SystemIntents.requestUninstall(this, app.component.packageName)) {
+                        showPanel(AppInfoSheet(this, ::closePanel, app.label, app.component.packageName))
+                        Toast.makeText(this, R.string.lite_system_uninstall_unavailable, Toast.LENGTH_LONG).show()
+                    }
                 }
             }
             MenuPage.Folders -> {
@@ -568,7 +637,10 @@ class HomeActivity : Activity(), HomeView.Host {
     override fun openWallpaperSettings() = openPersonalize(0)
 
     override fun openNetworkSettings() {
-        open(Intent(Settings.ACTION_WIFI_SETTINGS))
+        whenUnlocked {
+            if (SystemIntents.openNetwork(this)) closeAll()
+            else Toast.makeText(this, R.string.lite_system_network_unavailable, Toast.LENGTH_LONG).show()
+        }
     }
 
     private val announcementChanged: () -> Unit = {
@@ -584,7 +656,7 @@ class HomeActivity : Activity(), HomeView.Host {
     }
     private fun openAnnouncement(manual: Boolean) {
         if (Kids.active) return
-        val n = if (manual) Announcements.unread() ?: Announcements.latest() else Announcements.popup()
+        val n = if (manual) Announcements.unread() else Announcements.popup()
         if (n == null) {
             if (manual) {
                 Announcements.check(force = true)
@@ -593,7 +665,7 @@ class HomeActivity : Activity(), HomeView.Host {
             return
         }
         Announcements.presented(n)
-        showPanel(AnnouncementSheet(this, n, { closePanel(); resetIdle() }, ::open), keepBelow = manual)
+        showPanel(AnnouncementSheet(this, n, { closePanel(); resetIdle() }), keepBelow = manual)
         handler.removeCallbacks(idle)
     }
 
@@ -601,19 +673,22 @@ class HomeActivity : Activity(), HomeView.Host {
         closeAll()
         showPanel(ControlCenter(
             this, ::closePanel, page,
-            open = { closeAll(); open(it) },
+            open = {
+                if (page != CcPage.Setup) closeAll()
+                open(it)
+            },
             locked = { whenUnlocked(it) },
             personalize = { openPersonalize() },
             wallpaper = { openPersonalize(0) },
             screensaver = { openPersonalize(3) },
             showSupport = { showPanel(HaloInfoSheet(this, ::closePanel, true), keepBelow = true) },
             showNotice = { showPanel(HaloInfoSheet(this, ::closePanel, false), keepBelow = true) },
-            showAnnouncements = { openAnnouncement(manual = true) },
+            showAnnouncements = { whenUnlocked { showPanel(FeedbackSheet(this, ::closePanel) { openAnnouncement(manual = true) }, keepBelow = true) } },
             colorChanged = { home.applySettings(); showWeather() },
             goTo = ::showControlCenter,
             bootLabel = LiteSettings.bootApp?.let { pkg -> entry(pkg)?.label ?: pkg },
             clearBoot = { LiteSettings.chooseBootApp(null); showControlCenter(CcPage.Main) },
-            noInputs = { Toast.makeText(this, getString(R.string.cc_no_inputs), Toast.LENGTH_SHORT).show() },
+            noInputs = { Toast.makeText(this, R.string.lite_inputs_unavailable, Toast.LENGTH_LONG).show() },
             kidsLeave = { whenVerified { Kids.leave(); closeAll() } },
             kidsToggle = ::toggleKidsShortcut,
         ))
@@ -830,6 +905,7 @@ class HomeActivity : Activity(), HomeView.Host {
     /** Opens [p] over Home; [keepBelow] leaves the panel under it (a folder under its app's menu). */
     private fun showPanel(p: Sheet, keepBelow: Boolean = false) {
         if (!keepBelow) closeAll()
+        (panels.lastOrNull() as? LiteQuizSheet)?.setInteractionEnabled(false)
         panels += p
         root.addView(p)
         home.coveredBelow = 0
@@ -842,6 +918,7 @@ class HomeActivity : Activity(), HomeView.Host {
 
     private fun closePanel() {
         panels.removeLastOrNull()?.let { root.removeView(it) }
+        (panels.lastOrNull() as? LiteQuizSheet)?.setInteractionEnabled(true)
         home.coveredBelow = 0
         home.setIconCovered(panels.isNotEmpty())
         redrawAllInSoftware()
@@ -899,9 +976,22 @@ class HomeActivity : Activity(), HomeView.Host {
         scheduleAnnouncement()
     }
 
+    @Volatile private var cleanupEpoch = 0L
+    private val idleCleanup = Runnable {
+        val expected = cleanupEpoch
+        if (resumed && saver == null && welcome == null && panels.isEmpty() && !Kids.active && LiteSettings.autoCleanIdle) {
+            work.execute {
+                if (cleanupEpoch == expected) LiteBackgroundCleaner.clean(applicationContext)
+            }
+        }
+    }
+
     private val idle = Runnable { if (resumed && panels.none { it is PinPad }) showSaver() }
 
     private fun resetIdle() {
+        cleanupEpoch++
+        handler.removeCallbacks(idleCleanup)
+        if (resumed && saver == null && welcome == null && LiteSettings.autoCleanIdle) handler.postDelayed(idleCleanup, 120_000L)
         handler.removeCallbacks(idle)
         if (resumed && saver == null && welcome == null && LiteSettings.screensaverMinutes > 0) {
             handler.postDelayed(idle, idleBeforeSaver())
@@ -925,6 +1015,7 @@ class HomeActivity : Activity(), HomeView.Host {
      * before it shows an error and stays on it, the full app's issue #553).
      */
     private fun openBootApp() {
+        if (LiteUpdateReturn.keepHome(this)) return
         val pkg = LiteSettings.bootApp ?: return
         if (Kids.active && pkg !in Kids.allowed) return
         // Once per power-on, kept on disk: a firmware that stops Lite in the background made each
@@ -943,7 +1034,7 @@ class HomeActivity : Activity(), HomeView.Host {
         val since = SystemClock.elapsedRealtime()
         val tryOpen = object : Runnable {
             override fun run() {
-                if (isFinishing) return
+                if (isFinishing || LiteUpdateReturn.keepHome(this@HomeActivity)) return
                 val online = ControlCenter.network(this@HomeActivity).glyph != Glyph.Offline
                 if (!online && SystemClock.elapsedRealtime() - since < 20_000) { handler.postDelayed(this, 500); return }
                 Log.i(TAG, "opening $pkg, what the TV starts on")
@@ -955,6 +1046,12 @@ class HomeActivity : Activity(), HomeView.Host {
     }
 
     private fun open(intent: Intent) {
+        if (TclMs901Sources.isPortIntent(intent)) {
+            if (TclMs901Sources.switch(this, intent)) closeAll()
+            else if (SystemIntents.openInputPicker(this)) closeAll()
+            else Toast.makeText(this, R.string.lite_inputs_help, Toast.LENGTH_SHORT).show()
+            return
+        }
         try {
             startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (t: Throwable) {

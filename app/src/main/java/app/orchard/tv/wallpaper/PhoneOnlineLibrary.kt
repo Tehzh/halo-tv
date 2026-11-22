@@ -12,7 +12,24 @@ import java.net.URL
 /** Bounded phone-library requests; the TV never proxies arbitrary caller-supplied URLs. */
 internal object PhoneOnlineLibrary {
     private const val BASE = "https://ygn-bing-wallpaper.pages.dev/"
+    private const val INDEX_LIMIT = 4_000_000
+    private const val INDEX_AGE = 6 * 60 * 60_000L
     private val dates = Regex("[0-9]{8}")
+    private val thumbnails = Regex("thumbnails/[0-9]{4}/[0-9]{2}/[0-9]{8}\\.webp")
+
+    /** Ignore unusable rows before counting/pages/Compose keys; never cache an empty catalog. */
+    internal fun parseIndex(text: String): JSONArray {
+        val raw = JSONArray(text)
+        val seen = HashSet<String>()
+        val valid = JSONArray()
+        for (i in 0 until raw.length()) {
+            val row = raw.optJSONObject(i) ?: continue
+            val date = row.optString("date")
+            if (date.matches(dates) && row.optString("thumbnail").matches(thumbnails) && seen.add(date)) valid.put(row)
+        }
+        require(valid.length() > 0) { "No usable wallpaper catalog entries" }
+        return valid
+    }
     private fun bytes(address: String, limit: Int): ByteArray {
         val uri = URI(address)
         require(uri.scheme == "https" && uri.host in setOf("ygn-bing-wallpaper.pages.dev", "www.bing.com", "cdn.bimg.cc"))
@@ -29,21 +46,28 @@ internal object PhoneOnlineLibrary {
             }
         } finally { c.disconnect() }
     }
-    @Synchronized private fun index(context: Context): JSONArray {
+    @Synchronized internal fun index(context: Context, fetch: () -> ByteArray = { bytes(BASE + "data/index.json", INDEX_LIMIT) }): JSONArray {
         app.orchard.tv.system.CompatibleHttp.init(context)
         val file = File(context.cacheDir, "phone-bing-index.json")
-        if (file.exists() && file.length() <= 4_000_000 && System.currentTimeMillis() - file.lastModified() < 6 * 60 * 60_000L)
-            runCatching { return JSONArray(file.readText()) }
-        val data = bytes(BASE + "data/index.json", 4_000_000)
-        val list = JSONArray(String(data, Charsets.UTF_8))
-        file.writeBytes(data)
+        val age = System.currentTimeMillis() - file.lastModified()
+        if (file.isFile && file.length() in 1L..INDEX_LIMIT.toLong() && age in 0L until INDEX_AGE)
+            runCatching { parseIndex(file.readText()) }.getOrNull()?.let { return it }
+        val data = fetch()
+        require(data.size <= INDEX_LIMIT)
+        val list = parseIndex(String(data, Charsets.UTF_8))
+        // A failed/partial cache write must neither hide valid network results nor poison Retry.
+        val part = File(context.cacheDir, "phone-bing-index.json.part")
+        runCatching {
+            part.writeText(list.toString())
+            check(part.renameTo(file))
+        }.onFailure { android.util.Log.w("BingLibrary", "catalog cache unavailable; using downloaded catalog", it) }
+        runCatching { part.delete() }
         return list
     }
     fun page(context: Context, page: Int, category: String, pageSize: Int = 24): JSONObject {
         val all = index(context); val categories = linkedSetOf<String>(); val matches = mutableListOf<JSONObject>()
         for (i in 0 until all.length()) {
-            val row = all.getJSONObject(i); val date = row.optString("date")
-            if (!dates.matches(date)) continue
+            val row = all.getJSONObject(i)
             categories.add(row.optString("category"))
             if (category.isEmpty() || row.optString("category") == category) matches.add(row)
         }
@@ -51,7 +75,7 @@ internal object PhoneOnlineLibrary {
             .put("items", JSONArray().apply {
                 matches.drop(page.coerceIn(0, 10000) * pageSize).take(pageSize).forEach { row ->
                     val thumb = row.optString("thumbnail")
-                    if (thumb.matches(Regex("thumbnails/[0-9]{4}/[0-9]{2}/[0-9]{8}\\.webp")))
+                    if (thumb.matches(thumbnails))
                         put(JSONObject().put("date", row.getString("date")).put("title", row.optString("title"))
                             .put("credit", row.optString("copyright")).put("thumbnail", BASE + thumb))
                 }

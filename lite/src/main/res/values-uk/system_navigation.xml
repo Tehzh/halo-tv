@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lite_system_settings_unavailable">Системні налаштування недоступні. Відкрийте їх кнопкою налаштувань на пульті або з початкового робочого столу телевізора.</string>
+    <string name="lite_system_network_unavailable">Налаштування мережі недоступні. Відкрийте Wi-Fi з початкового робочого столу або кнопкою налаштувань на пульті.</string>
+    <string name="lite_system_uninstall_unavailable">Системне видалення недоступне або заблоковане. Видаліть застосунок із початкового робочого столу або в диспетчері застосунків телевізора.</string>
+    <string name="lite_system_app_info_hint">Запросіть видалення тут і підтвердьте його на телевізорі. Для очищення кешу та інших дій відкрийте системні відомості про застосунок.</string>
+    <string name="lite_system_app_details">Системні відомості про застосунок</string>
+    <string name="lite_system_app_details_unavailable">Системні відомості недоступні. Скористайтеся кнопкою видалення на цій сторінці.</string>
+</resources>

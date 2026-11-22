@@ -1,11 +1,16 @@
 package app.orchard.tv.guard
 
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -13,6 +18,8 @@ import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.Settings
 import android.widget.Toast
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import app.orchard.tv.MainActivity
@@ -44,8 +51,14 @@ object KidsWatch {
 
     private val handler = Handler(Looper.getMainLooper())
     private var app: Context? = null
-    private var ticking = false
     private var lastTickAt = 0L
+    private var previouslyWatching = false
+    private val delivery = KidsDelivery()
+    private var lastLock: KidsLock? = null
+    private var lastDeliveryLog = ""
+    private var reminderPosted = false
+    @Volatile private var diagnostic = "not_started"
+
     private var idleMs = 0L
 
     /** The last warning's step (5 or 1 minutes), so each is said once; 0 when none is due. */
@@ -57,15 +70,16 @@ object KidsWatch {
     /** Aerial's Home is resumed (MainActivity): time there is not counted. */
     var homeInFront = false
         set(value) {
+            if (field == value) return
             field = value
-            // Out to an app or back: look now rather than up to a tick later.
-            if (app != null) handler.post { tick() }
+            poke()
         }
 
     private val screenOff = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             // A parent who left the mode is gone once the TV sleeps.
-            Restricted.rearm()
+            if (intent.action == Intent.ACTION_SCREEN_OFF) Restricted.rearm()
+            poke()
         }
     }
 
@@ -76,7 +90,8 @@ object KidsWatch {
             app = context.applicationContext
             AerialSettings.init(context)
             Restricted.init(context)
-            ContextCompat.registerReceiver(app!!, screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF), ContextCompat.RECEIVER_NOT_EXPORTED)
+            val screen = IntentFilter(Intent.ACTION_SCREEN_OFF).apply { addAction(Intent.ACTION_SCREEN_ON) }
+            ContextCompat.registerReceiver(app!!, screenOff, screen, ContextCompat.RECEIVER_NOT_EXPORTED)
         }
         poke()
     }
@@ -89,15 +104,24 @@ object KidsWatch {
     }
 
     private fun tickAndPlan() {
+        if (app == null) return
         tick()
+        handler.removeCallbacks(loop)
         if (!Restricted.enabled) {
-            ticking = false
-            Restricted.lock = null
+            lastTickAt = 0L
+            previouslyWatching = false
             return
         }
-        ticking = true
-        handler.removeCallbacks(loop)
-        handler.postDelayed(loop, if (watchesUsage()) USAGE_TICK_MS else TICK_MS)
+        val lock = Restricted.lock
+        val until = if (previouslyWatching && lock == null) Restricted.untilLockMs(System.currentTimeMillis()) else null
+        val cadence = when {
+            lock != null && !homeInFront && !QuizOverlay.visible -> delivery.nextCheck(SystemClock.elapsedRealtime()).let {
+                if (it == 1_000L && !QuizOverlay.quizDue()) TICK_MS else it
+            }
+            watchesUsage() -> USAGE_TICK_MS
+            else -> TICK_MS
+        }
+        handler.postDelayed(loop, minOf(cadence, until?.coerceAtLeast(250L) ?: cadence))
     }
 
     private fun tick() {
@@ -107,36 +131,120 @@ object KidsWatch {
         val since = if (lastTickAt == 0L) 0L else (at - lastTickAt).coerceAtLeast(0L)
         lastTickAt = at
         val interactive = ctx.getSystemService<PowerManager>()?.isInteractive != false
-        val watching = Restricted.active && interactive && !homeInFront && !AerialDream.showing && !QuizOverlay.visible
-        if (watching) {
+        val watching = Restricted.active && interactive && !homeInFront && !AerialDream.showing &&
+            Restricted.lock == null && !QuizOverlay.visible
+        val watchedMs = if (Restricted.active) watchedSinceLastTick(previouslyWatching, since, 2 * TICK_MS) else 0L
+        previouslyWatching = watching
+        if (watching || watchedMs > 0L) {
             if (Restricted.kind == RestrictedKind.Elders) {
                 val interval = Restricted.elderReminderMinutes
                 if (interval != elderReminderSetting) { elderReminderSetting = interval; elderWatchedMs = 0L }
-                elderWatchedMs += since.coerceAtMost(2 * TICK_MS)
+                elderWatchedMs += watchedMs
                 if (interval > 0 && elderWatchedMs >= interval * 60_000L) {
                     elderWatchedMs = 0L
                     warn(ctx, ctx.getString(R.string.elder_rest_message))
                 }
             }
             idleMs = 0
-            // A gap longer than two ticks is the process held up (standby), not watching.
-            Restricted.count(since.coerceAtMost(2 * TICK_MS), 0, now)
-        } else {
-            idleMs += since
-            Restricted.count(0, idleMs, now)
-        }
+        } else idleMs += since
+        if (Restricted.enabled) Restricted.count(watchedMs, idleMs, now)
 
         val lock = Restricted.lockNow(now)
-        if (lock != Restricted.lock) DiagLog.i("kids: ${lockName(lock)}")
-        Restricted.lock = lock
-        if (QuizOverlay.visible && (!QuizOverlay.quizDue() || !interactive)) QuizOverlay.dismiss()
-        if (lock != null && interactive && !homeInFront) {
-            val quizShown = QuizOverlay.quizDue() && (HomeGuardService.showQuiz() || QuizOverlay.show(ctx, accessibility = false))
-            if (!quizShown) bringBack(ctx, "locked (${lockName(lock)})")
+        if (lock != lastLock) {
+            DiagLog.i("kids: lock=${lockName(lock)}")
+            delivery.clear("not_due")
+            cancelReminder(ctx)
+            lastLock = lock
         }
+        Restricted.lock = lock
+        if (lock != null) previouslyWatching = false
+        val quiz = QuizOverlay.quizDue()
+        if (!quiz || !interactive || homeInFront) QuizOverlay.dismiss()
+        val binding = HomeGuardService.quizBinding()
+        when {
+            lock == null -> Unit
+            homeInFront -> {
+                delivery.home()
+                cancelReminder(ctx)
+            }
+            !interactive || AerialDream.showing -> delivery.suspended()
+            else -> {
+                val overlay = QuizOverlay.allowed(ctx)
+                val launchAllowed = binding != 0 || overlay || Build.VERSION.SDK_INT < 29
+                delivery.attempt(at, KidsDelivery.Access(binding, overlay, launchAllowed), quiz,
+                    QuizOverlay.visible,
+                    overlay = {
+                        val guard = HomeGuardService.showQuiz()
+                        if (quizWindowAccepted(guard)) guard else {
+                            val appOverlay = QuizOverlay.show(ctx, accessibility = false)
+                            if (quizWindowAccepted(appOverlay)) appOverlay else "$guard+$appOverlay"
+                        }
+                    },
+                    launch = {
+                        val service = HomeGuardService.requestQuizHome()
+                        if (service != null) service else runCatching {
+                            ctx.startActivity(MainActivity.bringBackIntent(ctx))
+                            "activity_requested"
+                        }.getOrElse { "activity_${it.javaClass.simpleName}" }
+                    },
+                    remind = { remindToReturn(ctx, quiz) },
+                )
+                if (QuizOverlay.visible) cancelReminder(ctx)
+            }
+        }
+        val dueIn = if (lock == null && watching) Restricted.untilLockMs(now) else null
+        diagnostic = "active=${Restricted.active} watching=${watching && lock == null} due_in_ms=${dueIn ?: "none"} " +
+            "lock=${lockName(lock)} quiz_due=$quiz guard_bound=${binding != 0} route=${delivery.state}"
+        if (lock != null && delivery.state != lastDeliveryLog) DiagLog.i("kids: $diagnostic")
+        lastDeliveryLog = delivery.state
+        if (watching && lock == null) warnIfDue(ctx, now) else if (lock != null || !Restricted.active) warnedStep = 0
+        if (watching && lock == null && watchesUsage()) keepAwayByUsage(ctx)
+    }
 
-        if (watching && lock == null) warnIfDue(ctx, now) else if (lock != null) warnedStep = 0
-        if (watching && watchesUsage()) keepAwayByUsage(ctx)
+    private const val REMINDER_CHANNEL = "kids_viewing_reminders"
+    private const val REMINDER_ID = 0x484B
+
+    private fun remindToReturn(ctx: Context, quiz: Boolean): String {
+        val text = ctx.getString(if (quiz) R.string.kids_quiz_due_hint else R.string.kids_limit_due_hint)
+        val posted = runCatching {
+            val manager = ctx.getSystemService<NotificationManager>() ?: return@runCatching false
+            if (Build.VERSION.SDK_INT >= 33 &&
+                ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) return@runCatching false
+            if (!NotificationManagerCompat.from(ctx).areNotificationsEnabled()) return@runCatching false
+            if (Build.VERSION.SDK_INT >= 26) {
+                if (manager.getNotificationChannel(REMINDER_CHANNEL) == null) {
+                    manager.createNotificationChannel(NotificationChannel(REMINDER_CHANNEL,
+                        ctx.getString(R.string.kids_reminder_channel), NotificationManager.IMPORTANCE_HIGH))
+                }
+                if (manager.getNotificationChannel(REMINDER_CHANNEL)?.importance == NotificationManager.IMPORTANCE_NONE) {
+                    return@runCatching false
+                }
+            }
+            val pending = PendingIntent.getActivity(ctx, REMINDER_ID, MainActivity.bringBackIntent(ctx),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val notice = NotificationCompat.Builder(ctx, REMINDER_CHANNEL)
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setContentTitle(ctx.getString(R.string.kids_reminder_channel))
+                .setContentText(text).setStyle(NotificationCompat.BigTextStyle().bigText(text))
+                .setPriority(NotificationCompat.PRIORITY_HIGH).setContentIntent(pending).setAutoCancel(true).build()
+            manager.notify(REMINDER_ID, notice)
+            true
+        }.getOrDefault(false)
+        if (posted) {
+            reminderPosted = true
+            return "notification_posted"
+        }
+        return runCatching {
+            Toast.makeText(ctx, text, Toast.LENGTH_LONG).show()
+            "toast_requested"
+        }.getOrElse { "reminder_unavailable" }
+    }
+
+    private fun cancelReminder(ctx: Context) {
+        if (!reminderPosted) return
+        reminderPosted = false
+        runCatching { ctx.getSystemService<NotificationManager>()?.cancel(REMINDER_ID) }
     }
 
     private fun warnIfDue(ctx: Context, now: Long) {
@@ -217,6 +325,14 @@ object KidsWatch {
         bringBack(ctx, "$front in front (usage stats)")
     }
 
+    internal fun quizForegroundPackage(ctx: Context): String? {
+        if (homeInFront) return null
+        HomeGuardService.quizForegroundPackage()?.let { return it.takeUnless { pkg -> pkg == ctx.packageName } }
+        if (!HomeGuardService.usageStatsAllowed(ctx)) return null
+        return UsageFront.read(ctx, System.currentTimeMillis(), 60 * 60_000L)
+            ?.takeUnless { it.closed || it.pkg == ctx.packageName }?.pkg
+    }
+
     private fun frontByUsage(ctx: Context): String? = runCatching {
         if (Build.VERSION.SDK_INT < 22) return null
         val now = System.currentTimeMillis()
@@ -239,6 +355,6 @@ object KidsWatch {
         if (!r.enabled) return "Kids mode off"
         val lock = lockName(r.lock)
         return "Kids mode ${r.kind.key} active=${r.active} allowed=${r.allowed.size} block=${r.blockOthers} rules=${r.rules} " +
-            "used=${r.usage.usedMs / 60_000} min continuous=${r.usage.continuousMs / 60_000} min lock=$lock ticking=$ticking"
+            "used=${r.usage.usedMs / 60_000} min continuous=${r.usage.continuousMs / 60_000} min lock=$lock; $diagnostic"
     }
 }

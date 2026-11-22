@@ -17,4 +17,14 @@
     <string name="lite_contact_xhs">Xiaohongshu</string>
     <string name="lite_contact_enlarge">Выберите QR-код и нажмите OK для увеличения.</string>
     <string name="lite_contact_scan">Сканировать код</string>
+    <string name="lite_online_saver">Изображения из Интернета</string>
+    <string name="lite_online_saver_hint">Показывает сохранённые изображения из Интернета. До первой загрузки используются встроенные изображения.</string>
+    <string name="lite_guard_title">Защита главного экрана Halo TV Lite</string>
+    <string name="lite_guard_description">Возвращает в Halo TV Lite по кнопке «Домой». При запуске может вернуть экран из системного меню. Содержимое экрана не читается.</string>
+    <string name="lite_guard_open">Включить или выключить защиту</string>
+    <string name="lite_guard_hint">Включите или выключите защиту Halo TV Lite в специальных возможностях. Если после перезапуска служба не подключается, проверьте автозапуск в настройках приложений телевизора.</string>
+    <string name="lite_guard_unsupported">Защита · требуется Android 5.0 или новее</string>
+    <string name="lite_guard_off">Защита · выключена</string>
+    <string name="lite_guard_waiting">Защита · разрешена, служба не подключена</string>
+    <string name="lite_guard_connected">Защита · служба подключена</string>
 </resources>

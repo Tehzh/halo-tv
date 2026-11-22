@@ -59,6 +59,8 @@ internal object LiteOnlineUpdates {
         app = context.applicationContext
         Announcements.init(context, "lite", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE.toLong())
         val prefs = context.getSharedPreferences("halo_lite_updates", Context.MODE_PRIVATE)
+        val source = "independent-v1"
+        if (prefs.getString("source", "") != source) prefs.edit().remove("offer").remove("checked_at").putString("source", source).apply()
         autoDownload = prefs.getBoolean("auto_download", false)
         checkedAt = prefs.getLong("checked_at", 0L)
         release = runCatching {
@@ -126,22 +128,26 @@ internal object LiteOnlineUpdates {
 
     fun download(context: Context, installAfterDownload: Boolean = true) {
         if (state == State.Downloading || state == State.Checking || Kids.active) return
-        val found = available ?: return
+        val requested = available ?: return
         pendingGeneration++
         state = State.Downloading; percent = 0; failure = ""; changed()
         Thread({
+            val found = requested
             var reason = "download_failed"
             for (url in found.urls.distinct()) {
-                reason = LiteUpdate.receiveOnline(context.applicationContext, url, found.sha256, found.code) { value ->
-                    main.post { if (percent != value) { percent = value; changed() } }
+                for (attempt in 0..2) {
+                    reason = LiteUpdate.receiveOnline(context.applicationContext, url, found.sha256, found.code) { value ->
+                        main.post { if (percent != value) { percent = value; changed() } }
+                    }
+                    if (reason !in listOf("download_failed", "transfer_failed")) break
                 }
-                if (reason == "ready" || reason in listOf("not_newer", "unsupported", "no_space", "busy")) break
+                if (reason == "ready" || reason in listOf("no_space", "busy")) break
             }
             main.post {
                 if (reason == "ready") {
                     ready = true; state = State.Ready
                     // Installation is initiated only after the viewer explicitly chose online update.
-                    if (installAfterDownload) {
+                    if (installAfterDownload && homeInFront && !Kids.active) {
                         if (!LiteUpdate.install(context.applicationContext)) failure = "installer"
                     } else { promptPending = true; promptDownloaded() }
                 } else { failure = reason; state = State.DownloadFailed }
@@ -151,7 +157,7 @@ internal object LiteOnlineUpdates {
     }
 
     private fun website(): Release {
-        val json = JSONObject(read(LiteReleasePolicy.WEBSITE + "/updates/stable.json"))
+        val json = JSONObject(read(LiteReleasePolicy.WEBSITE + "/updates/independent.json"))
         check(json.getInt("schema") == 1)
         val version = json.getString("version").also { check(it.matches(Regex("[0-9]+(\\.[0-9]+){1,3}"))) }
         val asset = json.getJSONObject("packages").getJSONObject("lite")
@@ -170,7 +176,7 @@ internal object LiteOnlineUpdates {
         val file = (0 until assets.length()).map { assets.getJSONObject(it) }.firstOrNull {
             LiteReleasePolicy.liteName(it.optString("name")) && LiteReleasePolicy.trustedPackage(it.optString("browser_download_url"))
         } ?: error("no Lite package")
-        return Release(version, null, listOf(file.getString("browser_download_url")), json.optString("body").take(8000),
+        return Release(version, null, listOf(LiteReleasePolicy.WEBSITE + "/updates/HaloTV-$version-lite.apk", file.getString("browser_download_url")), json.optString("body").take(8000),
             file.optString("digest").removePrefix("sha256:").takeIf { it.matches(Regex("[a-f0-9]{64}")) })
     }
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="halo_feedback_entry">Notices &amp; feedback</string>
+    <string name="halo_feedback_notices">View notices</string>
+    <string name="halo_feedback_back">Back</string>
+    <string name="halo_feedback_github_scan">Scan to report on GitHub</string>
+    <string name="halo_feedback_github_hint">Include your TV model, Android and HaloTV versions, edition, and steps to reproduce.</string>
+    <string name="halo_feedback_public_hint">GitHub issues are public. Remove personal details from screenshots and logs before posting.</string>
+    <string name="halo_feedback_diagnostics_scan">Scan on the same network to attach diagnostics</string>
+</resources>

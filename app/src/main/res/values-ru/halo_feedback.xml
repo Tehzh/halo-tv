@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="halo_feedback_entry">Notices &amp; feedback</string>
+    <string name="halo_feedback_notices">View notices</string>
+    <string name="halo_feedback_back">Back</string>
+    <string name="halo_feedback_github_scan">Сканируйте для обращения на GitHub</string>
+    <string name="halo_feedback_github_hint">Укажите модель ТВ, версии Android и HaloTV, редакцию и шаги воспроизведения.</string>
+    <string name="halo_feedback_public_hint">Обращения на GitHub открыты. Удалите личные данные со снимков и из журналов.</string>
+    <string name="halo_feedback_diagnostics_scan">Сканируйте в той же сети, чтобы добавить диагностику</string>
+</resources>

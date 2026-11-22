@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aerial_quality_4k_unavailable">This TV did not report compatible 4K decoding. Auto and 1080p use the 1080p source.</string>
+    <string name="aerial_quality_hd_uhd">Shared with the aerial screensaver. Auto prefers 4K when the source supports it.</string>
+</resources>

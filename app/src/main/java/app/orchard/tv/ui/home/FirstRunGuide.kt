@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.viewinterop.AndroidView
 
-/** One welcome per installation of Halo 3, including upgrades from the old multi-page guide. */
+/** Onboarding completion survives artwork changes and normal application version upgrades. */
 object FirstRunGuideStore {
     fun shouldShow(context: Context) = HaloWelcomeView.shouldShow(context)
 }

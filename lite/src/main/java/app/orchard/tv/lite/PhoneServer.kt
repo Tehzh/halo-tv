@@ -20,8 +20,6 @@ import java.io.File
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import java.security.SecureRandom
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 
 /**
  * The full app's phone page (wallpaper/PhoneServer.kt), the same page and the same requests:
@@ -64,14 +62,34 @@ class PhoneServer private constructor(private val context: Context, private val 
         val prefix = "/$token"
         val uri = session.uri
         if (uri != prefix && !uri.startsWith("$prefix/")) return text(Response.Status.NOT_FOUND, "Not found")
+        // Relative page assets need the token URL to end in a slash.
+        if (uri == prefix && session.method == Method.GET) {
+            return newFixedLengthResponse(Response.Status.REDIRECT, "text/plain", "").apply {
+                addHeader("Location", "$prefix/")
+                addHeader("Cache-Control", "no-store")
+            }
+        }
         val path = uri.removePrefix(prefix).ifEmpty { "/" }
         val post = session.method == Method.POST
         return runCatching {
             // Kids and Elders mode: nothing changes from here without the parental PIN, as in the full app.
             if (post && path != "/api/kids/unlock" && (onMain { Kids.active } || path.startsWith("/api/kids/")) &&
                 !pinOk(session.headers["x-aerial-pin"])
-            ) return json(state().put("saved", false).put("kidsLocked", true))
+            ) {
+                val info = if (path == "/api/videos/send" || path == "/api/videos/check") JSONObject() else state()
+                return json(info.put("saved", false).put("kidsLocked", true)).apply {
+                    if (path == "/api/videos/send") closeConnection(true)
+                }
+            }
             when {
+                path == "/feedback.html" -> newFixedLengthResponse(Response.Status.REDIRECT, "text/plain", "").apply {
+                    addHeader("Location", GithubFeedback.URL)
+                    addHeader("Cache-Control", "no-store")
+                    addHeader("Referrer-Policy", "no-referrer")
+                }
+                path == "/api/feedback" || path.startsWith("/api/feedback/") ->
+                    text(Response.Status.GONE, "Feedback has moved to GitHub Issues").apply { closeConnection(true) }
+
                 path == "/" -> newFixedLengthResponse(Response.Status.OK, "text/html; charset=utf-8", page())
                 path == "/halo.js" -> asset("web/halo.js", "application/javascript")
                 path.matches(Regex("/icons/[a-z-]+\\.svg")) -> asset("web$path", "image/svg+xml")
@@ -87,13 +105,21 @@ class PhoneServer private constructor(private val context: Context, private val 
                 path == "/api/halo/bing/original" -> json(PhoneOnlineLibrary.original(session.parms["date"].orEmpty()))
                 post && path == "/api/halo/bing/apply" -> {
                     val fields = form(session)
-                    val saved = runCatching {
-                        val (bytes, _) = PhoneOnlineLibrary.picture(fields["date"].orEmpty())
-                        val photo = Wallpapers.onlinePicture(bytes) ?: error("Image could not be decoded")
-                        try { Wallpapers.storeOnline(photo) } finally { photo.recycle() }
-                    }.getOrNull()
-                    if (saved != null) onMain { Wallpapers.rebuildList(); Wallpapers.select(saved); ops.wallpaperChanged(true) }
-                    json(state().put("saved", saved != null))
+                    val request = onMain { Wallpapers.beginOnlineRequest() }
+                    var temp: java.io.File? = null
+                    val saved = try {
+                        val staged = runCatching {
+                            val (bytes, _) = PhoneOnlineLibrary.picture(fields["date"].orEmpty())
+                            val photo = Wallpapers.onlinePicture(bytes) ?: error("Image could not be decoded")
+                            try { Wallpapers.prepareOnline(photo) } finally { photo.recycle() }
+                        }.getOrNull()
+                        temp = staged
+                        staged != null && onMain { Wallpapers.commitOnline(staged, request)?.also { ops.wallpaperChanged(true) } != null }
+                    } finally {
+                        temp?.delete()
+                        Wallpapers.finishOnlineRequest(request)
+                    }
+                    json(state().put("saved", saved))
                 }
                 post && path == "/api/halo/update-apk" -> {
                     val reason = if (onMain { Kids.active }) "restricted"
@@ -126,7 +152,11 @@ class PhoneServer private constructor(private val context: Context, private val 
                     json(state().put("saved", can))
                 }
                 path == "/api/state" -> json(state())
-                path == "/api/diagnostics" -> text(Response.Status.OK, diagnostics())
+                session.method == Method.GET && path == "/api/diagnostics/summary" -> json(GithubFeedback.summary(
+                    BuildConfig.VERSION_NAME, "Lite", "${Ui.screenW}x${Ui.screenH}",
+                    guardDiagnostics() + "\n" + "Weather: enabled=${LiteSettings.showWeather}, shown=${Weather.now != null}, chosen=${Weather.chosen}",
+                ))
+                path == "/api/diagnostics" -> text(Response.Status.OK, GithubFeedback.sanitize(diagnostics()))
                 path.startsWith("/thumb/") -> thumb(java.net.URLDecoder.decode(path.removePrefix("/thumb/"), "UTF-8"))
                 post && path == "/api/wallpaper" -> {
                     val id = form(session)["id"].orEmpty()
@@ -136,7 +166,7 @@ class PhoneServer private constructor(private val context: Context, private val 
                 }
                 post && path == "/api/screensaver" -> {
                     val key = form(session)["mode"]
-                    val mode = ScreensaverMode.entries.firstOrNull { it.key == key && it in listOf(ScreensaverMode.Photos, ScreensaverMode.Clock, ScreensaverMode.FlipClock, ScreensaverMode.Videos) }
+                    val mode = ScreensaverMode.entries.firstOrNull { it.key == key }
                     if (mode != null) onMain { Wallpapers.chooseScreensaver(mode); ops.settingsChanged() }
                     json(state())
                 }
@@ -161,13 +191,14 @@ class PhoneServer private constructor(private val context: Context, private val 
                     json(state())
                 }
                 post && path == "/api/upload" -> upload(session)
+                post && path == "/api/videos/check" -> checkVideo(session)
                 post && path == "/api/videos/send" -> video(session)
                 post && path == "/api/videos/delete" -> {
                     val removed = ScreensaverVideos.delete(context, form(session)["id"].orEmpty())
                     json(state().put("removed", removed))
                 }
                 path.startsWith("/tile/") -> tile(java.net.URLDecoder.decode(path.removePrefix("/tile/"), "UTF-8"), own = session.parameters["art"]?.firstOrNull() == "own")
-                path.startsWith("/library/") -> libraryPicture(java.net.URLDecoder.decode(path.removePrefix("/library/"), "UTF-8"), session.parameters["c"]?.firstOrNull())
+                path.startsWith("/library/") -> libraryPicture(java.net.URLDecoder.decode(path.removePrefix("/library/"), "UTF-8"), session.parameters["c"]?.firstOrNull(), session.parameters["from"]?.firstOrNull()?.takeIf { it.isNotEmpty() })
                 post && path == "/api/icon" -> icon(session)
                 post && path == "/api/app/name" -> {
                     val f = form(session)
@@ -185,6 +216,7 @@ class PhoneServer private constructor(private val context: Context, private val 
                     if (known && name.isNotEmpty()) onMain { ops.renameFolder(id, name) }
                     json(state().put("saved", known && name.isNotEmpty()))
                 }
+                path == "/api/library/all" -> json(libraryCatalog())
                 post && path == "/api/icon/pick" -> {
                     val f = form(session)
                     val pkg = f["app"].orEmpty()
@@ -194,13 +226,21 @@ class PhoneServer private constructor(private val context: Context, private val 
                         else -> null
                     }
                     val choice = f["choice"]?.takeIf { it.isNotEmpty() }
-                    val ok = installed(pkg) && pick != null && (pick != IconLibrary.Pick.Library ||
-                        IconLibrary.choices(pkg).any { choice == null || it.id == choice })
+                    val from = f["from"]?.takeIf { it.isNotEmpty() && it != pkg }
+                    val picture = if (pick == IconLibrary.Pick.Library && choice != null) {
+                        IconLibrary.catalog()[from ?: pkg]?.firstOrNull { it.id == choice }
+                    } else null
+                    val ok = installed(pkg) && pick != null && when {
+                        pick != IconLibrary.Pick.Library -> from == null
+                        choice == null -> from == null && IconLibrary.choices(pkg).isNotEmpty()
+                        picture != null -> IconLibrary.fetchPicture(picture)
+                        else -> false
+                    }
                     if (ok) {
                         CustomIcons.clear(pkg)
                         // Kept even for the library: a firmware app drawn as Aerial's own tile
                         // takes it only when picked, as in the full app.
-                        IconLibrary.choose(pkg, pick, choice)
+                        IconLibrary.choose(pkg, pick, choice, from)
                         onMain { ops.iconsChanged() }
                     }
                     json(state().put("saved", ok))
@@ -225,7 +265,11 @@ class PhoneServer private constructor(private val context: Context, private val 
             }
         }.getOrElse {
             Log.w(TAG, "request failed", it)
-            text(Response.Status.INTERNAL_ERROR, "error")
+            if (it is MainThreadTimeout) text(Response.Status.SERVICE_UNAVAILABLE, "result unknown").apply {
+                // Earlier steps in this request may already have committed even if its queued block did not start.
+                addHeader("X-Halo-Main-Outcome", "unknown")
+                addHeader("Cache-Control", "no-store")
+            } else text(Response.Status.INTERNAL_ERROR, "error")
         }
     }
 
@@ -243,19 +287,23 @@ class PhoneServer private constructor(private val context: Context, private val 
         .put("version", BuildConfig.VERSION_NAME)
         .put("edition", "Lite")
         .put("oneRowHome", LiteSettings.oneRowHome).put("homeColumns", LiteSettings.homeColumns)
-        .put("peekNextRow", LiteSettings.peekNextRow).put("showAllNames", LiteSettings.showAllNames)
+        .put("peekNextRow", LiteSettings.peekNextRow).put("showAllNames", LiteSettings.showAllNames).put("appNameStyle", LiteSettings.appNameStyle)
         .put("plateStyle", if (LiteSettings.homePlate) 0 else 2).put("focusStyle", LiteSettings.focusStyle.key)
         .put("compactDockCorners", LiteSettings.compactDockCorners)
+        .put("dockSize", LiteSettings.dockSize)
+        .put("settingsIconPosition", LiteSettings.settingsIconPosition)
         .put("settingsIconVisibility", LiteSettings.settingsIconVisibility)
         .put("clockTextColor", LiteSettings.desktopTextColor).put("clockPosition", LiteSettings.clockPosition)
         .put("clockSizeMode", LiteSettings.clockSizeMode).put("clockHours", LiteSettings.clockHours.key)
         .put("showHomeGreeting", LiteSettings.showHomeGreeting).put("showHomeTime", LiteSettings.showHomeTime)
         .put("showHomeDate", LiteSettings.showHomeDate).put("flipClock24Hour", LiteSettings.flipClock24Hour)
         .put("flipClockSeconds", LiteSettings.flipClockSeconds)
+        .put("flipClockSecondsStyle", LiteSettings.flipClockSecondsStyle)
         .put("showLunarDate", LiteSettings.showLunarDate).put("showWeather", LiteSettings.showWeather)
         .put("showDeviceCapacity", LiteSettings.showDeviceCapacity).put("screensaverMinutes", LiteSettings.screensaverMinutes)
         .put("backStartsScreensaver", LiteSettings.backStartsScreensaver).put("screensaverClock", LiteSettings.screensaverClock)
         .put("uiSounds", LiteSettings.uiSounds.key)
+            .put("autoCleanIdle", LiteSettings.autoCleanIdle)
 
     private fun setHalo(key: String?, raw: String?): Boolean {
         val n = raw?.toIntOrNull()
@@ -264,11 +312,14 @@ class PhoneServer private constructor(private val context: Context, private val 
             "oneRowHome" -> LiteSettings.chooseOneRowHome(on ?: return false)
             "homeColumns" -> LiteSettings.chooseHomeColumns(n?.takeIf { it in LiteSettings.HOME_COLUMNS } ?: return false)
             "peekNextRow" -> LiteSettings.choosePeekNextRow(on ?: return false)
+            "appNameStyle" -> LiteSettings.chooseAppNameStyle(n?.takeIf { it in 0..2 } ?: return false)
             "showAllNames" -> LiteSettings.chooseShowAllNames(on ?: return false)
             "plateStyle" -> LiteSettings.chooseHomePlate(when (n) { 0 -> true; 2 -> false; else -> return false })
             "focusStyle" -> LiteSettings.chooseFocusStyle(FocusStyle.entries.firstOrNull { it.key == raw } ?: return false)
             "clockTextColor" -> LiteSettings.chooseDesktopTextColor(n?.takeIf { it in 0..2 } ?: return false)
             "compactDockCorners" -> LiteSettings.chooseCompactDockCorners(on ?: return false)
+            "dockSize" -> LiteSettings.chooseDockSize(n?.takeIf { it in 0..2 } ?: return false)
+            "settingsIconPosition" -> LiteSettings.chooseSettingsIconPosition(n?.takeIf { it in 0..2 } ?: return false)
             "settingsIconVisibility" -> LiteSettings.chooseSettingsIconVisibility(n?.takeIf { it in 0..2 } ?: return false)
             "clockPosition" -> LiteSettings.chooseClockPosition(n?.takeIf { it in 0..3 } ?: return false)
             "clockSizeMode" -> LiteSettings.chooseClockSizeMode(n?.takeIf { it in 0..2 } ?: return false)
@@ -278,12 +329,14 @@ class PhoneServer private constructor(private val context: Context, private val 
             "showHomeDate" -> LiteSettings.chooseShowHomeDate(on ?: return false)
             "flipClock24Hour" -> LiteSettings.chooseFlipClock24Hour(on ?: return false)
             "flipClockSeconds" -> LiteSettings.chooseFlipClockSeconds(on ?: return false)
+            "flipClockSecondsStyle" -> LiteSettings.chooseFlipClockSecondsStyle(n?.takeIf { it in 0..1 } ?: return false)
             "showLunarDate" -> LiteSettings.chooseShowLunarDate(on ?: return false)
             "showWeather" -> LiteSettings.chooseShowWeather(on ?: return false)
             "showDeviceCapacity" -> LiteSettings.chooseShowDeviceCapacity(on ?: return false)
             "screensaverMinutes" -> LiteSettings.chooseScreensaverMinutes(n?.takeIf { it in LiteSettings.screensaverChoices } ?: return false)
             "backStartsScreensaver" -> LiteSettings.chooseBackStartsScreensaver(on ?: return false)
             "screensaverClock" -> LiteSettings.chooseScreensaverClock(on ?: return false)
+            "autoCleanIdle" -> LiteSettings.chooseAutoCleanIdle(raw == "true")
             "uiSounds" -> { LiteSettings.chooseUiSounds(UiSounds.of(raw) ?: return false); Sounds.prepare() }
             else -> return false
         }
@@ -295,13 +348,15 @@ class PhoneServer private constructor(private val context: Context, private val 
     private fun loaded(): List<AppEntry> = onMain { (ops.home().filter { it.folder == null } + ops.folderApps().values.flatten() + ops.hidden()).distinctBy { it.key } }
 
     private fun state(): JSONObject {
+        val selected = Wallpapers.selectedId
         val list = JSONArray()
         Wallpapers.items.forEach { w ->
-            list.put(JSONObject().put("id", w.id).put("kind", w.kind.name.lowercase()).put("title", w.title).put("caption", w.caption ?: ""))
+            list.put(JSONObject().put("id", w.id).put("kind", w.kind.name.lowercase()).put("title", w.title).put("caption", w.caption ?: "").put("version", Wallpapers.contentRevision(w.id)))
         }
         return JSONObject()
             .put("halo", onMain { haloSettings() })
-            .put("selected", Wallpapers.selectedId)
+            .put("selected", selected)
+            .put("wallpaperVersion", Wallpapers.contentRevision(selected))
             .put("latestDaily", Wallpapers.LATEST_DAILY)
             .put("rotatePhotos", Wallpapers.ROTATE_PHOTOS)
             .put("screensaver", Wallpapers.screensaver.key)
@@ -426,14 +481,32 @@ class PhoneServer private constructor(private val context: Context, private val 
     /** The library's pictures of an app on this TV, as the full app's PhoneServer.libraryChoices. */
     private fun libraryChoices(pkg: String, inUse: Boolean) = JSONArray().apply {
         val on = IconLibrary.chosen(pkg)?.id
+        val borrowed = IconLibrary.borrowed(pkg)
         IconLibrary.choices(pkg).forEach { c ->
             put(JSONObject().put("id", c.id).put("by", IconLibrary.credits.optJSONObject(c.by) ?: JSONObject())
+                .put("on", inUse && borrowed == null && c.id == on))
+        }
+        // Another app's picture given to this one, with the app it is from (as the full app).
+        if (borrowed != null && IconLibrary.file(pkg, borrowed.second.id, borrowed.first) != null) {
+            val c = borrowed.second
+            put(JSONObject().put("id", c.id).put("from", borrowed.first).put("by", IconLibrary.credits.optJSONObject(c.by) ?: JSONObject())
                 .put("on", inUse && c.id == on))
         }
     }
 
-    private fun libraryPicture(pkg: String, choice: String?): Response {
-        val f = IconLibrary.file(pkg, choice) ?: return text(Response.Status.NOT_FOUND, "")
+    /** The whole icon library for the phone page's picker (#1486), as the full app. */
+    private fun libraryCatalog(): JSONObject = JSONObject()
+        .put("base", IconLibrary.PICTURES)
+        .put("apps", JSONArray().apply {
+            IconLibrary.catalog().toSortedMap().forEach { (pkg, choices) ->
+                put(JSONObject().put("app", pkg).put("name", IconLibrary.names.optJSONObject(pkg)).put("choices", JSONArray().apply {
+                    choices.forEach { put(JSONObject().put("id", it.id).put("p", it.path)) }
+                }))
+            }
+        })
+
+    private fun libraryPicture(pkg: String, choice: String?, from: String?): Response {
+        val f = IconLibrary.file(pkg, choice, from) ?: return text(Response.Status.NOT_FOUND, "")
         val type = if (f.name.endsWith(".png")) "image/png" else "image/jpeg"
         return newFixedLengthResponse(Response.Status.OK, type, f.inputStream(), f.length()).apply { addHeader("Cache-Control", "max-age=600") }
     }
@@ -478,6 +551,13 @@ class PhoneServer private constructor(private val context: Context, private val 
         return json(state().put("added", added))
     }
 
+    private fun checkVideo(session: IHTTPSession): Response {
+        val length = session.parameters["size"]?.firstOrNull()?.toLongOrNull() ?: 0L
+        val name = session.parameters["name"]?.firstOrNull().orEmpty()
+        val error = ScreensaverVideos.uploadError(context, name, length)
+        return json(JSONObject().put("error", error?.key ?: JSONObject.NULL))
+    }
+
     /**
      * One film per request, its bytes as the body and its name in the address. Not through
      * [IHTTPSession.parseBody]: that writes the body to the cache, copies the file part out again and
@@ -486,15 +566,23 @@ class PhoneServer private constructor(private val context: Context, private val 
     private fun video(session: IHTTPSession): Response {
         val length = session.headers["content-length"]?.toLongOrNull() ?: 0L
         val name = session.parameters["name"]?.firstOrNull().orEmpty()
-        val saved = ScreensaverVideos.receive(context, session.inputStream, length, name) != null
-        // A refused or broken film leaves unread bytes behind; do not read them as the next request.
-        return json(state().put("saved", saved)).apply { if (!saved) closeConnection(true) }
+        val result = ScreensaverVideos.receive(context, session.inputStream, length, name)
+        // Send the disk result independently of any desktop or phone state refresh.
+        return json(JSONObject().put("saved", result.video != null)
+            .put("error", result.error?.key ?: JSONObject.NULL)
+            .put("videoId", result.video?.id ?: JSONObject.NULL)).apply { closeConnection(true) }
     }
 
+    private fun guardDiagnostics(): String =
+        "Home Guard: supported=${LiteHomeGuard.supported()}, default_home=${LiteHomeGuard.isDefaultHome(context)}, " +
+            "authorized=${LiteHomeGuard.authorized(context)}, connected=${LiteHomeGuard.connected()}"
+
     private fun diagnostics(): String = buildString {
-        appendLine("Aerial Lite ${runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()}")
-        appendLine("Device      ${Build.MANUFACTURER} ${Build.MODEL} (${Build.DEVICE}), Android ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
+        appendLine("Halo TV     ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE}) lite, package ${context.packageName}")
+        appendLine("Device      ${Build.MANUFACTURER} / ${Build.MODEL} (device ${Build.DEVICE})")
+        appendLine("Android     ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
         appendLine("Screen      ${Ui.screenW}x${Ui.screenH}")
+        appendLine(guardDiagnostics())
         appendLine("Wallpaper   ${Wallpapers.selectedId}  screensaver=${Wallpapers.screensaver.key}  after=${LiteSettings.screensaverMinutes}")
         appendLine("Settings    focus=${LiteSettings.focusStyle.key} one_row=${LiteSettings.oneRowHome} columns=${LiteSettings.homeColumns} peek=${LiteSettings.peekNextRow} plate=${LiteSettings.homePlate} names=${LiteSettings.showAllNames} boot_app=${LiteSettings.bootApp}")
         appendLine("Apps        ${loaded().size}")
@@ -605,11 +693,7 @@ class PhoneServer private constructor(private val context: Context, private val 
         /** Runs [block] on the main thread and waits for it, as the full app's runBlocking(Dispatchers.Main). */
         fun <T> onMain(block: () -> T): T {
             if (Looper.myLooper() == Looper.getMainLooper()) return block()
-            val done = CountDownLatch(1)
-            var result: Result<T>? = null
-            main.post { result = runCatching(block); done.countDown() }
-            if (!done.await(15, TimeUnit.SECONDS)) error("main thread busy")
-            return result!!.getOrThrow()
+            return MainThreadCall.run(post = { main.post(it) }, timeoutMs = 15_000L, block = block)
         }
 
         /**
@@ -622,7 +706,7 @@ class PhoneServer private constructor(private val context: Context, private val 
             running?.let { if (it.isAlive) return it }
             for (port in PORT until PORT + 10) {
                 val server = PhoneServer(context.applicationContext, token(context), ops, port)
-                if (runCatching { server.start(SOCKET_READ_TIMEOUT, true) }.isSuccess) {
+                if (runCatching { server.start(ScreensaverVideos.UPLOAD_IDLE_MS, true) }.isSuccess) {
                     running = server
                     return server
                 }
@@ -658,13 +742,25 @@ class PhoneServer private constructor(private val context: Context, private val 
          * 5.0; the interfaces work everywhere.
          */
         fun lanAddress(): String? = runCatching {
-            NetworkInterface.getNetworkInterfaces().toList()
-                .filter { it.isUp && !it.isLoopback }
-                .sortedBy { if (it.name.startsWith("eth") || it.name.startsWith("wlan")) 0 else 1 }
-                .flatMap { it.inetAddresses.toList() }
-                .firstOrNull { it is Inet4Address && !it.isLoopbackAddress && !it.isLinkLocalAddress && !isBenchmark(it) }
-                ?.hostAddress
+            val candidates = NetworkInterface.getNetworkInterfaces().toList()
+                .filter { it.isUp && !it.isLoopback && isPhysicalLanName(it.name) }
+                .flatMap { iface -> iface.inetAddresses.toList().map { iface.name to it } }
+            selectLanAddress(candidates)
         }.getOrNull()
+
+        internal fun selectLanAddress(candidates: List<Pair<String, java.net.InetAddress>>): String? = candidates
+            .filter { isPhysicalLanName(it.first) }
+            .sortedBy { if (it.first.lowercase(java.util.Locale.ROOT).startsWith("eth")) 0 else 1 }
+            .map { it.second }
+            .firstOrNull { it is Inet4Address && !it.isLoopbackAddress && !it.isLinkLocalAddress && !isBenchmark(it) }
+            ?.hostAddress
+
+        /** Interface names are an imperfect fallback; reject known virtual and hotspot-only names. */
+        internal fun isPhysicalLanName(name: String): Boolean {
+            val n = name.lowercase(java.util.Locale.ROOT)
+            return listOf("eth", "wlan", "wifi", "en").any { n.startsWith(it) } &&
+                !n.startsWith("wifi-aware")
+        }
 
         private fun isBenchmark(address: java.net.InetAddress): Boolean {
             val b = address.address

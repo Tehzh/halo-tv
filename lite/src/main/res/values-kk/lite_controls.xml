@@ -17,4 +17,14 @@
     <string name="lite_contact_xhs">Xiaohongshu</string>
     <string name="lite_contact_enlarge">QR кодын таңдап, үлкейту үшін OK басыңыз.</string>
     <string name="lite_contact_scan">Кодты сканерлеу</string>
+    <string name="lite_online_saver">Онлайн суреттер</string>
+    <string name="lite_online_saver_hint">Кэштелген онлайн суреттерді көрсетеді. Алғашқы жүктеуге дейін кірістірілген суреттер пайдаланылады.</string>
+    <string name="lite_guard_title">Halo TV Lite басты экран қорғанысы</string>
+    <string name="lite_guard_description">Басты экран пернесін басқанда Halo TV Lite қолданбасына қайтарады. Іске қосылғанда жүйелік экраннан қайтара алады. Экран мазмұнын оқымайды.</string>
+    <string name="lite_guard_open">Қорғанысты қосу не өшіру</string>
+    <string name="lite_guard_hint">Арнайы мүмкіндіктерде Halo TV Lite қорғанысын қосыңыз немесе өшіріңіз. Қайта іске қосқаннан кейін қызмет қосылмаса, теледидардың қолданба баптауларынан автоқосуды тексеріңіз.</string>
+    <string name="lite_guard_unsupported">Қорғаныс · Android 5.0 немесе одан жаңа нұсқа қажет</string>
+    <string name="lite_guard_off">Қорғаныс · өшірулі</string>
+    <string name="lite_guard_waiting">Қорғаныс · рұқсат берілген, қызмет қосылмаған</string>
+    <string name="lite_guard_connected">Қорғаныс · қызмет қосылған</string>
 </resources>

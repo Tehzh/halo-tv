@@ -58,6 +58,7 @@ private const val POLL_QUIET_MS = 400L
 
 sealed interface Overlay {
     data object None : Overlay
+    data object Feedback : Overlay
     data class Announcement(val notice: app.orchard.tv.announcements.RemoteAnnouncement, val fromControlCenter: Boolean = false) : Overlay
     data class ControlCenter(val page: CcPage = CcPage.Main) : Overlay
     /** [inFolder]: the menu was opened inside that folder, and closes back to it. */
@@ -65,7 +66,10 @@ sealed interface Overlay {
     data class Folder(val id: String) : Overlay
     data object HiddenApps : Overlay
     data object Wallpaper : Overlay
-    data object WallpaperPicker : Overlay
+    /** Each entry starts a new wallpaper session, even when its destination is the same. */
+    class WallpaperPicker(val localVideos: Boolean? = null) : Overlay {
+        val initialCategory: Int get() = if (localVideos == true) 1 else 0
+    }
     data class Pin(val mode: PinMode, val fixedFrost: Boolean = false, val onDone: () -> Unit) : Overlay
     /** Setting up Kids and Elders mode (Restricted), from Personalize. */
     data object Kids : Overlay
@@ -104,6 +108,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val folderArt = HashMap<String, Pair<List<TileArt>, TileArt>>()
     var loaded by mutableStateOf(false); private set
 
+    // Retain setup progress while system permission pages temporarily dispose Control Center.
+    internal var guardSetupGuided by mutableStateOf(false)
+    internal var guardSetupVisited by mutableStateOf(emptySet<app.orchard.tv.guard.GuardActivation.Step>())
     var overlay by mutableStateOf<Overlay>(Overlay.None)
     var movingKey by mutableStateOf<String?>(null); private set
     /** The folder [movingKey] is being moved inside; null when it moves on Home. */
@@ -181,6 +188,10 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private var loadJob: Job? = null
     private var sourceJob: Job? = null
     private var sourceProbe = 0L
+    private var sourcesReadAt = Long.MIN_VALUE / 2
+    private var systemJob: Job? = null
+    private var packageCheckJob: Job? = null
+    private var networkJob: Job? = null
 
     /** A tile picture set or removed from the phone page; see CustomIcons.onChange; before init, which registers it. */
     private val customIconsChanged: () -> Unit = {
@@ -229,7 +240,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         viewModelScope.launch {
-            snapshotFlow { AerialSettings.compactDockCorners }.drop(1).collect {
+            // Existing artwork has headroom for the 10% enlargement. Only rebuild faces;
+            // do not rescan installed apps or reload icon-library artwork on each size choice.
+            snapshotFlow { AerialSettings.compactDockCorners to AerialSettings.dockSize }.drop(1).collect {
                 if (loaded) prepareFaces()
             }
         }
@@ -267,18 +280,24 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
      * (issue #55). Before Android 8 there is no change counter; the reload is cheap, tiles are cached.
      */
     fun reloadIfPackagesChanged() {
-        if (!loaded) return
-        if (Build.VERSION.SDK_INT >= 26 && context.packageManager.getChangedPackages(packagesSeen) == null) return
-        reload()
+        if (!loaded || loadJob?.isActive == true || packageCheckJob?.isActive == true) return
+        packageCheckJob = viewModelScope.launch {
+            val changed = withContext(Dispatchers.IO) {
+                Build.VERSION.SDK_INT < 26 || runCatching {
+                    context.packageManager.getChangedPackages(packagesSeen) != null
+                }.getOrDefault(true)
+            }
+            if (changed && loadJob?.isActive != true) reload()
+        }
     }
 
     fun reload() {
-        if (Build.VERSION.SDK_INT >= 26) {
-            packagesSeen = context.packageManager.getChangedPackages(0)?.sequenceNumber ?: packagesSeen
-        }
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             val ctx = context
+            if (Build.VERSION.SDK_INT >= 26) packagesSeen = withContext(Dispatchers.IO) {
+                runCatching { ctx.packageManager.getChangedPackages(0)?.sequenceNumber }.getOrNull() ?: packagesSeen
+            }
             val started = SystemClock.uptimeMillis()
             // The inputs are probed while the apps load: one after the other, a cold start waited
             // for both in turn (0.1-0.8 s more on the TVs in issues #452, #454, #537).
@@ -580,8 +599,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refreshSystem() {
-        refreshSources()
-        viewModelScope.launch {
+        refreshSources(maxAgeMs = 30_000)
+        if (systemJob?.isActive == true) return
+        systemJob = viewModelScope.launch {
             val ctx = context
             // Brightness off the main thread too: on MiTV without picture_backlight its first read
             // probes the panel over binder (MitvPanel.usable).
@@ -597,11 +617,12 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Re-probe when returning to Home or while the input picker is open. */
-    fun refreshSources() {
-        if (sourceJob?.isActive == true) return
+    fun refreshSources(maxAgeMs: Long = 0) {
+        if (sourceJob?.isActive == true || sources.isNotEmpty() && SystemClock.elapsedRealtime() - sourcesReadAt < maxAgeMs) return
         sourceJob = viewModelScope.launch {
             val probe = ++sourceProbe
             val found = withContext(Dispatchers.Default) { SystemProbe.sources(context) }
+            sourcesReadAt = SystemClock.elapsedRealtime()
             if (probe == sourceProbe || sources.isEmpty()) {
                 if (updateSources(found)) arrange()
             }
@@ -652,7 +673,15 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun refreshNetwork() { network = SystemProbe.network(context) }
+    fun refreshNetwork() {
+        // Connectivity sends available + capabilities in a burst. Read the latest state once,
+        // off the input thread, rather than queueing Binder calls on every returned Home frame.
+        networkJob?.cancel()
+        networkJob = viewModelScope.launch {
+            delay(100)
+            network = withContext(Dispatchers.IO) { SystemProbe.network(context) }
+        }
+    }
 
     /**
      * For the volume broadcast, one per step. It used to run refreshSystem, which read the level,
@@ -698,7 +727,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     /** Runs [action] at once, or after the parental PIN in a restricted mode. */
     fun whenUnlocked(action: () -> Unit) {
         if (!Restricted.active || !AerialSettings.locked) action()
-        else overlay = Overlay.Pin(PinMode.Unlock, fixedFrost = overlay == Overlay.Wallpaper || overlay == Overlay.WallpaperPicker) {
+        else overlay = Overlay.Pin(PinMode.Unlock, fixedFrost = overlay == Overlay.Wallpaper || overlay is Overlay.WallpaperPicker) {
             overlay = Overlay.None
             action()
         }

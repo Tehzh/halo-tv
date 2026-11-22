@@ -10,6 +10,7 @@ import android.view.KeyEvent
 class Press {
     private var down = false
     private var long = false
+    private var keyCode = KeyEvent.KEYCODE_UNKNOWN
 
     /** Handles [e] when it is an OK key; true when it was one. */
     fun onKey(e: KeyEvent, click: () -> Unit, longPress: (() -> Unit)? = null): Boolean {
@@ -18,14 +19,14 @@ class Press {
             if (e.repeatCount == 0) {
                 down = true
                 long = false
-            } else if (down && !long && longPress != null) {
+                keyCode = e.keyCode
+            } else if (down && keyCode == e.keyCode && !long && longPress != null) {
                 long = true
                 longPress()
             }
         } else if (e.action == KeyEvent.ACTION_UP) {
-            val fire = down && !long
-            down = false
-            long = false
+            val fire = down && keyCode == e.keyCode && !long && !e.isCanceled
+            reset()
             if (fire) click()
         }
         return true
@@ -34,6 +35,7 @@ class Press {
     fun reset() {
         down = false
         long = false
+        keyCode = KeyEvent.KEYCODE_UNKNOWN
     }
 
     companion object {

@@ -16,4 +16,7 @@
     <string name="halo_lite_clock_weather">Сағат және ауа райы</string>
     <string name="halo_lite_interaction">Басқару</string>
     <string name="halo_lite_security">Қауіпсіздік</string>
+    <string name="st_sounds_soft">Жұмсақ</string>
+    <string name="halo_auto_clean_idle">Бос кезде фондық қолданбаларды тазалау</string>
+    <string name="lite_auto_clean_hint">Басты экранда 2 минут әрекет болмаса, кэштелген қолданбаларды тазалау әрекеті орындалады. Аудио ойнатылғанда немесе VPN қолданылғанда тазалау өткізіледі; нәтижені жүйе анықтайды.</string>
 </resources>

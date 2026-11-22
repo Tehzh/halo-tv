@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lite_inputs_help">可打开电视自带的信号源菜单；如果无法切换，请进入系统设置选择 HDMI / AV。</string>
+    <string name="lite_inputs_native">电视信号源菜单</string>
+    <string name="lite_inputs_settings">在系统设置中切换</string>
+    <string name="lite_inputs_unavailable">未能打开信号源菜单，请选择“在系统设置中切换”。</string>
+</resources>

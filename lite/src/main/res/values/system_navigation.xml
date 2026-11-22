@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lite_system_settings_unavailable">This TV does not expose a settings page that Halo TV can open. Use the Settings key or the original TV home screen.</string>
+    <string name="lite_system_network_unavailable">This TV does not expose a network settings page. Open Wi-Fi from the original TV home screen or the Settings key.</string>
+    <string name="lite_system_uninstall_unavailable">The system uninstaller is unavailable or blocked. Please uninstall the app from the original TV home screen or the TV app manager.</string>
+    <string name="lite_system_app_info_hint">Request an uninstall here and confirm on the TV. For cache and other options, open System app details.</string>
+    <string name="lite_system_app_details">System app details</string>
+    <string name="lite_system_app_details_unavailable">The system app-details page is unavailable. You can use Uninstall here.</string>
+</resources>

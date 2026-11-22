@@ -80,6 +80,7 @@ class FolderView(
 
     /** The folder's apps, again after a change from its menu or the phone page. */
     fun setApps(list: List<AppEntry>) {
+        press.reset()
         val focusedKey = apps.getOrNull(focus)?.key
         for (t in tiles) content.removeView(t)
         for (n in names) content.removeView(n)
@@ -138,6 +139,7 @@ class FolderView(
     private fun endMove() { moving = false; showFocus(animate = true) }
 
     override fun onKey(e: KeyEvent): Boolean {
+        if (e.action == KeyEvent.ACTION_DOWN && !Press.isOk(e.keyCode)) press.reset()
         val app = apps.getOrNull(focus)
         if (press.onKey(e, click = { if (moving) endMove() else app?.let(launch) }, longPress = { if (!moving) app?.let { menu(it, tiles[focus]) } })) return true
         when (e.keyCode) {
@@ -294,9 +296,15 @@ class PinPad(context: Context, close: () -> Unit, private val mode: Mode, privat
             if (e.action == KeyEvent.ACTION_DOWN && e.repeatCount == 0 && symbol != null) type(symbol)
             return true
         }
-        if (arrows == false && e.action == KeyEvent.ACTION_DOWN) {
-            if (code in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) { type('0' + (code - KeyEvent.KEYCODE_0)); return true }
-            if (code == KeyEvent.KEYCODE_DEL) { erase(); return true }
+        if (arrows == false) {
+            if (code in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) {
+                if (e.action == KeyEvent.ACTION_DOWN && e.repeatCount == 0) type('0' + (code - KeyEvent.KEYCODE_0))
+                return true
+            }
+            if (code == KeyEvent.KEYCODE_DEL) {
+                if (e.action == KeyEvent.ACTION_DOWN && e.repeatCount == 0) erase()
+                return true
+            }
         }
         return super.onKey(e)
     }

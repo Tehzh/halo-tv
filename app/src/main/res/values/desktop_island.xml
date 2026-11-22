@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="island_title">Desktop Island</string>
+    <string name="island_enabled">Enable Desktop Island</string>
+    <string name="island_cost">Desktop Island can increase memory usage. Turning it off stops the feature and leaves other HaloTV features available. Leave it off on older or low-spec TVs.</string>
+    <string name="island_playback_hint">When Desktop Island is on, mute the live wallpaper. To show music, allow background playback in your music app.</string>
+    <string name="island_music">Now playing</string>
+    <string name="island_source">Music app</string>
+    <string name="island_no_source">None selected</string>
+    <string name="island_empty_sources">No launchable apps found.</string>
+    <string name="island_access">Notification access</string>
+    <string name="island_access_on">Allowed</string>
+    <string name="island_access_off">Not allowed</string>
+    <string name="island_access_hint">Allow notification access for HaloTV to show playback from your selected music app. Apps without a compatible media session will not appear.</string>
+    <string name="island_access_manual">Open the TV settings and look for Notification access under Special app access. If your TV has no such setting, music will stay hidden.</string>
+    <string name="island_transfers">Phone media transfers</string>
+    <string name="island_updates">Update downloads</string>
+    <string name="island_receiving_photos">Receiving photos</string>
+    <string name="island_received_photos">View received photos</string>
+    <string name="island_receiving_video">Receiving video</string>
+    <string name="island_received_video">View received videos</string>
+    <string name="island_downloading">Downloading update</string>
+    <string name="island_update_ready">View downloaded update</string>
+    <string name="island_percent">%1$d%%</string>
+    <string name="island_position">Island position</string>
+    <string name="island_position_center">Top center</string>
+    <string name="island_position_right">Top right</string>
+    <string name="island_position_left">Lower left</string>
+</resources>

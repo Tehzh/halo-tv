@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lite_inputs_help">Теледидардың кірістер мәзірін ашыңыз. Ауыстыру орындалмаса, жүйе параметрлерінен HDMI / AV таңдаңыз.</string>
+    <string name="lite_inputs_native">Теледидар кірістерінің мәзірі</string>
+    <string name="lite_inputs_settings">Жүйе параметрлерінде ауыстыру</string>
+    <string name="lite_inputs_unavailable">Кірістер мәзірін ашу мүмкін болмады. «Жүйе параметрлерінде ауыстыру» тармағын таңдаңыз.</string>
+</resources>

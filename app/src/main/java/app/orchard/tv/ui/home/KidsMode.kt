@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -190,6 +191,7 @@ private fun SetupSettings(hasApps: Boolean, onStart: () -> Unit, modifier: Modif
                     customKidsTime(context, context.getString(R.string.kids_latest), rules.endMinute, true) { value -> val next = rules.copy(endMinute = value); Restricted.chooseRules(if (next.valid) next else next.copy(startMinute = KidsTime.DEFAULT_START.coerceAtMost(value - 1))); KidsWatch.poke() }
                 }
             }
+            if (kids) BasicText(stringResource(R.string.quiz_settings), style = Type.Headline, modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp))
             SetupRow(if (kids) R.string.quiz_interval else R.string.elder_reminder, null, { note = it }) {
                 val currentInterval = if (kids) rules.breakEvery else Restricted.elderReminderMinutes
                 BREAKS.forEach { m ->
@@ -209,6 +211,20 @@ private fun SetupSettings(hasApps: Boolean, onStart: () -> Unit, modifier: Modif
                 listOf(5, 10, 20).forEach { m -> SmallChip(m.toString(), Restricted.quizRewardMax == m) { Restricted.chooseQuizRewardMax(m) } }
                 SmallChip(stringResource(R.string.halo_kids_custom), Restricted.quizRewardMax !in listOf(5, 10, 20)) {
                     customKidsTime(context, context.getString(R.string.quiz_reward_max), Restricted.quizRewardMax, false) { Restricted.chooseQuizRewardMax(it) }
+                }
+            }
+            if (kids) {
+                listOf(listOf(0 to R.string.quiz_stage_any, 1 to R.string.quiz_stage_preschool, 2 to R.string.quiz_stage_12),
+                    listOf(3 to R.string.quiz_stage_34, 4 to R.string.quiz_stage_56)).forEach { options ->
+                    SetupRow(R.string.quiz_stage, null, { note = it }) {
+                        options.forEach { (value, label) -> SmallChip(stringResource(label), Restricted.quizStage == value) { Restricted.chooseQuizStage(value) } }
+                    }
+                }
+                listOf(listOf(0 to R.string.quiz_subject_all, 1 to R.string.quiz_subject_math),
+                    listOf(2 to R.string.quiz_subject_english, 3 to R.string.quiz_subject_poetry)).forEach { options ->
+                    SetupRow(R.string.quiz_subject, null, { note = it }) {
+                        options.forEach { (value, label) -> SmallChip(stringResource(label), Restricted.quizSubject == value) { Restricted.chooseQuizSubject(value) } }
+                    }
                 }
             }
         }
@@ -370,9 +386,13 @@ fun KidsLockScreen(lock: KidsLock?, pinOpen: Boolean, onParent: (onRight: () -> 
                     QuizPanel(context, onPassed = { reward ->
                         Restricted.completeQuiz(reward)
                         KidsWatch.poke()
-                    }, onParent = { askParent { granting = true } })
+                    }, onParent = {
+                        setInteractionEnabled(false)
+                        askParent { granting = true }
+                    })
                 },
-                modifier = Modifier.fillMaxSize().consumeTaps(),
+                update = { it.setInteractionEnabled(!pinOpen) },
+                modifier = Modifier.fillMaxSize().focusProperties { canFocus = !pinOpen }.consumeTaps(),
             )
             return@AnimatedVisibility
         }

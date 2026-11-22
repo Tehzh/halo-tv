@@ -114,6 +114,7 @@ object Wallpapers {
     private lateinit var app: Context
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val io = Mutex()
+    private val bingRequests = OnlineWallpaperRequests()
     private val bakedWrite = Mutex()
     @Volatile private var bakedWriteRequest = 0L
     private var bakedWriteJob: Job? = null
@@ -162,10 +163,6 @@ object Wallpapers {
     /** The owner's videos, all in turn or one of them. */
     fun isVideo(id: String = selectedId) = id == VIDEOS || id.startsWith(VIDEO_PREFIX)
 
-    /** The flip clock needs no video decoder, so Home can hold its paused film under it. */
-    fun holdVideoForSaver(id: String = selectedId, mode: ScreensaverMode = screensaver): Boolean =
-        isVideo(id) && mode in setOf(ScreensaverMode.FlipClock, ScreensaverMode.Photos, ScreensaverMode.Bing)
-
     /** The films [id] plays behind Home: all the owner's videos, or the one chosen. Call off the main thread. */
     fun videoFilms(id: String = selectedId): List<ScreensaverVideo> {
         val all = ScreensaverVideos.all(app)
@@ -211,7 +208,7 @@ object Wallpapers {
     var filmGlassless by mutableStateOf(false)
 
 
-    /** Goes up when a moving wallpaper's picture changes, so its card in Personalize is made again. */
+    /** Changes when the contents behind a stable wallpaper ID change, including online photos. */
     var pictureVersion by mutableIntStateOf(0); private set
     @Volatile private var aerialPreview: Pair<String, Bitmap>? = null
 
@@ -316,7 +313,8 @@ object Wallpapers {
         setSelection(availableSelection(id))
     }
 
-    private fun setSelection(id: String, beforeDeletion: Boolean = false): Boolean {
+    private fun setSelection(id: String, beforeDeletion: Boolean = false, refresh: Boolean = false): Boolean {
+        if (id == selectedId && !beforeDeletion && !refresh) return true
         val change = prefs.edit().putString("selected", id)
         if (beforeDeletion) {
             // Persist a usable choice before unlinking the current file.
@@ -334,9 +332,17 @@ object Wallpapers {
     }
 
     fun chooseAerial(id: String?) {
+        val changed = selectedAerialId != id
         selectedAerialId = id
         prefs.edit { putString("selected_aerial_id", id) }
-        select(LIVE)
+        if (selectedId == LIVE && changed) {
+            selectionGeneration++
+            dropLeftLiveSpot()
+            visibleLiveSpot = null
+            prefs.edit { remove("live_film"); remove("live_at") }
+            dropFilmFrost()
+            rebuildBackdrop()
+        } else select(LIVE)
     }
 
     /**
@@ -445,13 +451,17 @@ object Wallpapers {
 
     fun hasVideoPoster(id: String): Boolean = videoFilms(VIDEOS).firstOrNull { it.id == id }?.let(::posterOf)?.exists() == true
 
+    @Synchronized
     private fun keepPoster(film: ScreensaverVideo, frame: Bitmap) {
         val poster = posterOf(film)
         if (poster.exists()) return
         val part = File(poster.path + ".part")
         runCatching {
-            part.outputStream().use { Images.cover(frame, POSTER_W, POSTER_H).compress(Bitmap.CompressFormat.JPEG, 85, it) }
-            check(part.renameTo(poster))
+            val scaled = Images.cover(frame, POSTER_W, POSTER_H)
+            try {
+                part.outputStream().use { check(scaled.compress(Bitmap.CompressFormat.JPEG, 85, it)) }
+                check(part.renameTo(poster))
+            } finally { if (scaled !== frame) scaled.recycle() }
         }.onFailure { part.delete(); Log.w(TAG, "could not keep a video's poster", it) }
     }
 
@@ -476,17 +486,9 @@ object Wallpapers {
         val film = videoFilms(id).firstOrNull() ?: return null
         val poster = posterOf(film)
         if (poster.exists()) Images.decodeCover(poster, w, h)?.let { return it }
-        if (filmGlassless || fileFramesJam(app)) return null
-        val mmr = android.media.MediaMetadataRetriever()
-        return try {
-            mmr.setDataSource(film.file.path)
-            val frame = mmr.getFrameAtTime(0) ?: return null.also { DiagLog.i("video poster: no frame of ${film.id}") }
-            keepPoster(film, frame)
-            Images.cover(frame, w, h)
-        } catch (e: Exception) {
-            DiagLog.i("video poster: ${film.id} not read (${e.javaClass.simpleName})")
-            null
-        } finally { runCatching { mmr.release() } }
+        // Uploads provide a poster, and the playing surface can save one later. A retriever
+        // here competes with the wallpaper decoder and can wedge vendor media services.
+        return null
     }
 
     /** A 16:9 thumbnail for pickers and the phone page. Call off the main thread. */
@@ -512,6 +514,8 @@ object Wallpapers {
     private fun rebuildBackdrop() {
         backdropJob?.cancel()
         val id = selectedId
+        val generation = selectionGeneration
+        val pictureRevision = pictureVersion
         backdropJob = scope.launch {
             val available = availableSelection(id)
             if (available != id) {
@@ -543,12 +547,14 @@ object Wallpapers {
                 if (wp?.kind == WallpaperKind.Live || wp?.kind == WallpaperKind.Video) picture to frost
                 else picture?.let(Images::shadeForHome) to frost
             }
+            if (generation != selectionGeneration || id != selectedId || pictureRevision != pictureVersion) return@launch
             if (bmp == null && id.startsWith("photo:") && id != BING_ROTATION) {
                 select(AUTO)
                 return@launch
             }
             backdrop = bmp?.asImageBitmap()
             frosted = frost?.asImageBitmap()
+            rememberSelectionFilmFrost(frosted, if (id == LIVE) livePictureSpot()?.first else null)
             if (key != null && bmp != null && frost != null) saveBaked(key, bmp, frost)
         }
     }
@@ -566,9 +572,12 @@ object Wallpapers {
     /** Changes with the picture behind [wp], the screen size, and Aerial's version (the baking may change). */
     private fun bakedKey(wp: Wallpaper): String {
         val stamp = when (wp.kind) {
-            WallpaperKind.Daily, WallpaperKind.Photo -> fileFor(wp)?.lastModified() ?: 0L
+            WallpaperKind.Daily, WallpaperKind.Photo -> if (wp.id == BING_ROTATION)
+                "${fileFor(wp)?.lastModified() ?: 0}:${prefs.getLong("online_bing_revision", 0)}"
+                else fileFor(wp)?.lastModified() ?: 0L
             WallpaperKind.Live -> liveFrame.lastModified()
-            WallpaperKind.Video -> if (videoFrameIsOf(wp.id)) videoFrame.lastModified() else 0L
+            WallpaperKind.Video -> if (videoFrameIsOf(wp.id)) videoFrame.lastModified()
+                else videoFilms(wp.id).firstOrNull()?.let { posterOf(it).lastModified() } ?: 0L
             else -> 0L
         }
         // "clear": a film's picture baked unshaded, not one kept from when it was shaded.
@@ -600,6 +609,7 @@ object Wallpapers {
             if (home.width != screenW || home.height != screenH) return
             backdrop = home.asImageBitmap()
             frosted = frost.asImageBitmap()
+            // A moving wallpaper may show this legacy poster while booting, without adopting old glass.
             bakedKey = key
         }.onFailure { Log.w(TAG, "could not read the baked backdrop", it) }
     }
@@ -695,6 +705,7 @@ object Wallpapers {
         synchronized(thumbs) { thumbs.remove(id); if (video) { thumbs.remove(VIDEOS); thumbs.remove(VIDEO_PREFIX + film) } }
         backdrop = prepared.frame.asImageBitmap()
         frosted = prepared.frost.asImageBitmap()
+        rememberSelectionFilmFrost(frosted, film)
         pictureVersion++
         val target = if (video) videoFrame else liveFrame
         val key = if (video) "video" else "live"
@@ -760,6 +771,7 @@ object Wallpapers {
         bakedKey = null
         backdrop = frame.asImageBitmap()
         frosted = frost.asImageBitmap()
+        rememberSelectionFilmFrost(frosted, film)
         pictureVersion++
         if (saved) resolve(id)?.let { saveBaked(bakedKey(it), frame, frost) }
         // A slow poster write must not delay showing the current wallpaper frame.
@@ -883,7 +895,10 @@ object Wallpapers {
     /** A phone supplied a video cover after the video itself was added. */
     fun videoPosterChanged(id: String) {
         synchronized(thumbs) { thumbs.remove(VIDEO_PREFIX + id); thumbs.remove(VIDEOS) }
+        val activePoster = selectedId == VIDEO_PREFIX + id ||
+            (selectedId == VIDEOS && items.firstOrNull { it.id.startsWith(VIDEO_PREFIX) }?.id == VIDEO_PREFIX + id)
         pictureVersion++
+        if (activePoster && !videoFrameIsOf(selectedId)) rebuildBackdrop()
     }
 
     /** The TV inputs Home lists that can play behind it, as (TvInputInfo id, name). */
@@ -898,14 +913,17 @@ object Wallpapers {
      * plate can stand over the paused film at once, before the exact frame is decoded for
      * [useLiveFrame]. [frame] is used up.
      */
-    suspend fun useLiveFrost(frame: Bitmap) {
+    suspend fun useLiveFrost(frame: Bitmap, film: String?) {
         if (selectedId != LIVE) return
         val generation = selectionGeneration
         backdropJob?.cancel()
         // The frame the plate's glass was made from while the film moved: that glass, at once.
         val next = filmFrost?.takeIf { frame === filmFrostOf }
             ?: withContext(Dispatchers.Default) { Images.frost(frame) }.asImageBitmap()
-        if (selectedId == LIVE && selectionGeneration == generation) frosted = next
+        if (selectedId == LIVE && selectionGeneration == generation) {
+            frosted = next
+            rememberSelectionFilmFrost(next, film)
+        }
     }
 
     /**
@@ -914,10 +932,18 @@ object Wallpapers {
      * the film started from) stands in.
      */
     var filmFrost by mutableStateOf<ImageBitmap?>(null); private set
+    /** The first matching glass for a wallpaper choice. Freeze this palette instead of sampling each frame. */
+    var selectionFilmFrost by mutableStateOf<ImageBitmap?>(null); private set
+
+    private fun rememberSelectionFilmFrost(image: ImageBitmap?, film: String?) {
+        if (!moves() || image == null || selectionFilmFrost != null) return
+        if (matchesWallpaperFilm(selectedId, selectedAerialId, film)) selectionFilmFrost = image
+    }
+
     private var filmFrostOf: Bitmap? = null
     private var filmFrostGeneration = 0L
 
-    suspend fun useFilmFrost(frame: Bitmap) {
+    suspend fun useFilmFrost(frame: Bitmap, film: String?) {
         if (!moves()) return
         val wallpaperGeneration = selectionGeneration
         val frostGeneration = filmFrostGeneration
@@ -925,6 +951,7 @@ object Wallpapers {
         if (moves() && selectionGeneration == wallpaperGeneration && filmFrostGeneration == frostGeneration) {
             filmFrost = next
             filmFrostOf = frame
+            rememberSelectionFilmFrost(next, film)
         }
     }
 
@@ -956,8 +983,9 @@ object Wallpapers {
     /** Cancel stale samples while retaining the same wallpaper's already-prepared glass. */
     fun freezeFilmFrost() { filmFrostGeneration++ }
 
-    fun dropFilmFrost() {
+    private fun dropFilmFrost() {
         filmFrostGeneration++
+        selectionFilmFrost = null
         filmFrost = null
         filmFrostOf = null
     }
@@ -975,16 +1003,22 @@ object Wallpapers {
 
     /** Shows [clip]'s glass if it has one: from memory, else from disk. */
     suspend fun showClipGlass(clip: String?) {
-        if (clip == null || clipGlass?.first == clip) return
+        if (clip == null) return
+        clipGlass?.takeIf { it.first == clip }?.let {
+            rememberSelectionFilmFrost(it.second, clip)
+            return
+        }
+        val generation = selectionGeneration
         val file = File(clipGlassDir, "$clip.png")
         val bmp = withContext(Dispatchers.IO) { if (file.exists()) BitmapFactory.decodeFile(file.path) else null }
-        if (bmp != null) clipGlass = clip to bmp.asImageBitmap()
+        if (bmp != null && generation == selectionGeneration) publishClipGlass(clip, bmp)
     }
 
     /** [frame], a small frame of [clip], becomes its glass unless it has one already. */
     suspend fun keepClipGlass(clip: String, frame: Bitmap, showing: () -> String?) {
         if (clip in clipGlassMade) return
         clipGlassMade += clip
+        val generation = selectionGeneration
         val file = File(clipGlassDir, "$clip.png")
         val bmp = withContext(Dispatchers.IO) {
             if (file.exists()) return@withContext BitmapFactory.decodeFile(file.path)
@@ -995,7 +1029,13 @@ object Wallpapers {
                 .onFailure { Log.w(TAG, "could not keep the clip's glass", it) }
             frost
         } ?: return
-        if (showing() == clip) clipGlass = clip to bmp.asImageBitmap()
+        if (generation == selectionGeneration && showing() == clip) publishClipGlass(clip, bmp)
+    }
+
+    private fun publishClipGlass(clip: String, bitmap: Bitmap) {
+        val image = bitmap.asImageBitmap()
+        clipGlass = clip to image
+        rememberSelectionFilmFrost(image, clip)
     }
 
     /** Puts back the glass from before [useLiveFrost] when the exact frame could not be had. */
@@ -1052,12 +1092,19 @@ object Wallpapers {
         if (due) scope.launch { refreshDaily() }
     }
 
-    /** Bing's dates are China's, as yyyyMMdd. */
-    private fun hasTodaysDaily(): Boolean {
-        val today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Shanghai"))
-            .format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE)
-        return readDailyIndex().any { it.first >= today }
-    }
+    /**
+     * Whether the newest photo on hand is still the current one. Bing's `startdate` is not the day
+     * the photo is shown in China: the one up from 00:00 on the 20th (China time) is dated the 19th,
+     * its `fullstartdate` 202611191600 being UTC (checked against cn.bing.com 2026-11-20). Compared
+     * with China's date, today's photo never seemed to be there: the half-hourly retry ran all day,
+     * and a Home coming back after midnight within half an hour of one did not look again, so the
+     * new photo waited for the next round (Sony BRAVIA 2015, Android 7, issue #1630). The next photo
+     * is due a day after the newest one's start; an index from before has no start and is fetched.
+     */
+    private fun hasTodaysDaily(): Boolean = runCatching {
+        val arr = JSONArray(File(dailyDir, "index.json").readText())
+        dailyIsCurrent((0 until arr.length()).map { arr.getJSONObject(it).optString("start") }, System.currentTimeMillis())
+    }.getOrDefault(false)
 
     private var dailyRetry: Job? = null
 
@@ -1105,7 +1152,8 @@ object Wallpapers {
                     }
                     val copyright = img.optString("copyright")
                     val title = img.optString("title").ifBlank { copyright.substringBefore(" (").ifBlank { date } }
-                    index.put(JSONObject().put("date", date).put("title", title).put("caption", copyright))
+                    index.put(JSONObject().put("date", date).put("title", title).put("caption", copyright)
+                        .put("start", img.optString("fullstartdate")))
                 }
                 if (pinned != null && (0 until index.length()).none { index.getJSONObject(it).getString("date") == pinned.first }) {
                     index.put(JSONObject().put("date", pinned.first).put("title", pinned.second).put("caption", pinned.third))
@@ -1173,18 +1221,25 @@ object Wallpapers {
         id
     }
 
+    internal fun beginBingRequest(explicit: Boolean = true): OnlineWallpaperRequests.Ticket? =
+        bingRequests.begin(selectedId, selectionGeneration, explicit)
+
+    internal fun finishBingRequest(request: OnlineWallpaperRequests.Ticket) = bingRequests.finish(request)
+    internal fun contentRevision(id: String = selectedId): Long =
+        if (id == BING_ROTATION) prefs.getLong("online_bing_revision", 0) else 0
+
     /** Replaces only our dedicated rotation file, leaving every user-uploaded photo untouched. */
-    suspend fun storeBingRotation(bytes: ByteArray, credit: String, expectedId: String, expectedGeneration: Int): Boolean =
-        replaceBingCached(bytes, credit, expectedId) { OnlineRotation.isBingGenerationCurrent(expectedGeneration) }
+    internal suspend fun storeBingRotation(bytes: ByteArray, credit: String, request: OnlineWallpaperRequests.Ticket, expectedGeneration: Int): Boolean =
+        replaceBingCached(bytes, credit, request) { OnlineRotation.isBingGenerationCurrent(expectedGeneration) }
 
     /** Explicitly setting an online image keeps only one replaceable local cache file. */
-    suspend fun applyBingCached(bytes: ByteArray, credit: String, expectedId: String): Boolean =
-        replaceBingCached(bytes, credit, expectedId) { true }
+    internal suspend fun applyBingCached(bytes: ByteArray, credit: String, request: OnlineWallpaperRequests.Ticket): Boolean =
+        replaceBingCached(bytes, credit, request) { true }
 
-    private suspend fun replaceBingCached(bytes: ByteArray, credit: String, expectedId: String, wanted: () -> Boolean): Boolean {
-        val generation = selectionGeneration
+    private suspend fun replaceBingCached(bytes: ByteArray, credit: String, request: OnlineWallpaperRequests.Ticket, wanted: () -> Boolean): Boolean {
+        fun current() = bingRequests.accepts(request, selectedId, selectionGeneration) && wanted()
         return io.withLock {
-            if (selectedId != expectedId || generation != selectionGeneration || !wanted()) return@withLock false
+            if (!current()) return@withLock false
             val temp = File(app.filesDir, "online-bing-current.pending")
             val creditPart = File(app.filesDir, "online-bing-credit.pending")
             val creditFile = File(app.filesDir, "online-bing-current.credit.json")
@@ -1194,13 +1249,20 @@ object Wallpapers {
                     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                     BitmapFactory.decodeFile(temp.path, bounds)
                     require(bounds.outWidth > 0 && bounds.outHeight > 0)
+                    requireNotNull(Images.decodeCover(temp, 64, 64)).recycle()
                     creditPart.writeText(JSONObject().put("author", credit).put("page", "https://ygn-bing-wallpaper.pages.dev/").toString())
                 }
-                if (selectedId != expectedId || generation != selectionGeneration || !wanted()) return@withLock false
+                if (!current()) return@withLock false
                 if (!temp.renameTo(onlineBingFile)) return@withLock false
                 if (!creditPart.renameTo(creditFile)) creditFile.delete()
+                pictureVersion++
                 synchronized(thumbs) { thumbs.remove(BING_ROTATION) }
-                select(BING_ROTATION)
+                // Publish browser cache keys only after obsolete in-memory thumbnails are gone.
+                prefs.edit { putLong("online_bing_revision", prefs.getLong("online_bing_revision", 0) + 1) }
+                // Same ID, new bytes: invalidate the render generation and bake even when the
+                // filesystem timestamp has not advanced. Existing valid pixels remain until ready.
+                bakedKey = null
+                setSelection(BING_ROTATION, refresh = true)
                 true
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
@@ -1228,5 +1290,16 @@ object Wallpapers {
         synchronized(thumbs) { thumbs.remove(id); thumbs.remove(ROTATE_PHOTOS) }
         rebuildList()
         if (selectedId == ROTATE_PHOTOS) rebuildBackdrop()
+    }
+}
+
+/** A generic slot such as LIVE can point to a different film without changing its wallpaper ID. */
+internal fun matchesWallpaperFilm(wallpaper: String, aerial: String?, film: String?): Boolean {
+    if (film.isNullOrEmpty()) return false
+    return when {
+        wallpaper == Wallpapers.LIVE -> aerial == null || aerial == film
+        wallpaper == Wallpapers.VIDEOS -> true
+        wallpaper.startsWith(Wallpapers.VIDEO_PREFIX) -> wallpaper.removePrefix(Wallpapers.VIDEO_PREFIX) == film
+        else -> false
     }
 }

@@ -1,6 +1,7 @@
 package app.orchard.tv.guard
 
 import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -33,7 +34,9 @@ class RevivalListener : NotificationListenerService() {
     private val check = Runnable { checkGuard() }
     private val unlocked = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            startRecovery("user unlocked")
+            if (!GuardSetup.isUserUnlocked(context) || !GuardRecoveryPolicy.enabled(context)) return
+            GuardBootWatch.startSession(context)
+            startRecovery(if (intent.action == Intent.ACTION_SCREEN_ON) "screen on" else "user unlocked")
         }
     }
 
@@ -42,19 +45,20 @@ class RevivalListener : NotificationListenerService() {
         // Skyworth 8N312_H5D (Android 8) binds this service at boot, but leaves the guard
         // enabled and unbound. Do not depend on onListenerConnected or USER_UNLOCKED alone:
         // either callback can be missing, while the service and its main looper are alive.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            runCatching {
-                registerReceiver(unlocked, IntentFilter(Intent.ACTION_USER_UNLOCKED))
-                watchingUnlock = true
-            }.onFailure {
-                trace("could not watch unlock; relying on delayed checks: ${it.message}")
-            }
-        }
+        runCatching {
+            val filter = IntentFilter(Intent.ACTION_SCREEN_ON)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) filter.addAction(Intent.ACTION_USER_UNLOCKED)
+            // Both are protected platform broadcasts. Keep watching while this listener is bound,
+            // even when the accessibility service has disappeared; no periodic idle polling.
+            registerReceiver(unlocked, filter)
+            watchingUnlock = true
+        }.onFailure { trace("could not watch wake/unlock: ${it.message}") }
         startRecovery("service created")
     }
 
     override fun onListenerConnected() {
         if (destroyed) return
+        connectedInstance = this
         // The line docs/HANDOFF.md and the issues look for after a kill (logcat -s AerialGuard).
         Log.i("AerialGuard", "revived by the notification listener binding")
         trace("notification listener connected")
@@ -73,6 +77,22 @@ class RevivalListener : NotificationListenerService() {
         startRecovery("listener connected")
     }
 
+    override fun onListenerDisconnected() {
+        if (connectedInstance === this) connectedInstance = null
+        if (destroyed || !GuardSetup.isUserUnlocked(this) || !GuardRecoveryPolicy.enabled(this)) return
+        trace("notification listener disconnected")
+        // requestRebind does not grant notification access. It only asks for an approved listener.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val now = android.os.SystemClock.elapsedRealtime()
+            if (now - lastReconnectAt >= 30_000L) {
+                lastReconnectAt = now
+                runCatching { requestRebind(ComponentName(this, RevivalListener::class.java)) }
+                    .onFailure { trace("notification rebind unavailable: ${it.message}") }
+            }
+        }
+        startRecovery("listener disconnected")
+    }
+
     private fun startRecovery(reason: String) {
         if (destroyed || recovering) return
         recovering = true
@@ -84,7 +104,12 @@ class RevivalListener : NotificationListenerService() {
 
     private fun checkGuard() {
         if (destroyed || !recovering) return
+        if (GuardSetup.isUserUnlocked(this) && !GuardRecoveryPolicy.enabled(this)) {
+            finishRecovery("automatic recovery disabled")
+            return
+        }
         if (HomeGuardService.isRunning) {
+            GuardBootWatch.start(this)
             finishRecovery("guard bound")
             return
         }
@@ -131,13 +156,18 @@ class RevivalListener : NotificationListenerService() {
         trace(result)
     }
 
+
     override fun dump(fd: FileDescriptor?, writer: PrintWriter, args: Array<out String>?) {
         writer.println("Aerial revival: active=$recovering attempts=$attempt outcome=$outcome")
         writer.println("userUnlocked=${GuardSetup.isUserUnlocked(this)} guardRunning=${HomeGuardService.isRunning}")
+        // The guard's state too: where Home is not running this dump is the one way in (Android 8
+        // XGIMI H3, issue #1383: `dumpsys activity ...MainActivity` found no activity).
+        if (GuardSetup.isUserUnlocked(this)) runCatching { writer.println(HomeGuardService.diagnosticState()) }
         DiagLog.dump(writer)
     }
 
     override fun onDestroy() {
+        if (connectedInstance === this) connectedInstance = null
         destroyed = true
         recovering = false
         handler.removeCallbacks(check)
@@ -146,8 +176,11 @@ class RevivalListener : NotificationListenerService() {
         super.onDestroy()
     }
 
-    private companion object {
-        val RETRY_DELAYS_MS = longArrayOf(5_000, 5_000, 10_000, 15_000, 30_000, 60_000)
-        const val FINAL_CHECK_DELAY_MS = 5_000L
+    companion object {
+        @Volatile private var connectedInstance: RevivalListener? = null
+        val isConnected: Boolean get() = connectedInstance != null
+        private var lastReconnectAt = Long.MIN_VALUE / 2
+        private val RETRY_DELAYS_MS = longArrayOf(5_000, 5_000, 10_000, 15_000, 30_000, 60_000)
+        private const val FINAL_CHECK_DELAY_MS = 5_000L
     }
 }

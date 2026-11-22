@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="island_title">Басты экрандағы арал</string>
+    <string name="island_enabled">Аралды қосу</string>
+    <string name="island_cost">Арал жадты көбірек пайдалануы мүмкін. Оны өшіру HaloTV-дің басқа мүмкіндіктеріне әсер етпейді. Ескі немесе қуаты төмен теледидарларда оны қоспаған жөн.</string>
+    <string name="island_playback_hint">Арал қосулы кезде динамикалық тұсқағаздың дыбысын өшіріңіз. Музыканы көрсету үшін музыка қолданбасында фондық ойнатуға рұқсат беріңіз.</string>
+    <string name="island_music">Фондық музыка</string>
+    <string name="island_source">Музыка қолданбасы</string>
+    <string name="island_no_source">Таңдалмаған</string>
+    <string name="island_empty_sources">Қолжетімді қолданбалар жоқ.</string>
+    <string name="island_access">Хабарландыруларға қол жеткізу</string>
+    <string name="island_access_on">Рұқсат берілген</string>
+    <string name="island_access_off">Рұқсат берілмеген</string>
+    <string name="island_access_hint">HaloTV үшін хабарландыруларға қол жеткізуге рұқсат беріңіз. Арал медиасеансты қолдайтын таңдалған қолданбаның ойнату күйін ғана көрсетеді.</string>
+    <string name="island_access_manual">Теледидар баптауларындағы арнайы рұқсаттардан хабарландыруларға қол жеткізуді табыңыз. Мұндай баптау болмаса, музыка көрсетілмейді.</string>
+    <string name="island_transfers">Телефоннан фото мен бейне</string>
+    <string name="island_updates">Жаңартуларды жүктеу</string>
+    <string name="island_receiving_photos">Фотолар қабылдануда</string>
+    <string name="island_received_photos">Қабылданған фотоларды көру</string>
+    <string name="island_receiving_video">Бейне қабылдануда</string>
+    <string name="island_received_video">Қабылданған бейнелерді көру</string>
+    <string name="island_downloading">Жаңарту жүктелуде</string>
+    <string name="island_update_ready">Жүктелген жаңартуды көру</string>
+    <string name="island_percent">%1$d%%</string>
+    <string name="island_position">Аралдың орны</string>
+    <string name="island_position_center">Жоғарыда ортада</string>
+    <string name="island_position_right">Жоғарыда оң жақта</string>
+    <string name="island_position_left">Төменде сол жақта</string>
+</resources>

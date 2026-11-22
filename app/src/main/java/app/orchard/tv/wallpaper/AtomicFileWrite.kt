@@ -13,3 +13,20 @@ internal fun File.replaceContents(bytes: ByteArray) {
         temporary.delete()
     }
 }
+
+/** Publish a streamed value only after the writer confirms success and the file is synced. */
+internal fun File.replaceWithOutput(writer: (java.io.OutputStream) -> Boolean): Boolean {
+    val temporary = File.createTempFile(name.padEnd(3, '_'), ".part", parentFile)
+    try {
+        val written = FileOutputStream(temporary).use { output ->
+            val ok = writer(output)
+            if (ok) output.fd.sync()
+            ok
+        }
+        if (!written) return false
+        check(temporary.renameTo(this)) { "Could not publish ${name}" }
+        return true
+    } finally {
+        temporary.delete()
+    }
+}

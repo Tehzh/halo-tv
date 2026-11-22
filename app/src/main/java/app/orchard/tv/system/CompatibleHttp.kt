@@ -25,8 +25,8 @@ object CompatibleHttp {
     }
 
     /** Keep system trust and hostname checks; add current public CA roots missing from old firmware. */
-    private fun trust(): Array<javax.net.ssl.TrustManager>? {
-        val pem = roots ?: return null
+    private fun trust(pem: ByteArray?): Array<javax.net.ssl.TrustManager>? {
+        if (pem == null) return null
         val system = javax.net.ssl.TrustManagerFactory.getInstance(javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm())
         system.init(null as java.security.KeyStore?)
         val original = system.trustManagers.filterIsInstance<javax.net.ssl.X509TrustManager>().first()
@@ -49,7 +49,29 @@ object CompatibleHttp {
 
     private val tls: SSLSocketFactory? by lazy {
         if (Build.VERSION.SDK_INT >= 24) null
-        else runCatching { AllProtocols(SSLContext.getInstance("TLS").apply { init(null, trust(), null) }.socketFactory) }.getOrNull()
+        else runCatching { AllProtocols(SSLContext.getInstance("TLS").apply { init(null, trust(roots), null) }.socketFactory) }.getOrNull()
+    }
+
+    @Volatile private var appleThumbnailTls: SSLSocketFactory? = null
+
+    @Synchronized
+    private fun appleThumbnailTls(context: android.content.Context): SSLSocketFactory {
+        appleThumbnailTls?.let { return it }
+        val root = context.resources.openRawResource(R.raw.apple_root_ca).use { it.readBytes() }
+        return AllProtocols(SSLContext.getInstance("TLS").apply {
+            init(null, trust(root), null)
+        }.socketFactory).also { appleThumbnailTls = it }
+    }
+
+    /** Android 5/6 do not read the host-specific Apple trust anchor in network_security_config. */
+    internal fun openAerialThumbnail(context: android.content.Context, url: String): HttpsURLConnection {
+        val address = URL(url)
+        require(address.protocol == "https" && address.host.equals("sylvan.apple.com", ignoreCase = true))
+        return (address.openConnection() as HttpsURLConnection).apply {
+            // The additional trust anchor belongs to this host alone. Keep the default hostname verifier.
+            instanceFollowRedirects = false
+            if (Build.VERSION.SDK_INT < 24) sslSocketFactory = appleThumbnailTls(context)
+        }
     }
 
     fun open(url: String): HttpURLConnection = (URL(url).openConnection() as HttpURLConnection).apply {

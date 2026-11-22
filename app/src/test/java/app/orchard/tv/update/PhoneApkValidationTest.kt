@@ -23,7 +23,7 @@ import org.robolectric.annotation.Config
 class PhoneApkValidationTest {
     private val app: Application = RuntimeEnvironment.getApplication()
     private val apk get() = File(app.cacheDir, "policy-test.apk")
-    private fun certificate() = Signature(javaClass.getResourceAsStream("/halo-release-cert.der")!!.use { it.readBytes() })
+    private fun certificate() = Signature(javaClass.getResourceAsStream("/halo-independent-cert.der")!!.use { it.readBytes() })
     private fun incoming(variant: String = BuildConfig.FLAVOR, code: Int = BuildConfig.VERSION_CODE + 1) = PackageInfo().apply {
         packageName = app.packageName
         versionName = "3.0.5"
@@ -71,6 +71,7 @@ class PhoneApkValidationTest {
     }
     @Test fun buildLabelIdentifiesEdition() {
         assertTrue(Updates.buildLabel.contains(BuildConfig.VERSION_NAME))
-        assertTrue(Updates.buildLabel.endsWith(if (BuildConfig.FLAVOR == "guard") "Guard" else "Standard"))
+        assertTrue(Updates.buildLabel.contains(if (BuildConfig.FLAVOR == "guard") "Guard" else "Standard"))
+        assertTrue(Updates.buildLabel.endsWith(Updates.edition))
     }
 }

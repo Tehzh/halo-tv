@@ -21,7 +21,7 @@ internal object LiteReleasePolicy {
 
     fun liteName(name: String): Boolean {
         val n = name.lowercase(Locale.ROOT)
-        return (n.startsWith("halotv-") || n.startsWith("aerial-universal-")) && n.endsWith("-lite.apk")
+        return (n.startsWith("halotv-") || n.startsWith("aerial-universal-")) && (n.endsWith("-lite.apk") || n.endsWith("-independent_lite.apk"))
     }
 
     fun trustedPackage(url: String): Boolean = runCatching {

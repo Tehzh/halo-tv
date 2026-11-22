@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="aerial_quality_4k_unavailable">Теледидар үйлесімді 4K декодерін көрсетпеді. «Авто» және 1080p режимдері 1080p бейне көзін пайдаланады.</string>
+    <string name="aerial_quality_hd_uhd">Түсқағаз бен экран сақтағышына ортақ. «Авто» режимінде қолжетімді болса, 4K бейне көзі таңдалады.</string>
+</resources>

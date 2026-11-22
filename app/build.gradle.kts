@@ -1,5 +1,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
+import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+import java.util.zip.ZipOutputStream
 
 plugins {
     id("com.android.application")
@@ -7,17 +11,21 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+check(!project.hasProperty("haloLegacyBridge")) { "Legacy bridge builds are no longer supported." }
+
 android {
     namespace = "app.orchard.tv"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "app.orchard.tv"
+        applicationId = "app.halotv.launcher"
         // Android 5.0. Compose 1.10 and later need 6.0, so the Compose BOM below stays on 1.9.
         minSdk = 21
         targetSdk = 34
-        versionCode = 187
-        versionName = "3.0.5"
+        versionCode = 278
+        versionName = "3.5.2"
+        buildConfigField("String", "HALO_CERT", "\"ed28a19770dac5f926e7adf27224f05dd07d1a6dd54af89fc663bbcf102c41dd\"")
+
         // `./gradlew -Pdiag ...`: a build for one reporter's TV whose logcat shows no app lines;
         // see system/DiagLog.kt.
         val diag = project.hasProperty("diag")
@@ -33,30 +41,35 @@ android {
         create("standard") {
             dimension = "home"
             manifestPlaceholders["haloUpdateVariant"] = "standard"
+            buildConfigField("String", "HALO_EDITION", "\"standard\"")
         }
         create("guard") {
             dimension = "home"
             manifestPlaceholders["haloUpdateVariant"] = "guard"
+            buildConfigField("String", "HALO_EDITION", "\"guard\"")
         }
     }
 
     // The TVs only accept updates signed with the key Aerial was first installed with. That key
     // lives outside version control in local/ (see docs/HANDOFF.md); without it the build falls
     // back to this machine's debug key, which installs fresh but cannot update existing copies.
-    val signingProps = rootProject.file("local/signing.properties")
+    val signingProps = rootProject.file("local/independent-signing.properties")
     signingConfigs {
         if (signingProps.exists()) {
             val p = Properties().apply { signingProps.inputStream().use { load(it) } }
             create("aerial") {
                 enableV1Signing = true
                 enableV2Signing = true
-                storeFile = rootProject.file("local/" + p.getProperty("storeFile"))
+                storeFile = p.getProperty("storeFile").let { if (File(it).isAbsolute) File(it) else rootProject.file("local/" + it) }
                 storePassword = p.getProperty("storePassword")
                 keyAlias = p.getProperty("keyAlias")
                 keyPassword = p.getProperty("keyPassword")
             }
         }
     }
+
+    sourceSets.getByName("release").res.srcDir("src/independent/res")
+    sourceSets.getByName("debug").res.srcDir("src/independent/res")
 
     buildTypes {
         release {
@@ -113,4 +126,50 @@ dependencies {
     // Phone setup page (a tiny LAN web server) and the QR code that opens it.
     implementation("org.nanohttpd:nanohttpd:2.3.1")
     implementation("com.google.zxing:core:3.5.3")
+}
+
+
+/** Build API-specific dex metadata with this exact variant identity for update sessions. */
+abstract class DexMetadataAssets : DefaultTask() {
+    @get:InputDirectory abstract val dmDir: DirectoryProperty
+    @get:Input abstract val packageName: Property<String>
+    @get:Input abstract val versionCode: Property<Int>
+    @get:OutputDirectory abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun run() {
+        val dir = dmDir.get().asFile
+        val map = Properties().apply { File(dir, "dex-metadata-map.properties").inputStream().use { load(it) } }
+        val out = File(outputDir.get().asFile, "aerial-dm").apply { deleteRecursively(); mkdirs() }
+        val manifest = """{"packageName":"${packageName.get()}","versionCode":${versionCode.get()}}"""
+        for (api in listOf("28", "31")) {
+            val source = File(dir, map.getProperty(api) ?: error("no dex metadata for API $api in $dir"))
+            ZipOutputStream(File(out, "$api.dm").outputStream()).use { zip ->
+                ZipFile(source).use { from ->
+                    for (entry in from.entries()) {
+                        if (entry.name == "manifest.json") continue
+                        zip.putNextEntry(ZipEntry(entry.name))
+                        from.getInputStream(entry).use { it.copyTo(zip) }
+                        zip.closeEntry()
+                    }
+                }
+                zip.putNextEntry(ZipEntry("manifest.json"))
+                zip.write(manifest.toByteArray())
+                zip.closeEntry()
+            }
+        }
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        val name = variant.name.replaceFirstChar { it.uppercase() }
+        val task = tasks.register<DexMetadataAssets>("${variant.name}DexMetadataAssets") {
+            dependsOn("compile${name}ArtProfile")
+            dmDir.set(layout.buildDirectory.dir("intermediates/dex_metadata_directory/${variant.name}/compile${name}ArtProfile"))
+            packageName.set(variant.applicationId)
+            versionCode.set(variant.outputs.single().versionCode.map { it ?: 0 })
+        }
+        variant.sources.assets?.addGeneratedSourceDirectory(task, DexMetadataAssets::outputDir)
+    }
 }

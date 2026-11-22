@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lite_inputs_help">Відкрийте меню входів телевізора. Якщо перемикання не працює, виберіть HDMI / AV у системних налаштуваннях.</string>
+    <string name="lite_inputs_native">Меню входів телевізора</string>
+    <string name="lite_inputs_settings">Вибрати в налаштуваннях системи</string>
+    <string name="lite_inputs_unavailable">Не вдалося відкрити меню входів. Виберіть «Вибрати в налаштуваннях системи».</string>
+</resources>

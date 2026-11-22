@@ -86,6 +86,7 @@ class CompatibilityRegressionTest {
         components.forEach { context.packageManager.setComponentEnabledSetting(ComponentName(context, it), PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP) }
         val other = "example.reader/example.reader.Accessibility"
         Settings.Secure.putString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, other)
+        app.orchard.tv.guard.GuardRecoveryPolicy.setEnabled(context, true)
         GuardSetup.ensureEnabled(context)
         components.forEach { assertEquals(PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, context.packageManager.getComponentEnabledSetting(ComponentName(context, it))) }
         val result = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).split(':')

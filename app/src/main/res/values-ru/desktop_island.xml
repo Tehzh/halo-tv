@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="island_title">Остров на главном экране</string>
+    <string name="island_enabled">Включить остров</string>
+    <string name="island_cost">Остров может потреблять больше памяти. Его отключение не влияет на другие функции HaloTV. На старых и маломощных телевизорах лучше оставить его выключенным.</string>
+    <string name="island_playback_hint">При включённом острове отключите звук живых обоев. Для показа музыки разрешите фоновое воспроизведение в музыкальном приложении.</string>
+    <string name="island_music">Музыка в фоне</string>
+    <string name="island_source">Музыкальное приложение</string>
+    <string name="island_no_source">Не выбрано</string>
+    <string name="island_empty_sources">Нет доступных приложений.</string>
+    <string name="island_access">Доступ к уведомлениям</string>
+    <string name="island_access_on">Разрешён</string>
+    <string name="island_access_off">Не разрешён</string>
+    <string name="island_access_hint">Разрешите HaloTV доступ к уведомлениям. Остров показывает воспроизведение только из выбранного приложения с поддержкой медиасессий.</string>
+    <string name="island_access_manual">В настройках телевизора найдите доступ к уведомлениям в разделе особого доступа. Если такого пункта нет, музыка останется скрытой.</string>
+    <string name="island_transfers">Фото и видео с телефона</string>
+    <string name="island_updates">Загрузка обновлений</string>
+    <string name="island_receiving_photos">Получение фото</string>
+    <string name="island_received_photos">Просмотр полученных фото</string>
+    <string name="island_receiving_video">Получение видео</string>
+    <string name="island_received_video">Просмотр полученных видео</string>
+    <string name="island_downloading">Загрузка обновления</string>
+    <string name="island_update_ready">Просмотр загруженного обновления</string>
+    <string name="island_percent">%1$d%%</string>
+    <string name="island_position">Положение острова</string>
+    <string name="island_position_center">Вверху по центру</string>
+    <string name="island_position_right">Вверху справа</string>
+    <string name="island_position_left">Внизу слева</string>
+</resources>

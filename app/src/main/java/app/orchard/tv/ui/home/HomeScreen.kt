@@ -41,6 +41,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -50,12 +51,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
@@ -69,6 +72,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -77,7 +82,19 @@ import app.orchard.tv.apps.SourceLooks
 import app.orchard.tv.HomeViewModel
 import app.orchard.tv.Overlay
 import app.orchard.tv.R
+import app.orchard.tv.island.DesktopIsland
+import app.orchard.tv.island.IslandFocus
+import app.orchard.tv.island.IslandMaterial
+import app.orchard.tv.island.IslandSurface
+import app.orchard.tv.island.islandTitleWidthLimit
+import app.orchard.tv.island.IslandClockBounds
+import app.orchard.tv.island.IslandClockPart
+import app.orchard.tv.island.placeIsland
+import app.orchard.tv.island.IslandPreferences
+import app.orchard.tv.island.IslandTask
+import app.orchard.tv.island.islandOnHome
 import app.orchard.tv.settings.AerialSettings
+import app.orchard.tv.settings.DockSize
 import app.orchard.tv.settings.Restricted
 import app.orchard.tv.guard.KidsWatch
 import app.orchard.tv.apps.AppEntry
@@ -145,7 +162,6 @@ private val PlateNameRoom = 28.dp
 
 private const val CC_WARM_AFTER_MS = 3_000L
 
-private val GridMargin = 86.dp
 private val TopStatusY = 24.dp
 
 /** The highest the row above may sit once Home has scrolled into the grid: clear of the status pill. */
@@ -162,16 +178,22 @@ internal fun gridGap(columns: Int): Dp = when (columns) {
 }
 
 /** A tile's width at rest on a screen [screenW] wide; TileFaces works out the same size. */
-internal fun restTileWidth(screenW: Dp, columns: Int): Dp = (screenW - GridMargin * 2 - gridGap(columns) * (columns - 1)) / columns
+internal fun restTileWidth(screenW: Dp, columns: Int, dockSize: Int = DockSize.DEFAULT): Dp =
+    DockSize.tileWidth(screenW.value, columns, dockSize).dp
 
 /** Grid geometry for the screen at hand. On a 1080p TV this is a 960×540 dp canvas. */
-private class GridMetrics(screenW: Dp, screenH: Dp, val columns: Int, oneRow: Boolean, plateNames: Boolean, peek: Boolean, plate: Boolean, largeClock: Boolean, clockRight: Boolean) {
-    val margin = GridMargin
-    val headerMargin = GridMargin
-    val dockInset = margin - PlatePadH
+internal class GridMetrics(screenW: Dp, screenH: Dp, val columns: Int, oneRow: Boolean, plateNames: Boolean, peek: Boolean, plate: Boolean, largeClock: Boolean, clockRight: Boolean, dockSize: Int = DockSize.DEFAULT) {
+    val dockScale = DockSize.scale(dockSize)
+    val margin = DockSize.margin(screenW.value, dockSize).dp
+    val platePadV = PlatePadV * dockScale
+    val dockInset = margin - PlatePadH * dockScale
     val dockRight = screenW - dockInset
-    val gap = gridGap(columns)
-    val tileW = restTileWidth(screenW, columns)
+    // Corner information follows the resting tile edges; the top settings/status group
+    // follows the Dock outline. Keep the original offsets at the default size.
+    val headerMargin = margin
+    val statusInset = dockInset
+    val gap = gridGap(columns) * dockScale
+    val tileW = restTileWidth(screenW, columns, dockSize)
     val tileH = tileW * 9f / 16f
     val pitchX = tileW + gap
     val pitchY = tileH + 50.dp
@@ -187,13 +209,13 @@ private class GridMetrics(screenW: Dp, screenH: Dp, val columns: Int, oneRow: Bo
      * a grid row where names go between them (no plate, or every name shown), closer on a plate
      * with none. Not the grid's row plus [firstGap]: that stacked two names' room between them.
      */
-    val shelfSecond = if (plate && !plateNames) tileH + ShelfRowGap else pitchY
+    val shelfSecond = if (plate && !plateNames) tileH + ShelfRowGap * dockScale else pitchY
 
     /**
      * Two rows, laid from the bottom up: under the second row the plate's margin (and its names'
      * room), or without a plate room for names; then both rows.
      */
-    private val twoRowFit = screenH - (if (plate) PlateMarginBottom + PlatePadV + firstGap else RowNameRoom) - shelfSecond - tileH
+    private val twoRowFit = screenH - (if (plate) PlateMarginBottom + platePadV + firstGap else RowNameRoom) - shelfSecond - tileH
 
     /**
      * Top of the large clock: just under the status pill, left or right, in both layouts, as on the
@@ -203,11 +225,11 @@ private class GridMetrics(screenW: Dp, screenH: Dp, val columns: Int, oneRow: Bo
      * (four a row with every name) take it up beside the pill, at the left.
      */
     val clockY = if (oneRow || !largeClock) LargeClockTop else
-        (twoRowFit - (if (plate) PlatePadV else 0.dp) - LargeClockHeight)
+        (twoRowFit - (if (plate) platePadV else 0.dp) - LargeClockHeight)
             .coerceIn(if (clockRight) LargeClockTop else LargeClockTopMin, LargeClockTop)
 
     /** The highest two rows may start: under the large clock's weather line. What does not fit lifts in on the second row ([shelfLift]). */
-    private val twoRowFloor = if (largeClock) clockY + LargeClockHeight + if (plate) PlatePadV else 0.dp else 0.dp
+    private val twoRowFloor = if (largeClock) clockY + LargeClockHeight + if (plate) platePadV else 0.dp else 0.dp
 
     /**
      * In two-row mode both rows sit low, laid from the bottom up ([twoRowFit]). In one-row mode, or
@@ -221,7 +243,7 @@ private class GridMetrics(screenW: Dp, screenH: Dp, val columns: Int, oneRow: Bo
         peek -> screenH - pitchY - 12.dp - firstGap
         // Nothing peeks under the row, so it goes as low as it fits: the plate as far from the
         // bottom edge as from the sides, or without a plate, room for the focused app's name.
-        plate -> screenH - tileH - (PlateMarginBottom + PlatePadV) - firstGap
+        plate -> screenH - tileH - (PlateMarginBottom + platePadV) - firstGap
         else -> screenH - tileH - 70.dp
     }
 
@@ -283,10 +305,10 @@ fun HomeScreen(
     vm: HomeViewModel,
     onLaunch: (AppEntry, Rect?) -> Unit,
     onOpen: (Intent) -> Unit,
+    onMusicOpened: () -> Unit,
     onAppInfo: (String) -> Unit,
     onUninstall: (String) -> Unit,
     onStartScreensaver: () -> Unit,
-    onRefreshRateChanged: () -> Unit,
 ) {
     val apps = vm.apps
     val overlay = vm.overlay
@@ -303,16 +325,17 @@ fun HomeScreen(
     val wallpaperRequester = remember { FocusRequester() }
     var lastHeaderFocus by remember { mutableStateOf("settings") }
     val appContext = LocalContext.current
-    LaunchedEffect(AerialSettings.autoCleanIdle, vm.lastInputAt, vm.resumed, vm.overlay, vm.screensaverVisible) {
-        if (AerialSettings.autoCleanIdle && vm.resumed && vm.overlay == Overlay.None && !vm.screensaverVisible) {
-            delay(120_000)
-            if (vm.resumed && vm.overlay == Overlay.None && !vm.screensaverVisible) withContext(Dispatchers.IO) {
-                app.orchard.tv.system.BackgroundCleaner.clean(appContext, allowFallback = false)
-            }
-        }
+    val islandPreferences = remember(appContext) { IslandPreferences(appContext.applicationContext) }
+    val islandFocus = remember { IslandFocus() }
+    val islandOptions = islandPreferences.options
+    val clockPosition = AerialSettings.clockPosition
+    val islandClock = remember(clockPosition, islandOptions.enabled) {
+        if (islandOptions.enabled) IslandClockBounds() else null
     }
+    IdleCleanup(vm)
     val firmwareInputPanel = remember {
-        SystemProbe.tclInputPanel(appContext) != null || SystemProbe.coocaaInputPanel(appContext)
+        SystemProbe.tclInputPanel(appContext) != null || SystemProbe.coocaaInputPanel(appContext) ||
+            SystemProbe.tclSourceManagerPanel(appContext)
     }
 
     var focusedKey by remember { mutableStateOf<String?>(null) }
@@ -321,9 +344,13 @@ fun HomeScreen(
     var focusAfterOverlay by remember { mutableStateOf<String?>(null) }
     var indexAfterOverlay by remember { mutableStateOf(0) }
     var pillFocused by remember { mutableStateOf(false) }
+    var settingsFocused by remember { mutableStateOf(false) }
+    var dockVideoTint by remember { mutableStateOf<State<Color>?>(null) }
+    val bindDockVideoTint: (State<Color>?) -> Unit = remember { { dockVideoTint = it } }
     var lastFocusedIndex by remember { mutableStateOf(0) }
     val focusedIndex = apps.indexOfFirst { it.key == focusedKey }
     val columns = AerialSettings.homeColumns
+    val dockIconCount = minOf(columns, apps.size)
     val focusedRow = if (pillFocused || focusedIndex < 0) 0 else focusedIndex / columns
     // Kids mode's lock covers Home: nothing under it takes focus.
     val kidsLock = if (Restricted.active) Restricted.lock else null
@@ -436,6 +463,7 @@ fun HomeScreen(
     // (issue #60), and then it stays where the finger left it until the next key press.
     val scroll = remember { Animatable(0f) }
     var dragged by remember { mutableStateOf(false) }
+    var dragging by remember { mutableStateOf(false) }
     val movingNow by rememberUpdatedState(moving)
 
     fun focusApp(index: Int) {
@@ -565,7 +593,8 @@ fun HomeScreen(
                         // TCL's firmware opens its own input panel on this key; answering it here
                         // as well drew both panels at once (TCL MT5879, PR #334).
                         if (firmwareInputPanel) return@onPreviewKeyEvent false
-                        vm.overlay = Overlay.ControlCenter(CcPage.Inputs)
+                        vm.overlay = if (vm.sources.isEmpty() && SystemProbe.openInputPicker(appContext)) Overlay.None
+                        else Overlay.ControlCenter(CcPage.Inputs)
                         true
                     }
                     else -> false
@@ -579,7 +608,8 @@ fun HomeScreen(
         // same picture and plate, and only the row after it goes into the grid (issue #633: the
         // grid's frosted picture flashed up on the way to an app in the second row).
         val inGrid = focusedRow >= if (oneRow) 1 else 2
-        // With every name shown, the top row's go on its glass plate, which grows to hold them.
+        // Only all-names mode adds a caption band to the plate. Selected-only keeps the
+        // original compact Dock; its focused caption appears outside the plate/in the grid.
         val plateNames = AerialSettings.showAllNames && AerialSettings.homePlate
         val peek = AerialSettings.peekNextRow
         val hasPlate = AerialSettings.homePlate
@@ -600,8 +630,9 @@ fun HomeScreen(
             label = "settings-icon-idle",
         )
         val clockRightNow = AerialSettings.clockRight
-        val metrics = remember(maxWidth, maxHeight, columns, oneRow, plateNames, peek, hasPlate, largeClock, clockRightNow) {
-            GridMetrics(maxWidth, maxHeight, columns, oneRow, plateNames, peek, hasPlate, largeClock, clockRightNow)
+        val dockSize = AerialSettings.dockSize
+        val metrics = remember(maxWidth, maxHeight, columns, oneRow, plateNames, peek, hasPlate, largeClock, clockRightNow, dockSize) {
+            GridMetrics(maxWidth, maxHeight, columns, oneRow, plateNames, peek, hasPlate, largeClock, clockRightNow, dockSize)
         }
         val screenHeightDp = maxHeight
         val collapsePx = with(density) { metrics.collapse.toPx() }
@@ -614,7 +645,21 @@ fun HomeScreen(
             with(density) { if (focusedRow > 0 && !inGrid) metrics.shelfLift.toPx() else 0f },
             if (reduced) snap() else spring(dampingRatio = 1f, stiffness = 280f), label = "shelf-lift",
         )
+        // Inside the grid, only the shared vertical shelf spacing changes. Retain each
+        // keyed tile animation for actual app rearrangements, but do not retarget all of them
+        // whenever the remote crosses from the shelf to the grid.
+        val shelfSpacingTarget = if (inGrid) 0f else 1f
+        val shelfSpacing by animateFloatAsState(
+            shelfSpacingTarget,
+            if (reduced) snap() else spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow),
+            label = "shelf-spacing",
+        )
         val maxScroll = with(density) { metrics.scrollFor(rows - 1, rows).toPx() }.coerceAtLeast(0f)
+        val gridSettled = {
+            !dragging && !scroll.isRunning &&
+                (dragged || kotlin.math.abs(scroll.value - target.coerceIn(0f, maxScroll)) < 1f) &&
+                kotlin.math.abs(shelfSpacing - shelfSpacingTarget) < 0.005f
+        }
         LaunchedEffect(maxScroll) { scroll.updateBounds(0f, maxScroll) }
         val pastShelf by remember(collapsePx) { derivedStateOf { scroll.value > collapsePx / 2 } }
         val decay = rememberSplineBasedDecay<Float>()
@@ -657,12 +702,15 @@ fun HomeScreen(
         // Nothing over Home blurs it: a paused film stays (why: at LiveWallpaper below).
         val filmStandsIn = overlay == Overlay.None || overlay is Overlay.ControlCenter || overlay is Overlay.Wallpaper ||
             overlay is Overlay.WallpaperPicker || (overlay is Overlay.AppMenu && overlay.inFolder == null)
+        // An opaque photo/clock saver stays in this window and covers a paused wallpaper.
+        // It needs no second decoder, so return can reuse the already rendered surface.
+        val retainForSaver = vm.screensaverVisible && saverRetainsWallpaper(Wallpapers.screensaver)
         when {
             Wallpapers.selectedId == Wallpapers.LIVE -> LiveWallpaper(
                 moving = filmMoves,
-                keep = (vm.filmFront || vm.wallpaperTransientPause) && (!vm.screensaverVisible || filmSaver || Wallpapers.screensaver in setOf(ScreensaverMode.FlipClock, ScreensaverMode.Photos, ScreensaverMode.Bing)),
-                retainPaused = vm.wallpaperTransientPause || overlay != Overlay.None && overlay !is Overlay.ControlCenter ||
-                    vm.screensaverVisible && Wallpapers.screensaver in setOf(ScreensaverMode.FlipClock, ScreensaverMode.Photos, ScreensaverMode.Bing),
+                releaseForPicker = overlay is Overlay.WallpaperPicker,
+                keep = (vm.filmFront || vm.wallpaperTransientPause) && (!vm.screensaverVisible || filmSaver || retainForSaver),
+                retainPaused = retainForSaver || vm.wallpaperTransientPause || overlay != Overlay.None && overlay !is Overlay.ControlCenter,
                 cover = filmCover,
                 hold = filmSaver && vm.filmFront,
                 // Control Center, Personalize and an app's menu on Home leave Home sharp (dimmed,
@@ -676,19 +724,21 @@ fun HomeScreen(
                 otherFormatSaver = vm.screensaverVisible && !filmSaver && Wallpapers.screensaver == ScreensaverMode.Aerial &&
                     !AerialFormats.screensaverCarriesWallpaper(appContext),
                 lastInputAt = { vm.lastInputAt },
+                gridSettled = gridSettled,
                 live = liveFilm,
             )
             // Anew for each choice, so another of the owner's videos does not keep the last one's player.
             Wallpapers.isVideo() -> key(Wallpapers.selectedId) {
-                val holdVideo = vm.screensaverVisible && Wallpapers.holdVideoForSaver()
                 VideoWallpaper(
                     moving = filmMoves,
-                    retainPaused = vm.wallpaperTransientPause || holdVideo || overlay != Overlay.None && overlay !is Overlay.ControlCenter,
-                    keep = (vm.filmFront || vm.wallpaperTransientPause) && (!vm.screensaverVisible || filmSaver || holdVideo),
+                    releaseForPicker = overlay is Overlay.WallpaperPicker,
+                    retainPaused = retainForSaver || vm.wallpaperTransientPause || overlay != Overlay.None && overlay !is Overlay.ControlCenter,
+                    keep = (vm.filmFront || vm.wallpaperTransientPause) && (!vm.screensaverVisible || filmSaver || retainForSaver),
                     hold = filmSaver && vm.filmFront,
                     home = homeVideo,
                     standIn = filmStandsIn,
-                    lastInputAt = vm.lastInputAt,
+                    lastInputAt = { vm.lastInputAt },
+                    gridSettled = gridSettled,
                     cover = filmCover,
                     behindApp = !vm.filmFront,
                 )
@@ -702,8 +752,13 @@ fun HomeScreen(
                     dragState,
                     Orientation.Vertical,
                     enabled = gridEnabled && rows > 1,
+                    onDragStarted = { dragging = true },
                     onDragStopped = { velocity ->
-                        if (!reduced) scroll.animateDecay(-velocity, decay)
+                        try {
+                            if (!reduced) scroll.animateDecay(-velocity, decay)
+                        } finally {
+                            dragging = false
+                        }
                     },
                 )
                 // While moving an app, a tap on empty space ends the move, as OK does.
@@ -722,9 +777,9 @@ fun HomeScreen(
                 val second = if (metrics.shelfRows > 1) metrics.shelfSecond else 0.dp
                 Rect(
                     metrics.dockInset.toPx(),
-                    (metrics.topRowY - PlatePadV).toPx(),
+                    (metrics.topRowY - metrics.platePadV).toPx(),
                     metrics.dockRight.toPx(),
-                    (metrics.topRowY + metrics.tileH + PlatePadV + metrics.firstGap + second).toPx(),
+                    (metrics.topRowY + metrics.tileH + metrics.platePadV + metrics.firstGap + second).toPx(),
                 )
             }
             // Another wallpaper chosen: nothing shows through until the new one has a frame.
@@ -732,18 +787,17 @@ fun HomeScreen(
             // The aerial film's own glass for the grid: the one playing or stopped, else the one
             // the picture was taken from.
             val pictureClip = remember(Wallpapers.backdrop) { Wallpapers.livePictureSpot()?.first }
-            val clip = if (Wallpapers.selectedId == Wallpapers.LIVE) liveFilm.film?.id ?: pictureClip else null
+            val clip = if (Wallpapers.selectedId == Wallpapers.LIVE) {
+                (liveFilm.film?.id ?: pictureClip)?.takeIf { Wallpapers.selectedAerialId == null || it == Wallpapers.selectedAerialId }
+            } else null
             LaunchedEffect(clip) { Wallpapers.showClipGlass(clip) }
             val clipGlass = Wallpapers.clipGlass?.takeIf { it.first == clip }?.second
-            // Keep one glass palette per wallpaper choice; sampling moving frames made the Dock pulse.
-            var stableFilmGlass by remember(Wallpapers.selectedId) { mutableStateOf(Wallpapers.frosted) }
-            LaunchedEffect(Wallpapers.frosted) {
-                if (stableFilmGlass == null) stableFilmGlass = Wallpapers.frosted
-            }
+            val stableFilmGlass = Wallpapers.selectionFilmFrost
             HomeBackground(
                 // The chosen wallpaper; in "Follow App" mode, light from the focused app.
                 backdrop = if (Wallpapers.selectedId == Wallpapers.AUTO) ambientApp?.art?.backdrop else Wallpapers.backdrop ?: ambientApp?.art?.backdrop,
-                frosted = Wallpapers.frosted.takeIf { Wallpapers.selectedId != Wallpapers.AUTO && Wallpapers.backdrop != null },
+                frosted = (if (Wallpapers.moves()) stableFilmGlass else Wallpapers.frosted)
+                    .takeIf { Wallpapers.selectedId != Wallpapers.AUTO && Wallpapers.backdrop != null },
                 plate = plate,
                 scroll = { scroll.value },
                 collapse = collapsePx,
@@ -771,11 +825,12 @@ fun HomeScreen(
                 wallpaper = Wallpapers.selectedId,
                 glassAwaitsStop = Wallpapers.selectedId == Wallpapers.LIVE && clipGlass == null,
                 gridGlass = clipGlass,
+                onVideoDockTint = bindDockVideoTint.takeIf { islandOptions.enabled },
             )
 
             Box(Modifier.fillMaxSize().offset { IntOffset(0, -scroll.value.roundToInt()) }) {
-                val clockPosition = AerialSettings.clockPosition
                 val clockScale = when (AerialSettings.clockSizeMode) { 1 -> 1.2f; 2 -> 1.4f; else -> 1f }
+                val shelfTitleRoom = if (AerialSettings.largeAppTitle) 49.dp else 8.dp
                 val headerFade = Modifier.graphicsLayer {
                     alpha = 1f - (scroll.value / collapsePx * 1.6f).coerceIn(0f, 1f)
                     compositingStrategy = CompositingStrategy.ModulateAlpha
@@ -788,35 +843,38 @@ fun HomeScreen(
                             .graphicsLayer { scaleX = clockScale; scaleY = clockScale; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0f, 0f) }
                             .then(headerFade),
                         toSaver = { clockToSaver.value },
+                        islandBounds = islandClock,
                     )
                     1 -> {
                         var clockHeightPx by remember { mutableStateOf(0) }
                         val availablePx = with(density) {
-                            (metrics.topRowY - (if (hasPlate) PlatePadV + 8.dp else 8.dp) - 141.dp).toPx()
+                            (metrics.topRowY - (if (hasPlate) metrics.platePadV else 0.dp) - shelfTitleRoom - 141.dp).toPx()
                         }
                         // Only scale down when the clock would overlap the shelf, keeping its right edge fixed.
                         val fit = if (clockHeightPx > 0) (availablePx / clockHeightPx).coerceIn(0.1f, 1f) else 1f
-                        StackedHomeClock(
-                            now = now, alignEnd = true, scale = clockScale,
+                        CleanStyleClock(
+                            now = now, alignment = Alignment.End, scale = clockScale,
                             modifier = Modifier.align(Alignment.TopEnd)
                                 .padding(end = metrics.headerMargin, top = 141.dp)
                                 .onSizeChanged { clockHeightPx = it.height }
                                 .graphicsLayer { scaleX = fit; scaleY = fit; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(1f, 0f) }
-                                .then(headerFade),
+                                .then(headerFade)
+                                .then(islandClock?.run { Modifier.trackIslandClock(IslandClockPart.Block) } ?: Modifier),
                             toSaver = { clockToSaver.value },
                         )
                     }
                     2 -> {
                         var clockHeightPx by remember { mutableStateOf(0) }
                         val availablePx = with(density) {
-                            (metrics.topRowY - (if (hasPlate) PlatePadV + 8.dp else 8.dp) - 89.dp).toPx()
+                            (metrics.topRowY - (if (hasPlate) metrics.platePadV else 0.dp) - shelfTitleRoom - 89.dp).toPx()
                         }
                         val fit = if (clockHeightPx > 0) (availablePx / clockHeightPx).coerceIn(0.1f, 1f) else 1f
-                        StackedHomeClock(now = now, alignEnd = false, scale = clockScale,
+                        CleanStyleClock(now = now, alignment = Alignment.CenterHorizontally, scale = clockScale,
                             modifier = Modifier.align(Alignment.TopCenter).padding(top = 89.dp)
                                 .onSizeChanged { clockHeightPx = it.height }
                                 .graphicsLayer { scaleX = fit; scaleY = fit; transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f) }
-                                .then(headerFade),
+                                .then(headerFade)
+                                .then(islandClock?.run { Modifier.trackIslandClock(IslandClockPart.Block) } ?: Modifier),
                             toSaver = { clockToSaver.value })
                     }
                 }
@@ -828,31 +886,54 @@ fun HomeScreen(
                     !peek -> columns
                     else -> Int.MAX_VALUE
                 }
-                if (AerialSettings.focusStyle == FocusStyle.LiquidSlide && focusedIndex >= 0 && !pillFocused && gridEnabled && moving == null) {
+                if (AerialSettings.focusStyle.sliding && focusedIndex >= 0 && !pillFocused && gridEnabled && moving == null) {
                     val (targetX, targetY) = metrics.slot(focusedIndex, onTop = !inGrid)
+                    val classic = AerialSettings.focusStyle == FocusStyle.ClassicGlassSlide
                     // Match the focused artwork instead of enclosing it in another oversized frame.
-                    val frameWidth = metrics.tileW * 1.10f
-                    val frameHeight = metrics.tileH * 1.10f
+                    val frameWidth = if (classic) metrics.tileW * 1.13f + 6.dp else metrics.tileW * 1.10f
+                    val frameHeight = if (classic) metrics.tileH * 1.13f + 6.dp else metrics.tileH * 1.10f
                     val frameTarget = with(density) { IntOffset((targetX - (frameWidth - metrics.tileW) / 2).roundToPx(), (targetY - (frameHeight - metrics.tileH) / 2).roundToPx()) }
                     val frame by animateIntOffsetAsState(frameTarget,
-                        if (reduced) snap() else spring(dampingRatio = 1f, stiffness = 460f), label = "liquid-focus-slide")
+                        if (reduced) snap() else if (classic) spring(dampingRatio = 0.85f, stiffness = 420f)
+                        else spring(dampingRatio = 1f, stiffness = 460f), label = "liquid-focus-slide")
                     val gleam = remember { Animatable(0f) }
-                    LaunchedEffect(focusedIndex, reduced) {
-                        if (reduced) gleam.snapTo(0f) else {
+                    LaunchedEffect(focusedIndex, reduced, classic) {
+                        if (reduced || classic) gleam.snapTo(0f) else {
                             gleam.snapTo(1f)
                             gleam.animateTo(0f, tween(300, easing = Motion.EaseOut))
                         }
                     }
-                    Box(Modifier.zIndex(1f).offset { frame }.size(frameWidth, frameHeight)
+                    Box(Modifier.zIndex(1f).offset { frame - IntOffset(0, lift.roundToInt()) }.size(frameWidth, frameHeight)
                         .graphicsLayer {
                             alpha = 1f - (toSaver.value / 0.6f).coerceIn(0f, 1f)
                         }
-                        .liquidFocusLens(appTileCorner(AerialSettings.compactDockCorners) * 1.10f) { gleam.value })
+                        .then(if (classic) Modifier
+                            .background(Color.White.copy(alpha = 0.12f), RoundedCornerShape(if (AerialSettings.compactDockCorners) 14.dp else 27.dp))
+                            .border(1.5.dp, Color.White.copy(alpha = 0.72f), RoundedCornerShape(if (AerialSettings.compactDockCorners) 14.dp else 27.dp))
+                        else Modifier.liquidFocusLens(appTileCorner(AerialSettings.compactDockCorners) * 1.10f) { gleam.value }))
+                }
+                // One steady label above the shelf, aligned to the first tile's resting left edge.
+                // It is separate from the focus lens, so long names do not travel between tiles.
+                if (AerialSettings.largeAppTitle && !inGrid && !pillFocused && moving == null) {
+                    apps.getOrNull(focusedIndex)?.let { app ->
+                        BasicText(app.label,
+                            style = Type.LargeTitle.copy(fontSize = 28.sp, color = when (AerialSettings.clockTextColor) {
+                                1 -> Color(0xFF252A30); 2 -> Color.Black; else -> Color.White
+                            }),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.offset { IntOffset(metrics.margin.roundToPx(),
+                                (metrics.topRowY - metrics.platePadV - 45.dp).roundToPx() - lift.roundToInt()) }
+                                .fillMaxWidth().padding(end = metrics.margin * 2)
+                                .graphicsLayer { alpha = (1f - (scroll.value / collapsePx * 2f).coerceIn(0f, 1f)) *
+                                    (1f - (toSaver.value / 0.6f).coerceIn(0f, 1f)) })
+                    }
                 }
                 apps.forEachIndexed { index, app ->
                     key(app.key) {
-                        val (x, y) = metrics.slot(index, onTop = !inGrid)
-                        val slotPx = with(density) { IntOffset(x.roundToPx(), y.roundToPx()) }
+                        val (x, gridY) = metrics.slot(index, onTop = false)
+                        val shelfY = metrics.slot(index, onTop = true).second
+                        val slotPx = with(density) { IntOffset(x.roundToPx(), gridY.roundToPx()) }
+                        val shelfDeltaPx = with(density) { shelfY.roundToPx() - gridY.roundToPx() }
                         val slot = animateIntOffsetAsState(
                             slotPx,
                             spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow),
@@ -901,9 +982,14 @@ fun HomeScreen(
                                 }
                             },
                             modifier = Modifier
+                                .focusProperties {
+                                    if (index < columns) up = islandFocus.dockUp(settingsRequester)
+                                }
                                 .diagLayer("tiles")
                                 // Lifted on the shelf with the plate; the clock above stays put.
-                                .offset { slot.value - IntOffset(0, lift.roundToInt()) }
+                                .offset {
+                                    slot.value + IntOffset(0, (shelfDeltaPx * shelfSpacing).roundToInt() - lift.roundToInt())
+                                }
                                 // Into the screensaver, the apps go left to right, sinking a little.
                                 // Opacity lives in the tile's own layers: another layer around it dropped
                                 // the focus zoom and rounded clip on Android 9 (issue #725).
@@ -918,7 +1004,8 @@ fun HomeScreen(
                             rowEnd = index % columns == columns - 1 || index == apps.lastIndex,
                             // On the glass plate only with every name shown (an earlier build showed
                             // the focused one alone there, but it sat oddly on the glass).
-                            showName = plate == null || index >= columns * metrics.shelfRows || plateNames,
+                            showName = if (AerialSettings.largeAppTitle && !inGrid && index < columns * metrics.shelfRows) false
+                                else plate == null || index >= columns * metrics.shelfRows || plateNames,
                             nameOnPlate = plate != null && index < columns * metrics.shelfRows,
                         )
                     }
@@ -926,7 +1013,9 @@ fun HomeScreen(
             }
         }
 
-        PanelBackdrop(Wallpapers.frosted.takeIf { Wallpapers.backdrop != null }, { backdropFrost }, { 0f })
+        val panelFrost = (if (Wallpapers.moves()) Wallpapers.selectionFilmFrost else Wallpapers.frosted)
+            .takeIf { Wallpapers.backdrop != null }
+        PanelBackdrop(panelFrost, { backdropFrost }, { 0f })
 
         // Keep both top status controls on the same centerline, even when Settings is hidden.
         val statusPillsAlpha by animateFloatAsState(
@@ -934,29 +1023,34 @@ fun HomeScreen(
             tween(160, easing = Motion.EaseOut),
             label = "status-pills",
         )
-        if (AerialSettings.clockPosition == 3) {
+        if (clockPosition == 3) {
             val statusScale = when (AerialSettings.clockSizeMode) { 1 -> 1.2f; 2 -> 1.4f; else -> 1f }
             CornerClock(now = now, showDate = true, showCapacity = false, scale = statusScale,
                 modifier = Modifier.align(Alignment.TopStart)
                     .padding(
-                        start = metrics.dockInset + HomeSettingsFocusSize + 6.dp,
-                        end = metrics.dockInset + HomeSettingsFocusSize + 16.dp,
+                        start = metrics.statusInset + HomeSettingsFocusSize + 6.dp,
+                        end = metrics.statusInset + HomeSettingsFocusSize + 16.dp,
                     )
                     .padding(top = TopStatusY + (HomeSettingsButtonHeight - HomeSettingsFocusSize) / 2)
                     .graphicsLayer {
                         alpha = statusPillsAlpha * (1f - (toSaver.value * 2f).coerceIn(0f, 1f))
                         compositingStrategy = CompositingStrategy.ModulateAlpha
-                    }, toSaver = { toSaver.value }, saving = vm.screensaverVisible)
+                    }.then(islandClock?.run { Modifier.trackIslandClock(IslandClockPart.Block) } ?: Modifier),
+                toSaver = { toSaver.value }, saving = vm.screensaverVisible)
         }
         // The visible focus circle is inset from the remote's larger hit target.
-        val cornerInset = metrics.dockInset - (HomeSettingsButtonWidth - HomeSettingsFocusSize) / 2
-        val positionModifier = when (AerialSettings.settingsIconPosition) {
+        val cornerInset = metrics.statusInset - (HomeSettingsButtonWidth - HomeSettingsFocusSize) / 2
+        val settingsPosition = AerialSettings.settingsIconPosition
+        val settingsSideY = 89.dp
+        val positionModifier = when (settingsPosition) {
             0 -> Modifier.align(Alignment.TopStart).padding(top = TopStatusY, start = cornerInset)
             2 -> Modifier.align(Alignment.TopEnd).padding(top = TopStatusY, end = cornerInset)
-            else -> Modifier.align(Alignment.TopEnd).padding(top = 89.dp, end = metrics.headerMargin)
+            else -> Modifier.align(Alignment.TopEnd).padding(top = settingsSideY, end = metrics.headerMargin)
         }
+        val returnTile = apps.getOrNull(lastFocusedIndex.coerceIn(0, (dockIconCount - 1).coerceAtLeast(0)))
+            ?.let { requester(it.key) } ?: FocusRequester.Default
         Row(
-            positionModifier.graphicsLayer { alpha = statusPillsAlpha * iconIdleAlpha },
+            positionModifier.graphicsLayer { alpha = statusPillsAlpha * if (settingsFocused) 1f else iconIdleAlpha },
             verticalAlignment = Alignment.CenterVertically,
         ) {
             StatusPills(
@@ -971,7 +1065,10 @@ fun HomeScreen(
                     compositingStrategy = CompositingStrategy.ModulateAlpha
                 },
 
+                islandUp = { islandFocus.settingsUp() },
+                islandDown = { islandFocus.settingsDown(returnTile) },
                 onFocused = { gained ->
+                    settingsFocused = gained
                     // The window hands its first focus to a top control; the top row is where Home starts.
                     if (gained) {
                         if (focusedKey == null) {
@@ -999,10 +1096,77 @@ fun HomeScreen(
                 onWallpaperClick = {
                     lastHeaderFocus = "wallpaper"
                     pillFocused = true
-                    vm.overlay = Overlay.WallpaperPicker
+                    vm.overlay = Overlay.WallpaperPicker()
                 },
             )
         }
+
+        val islandHome = islandOnHome(vm.resumed, windowFocused, !gridEnabled || moving != null,
+            vm.screensaverVisible, Restricted.active, !pastShelf && vm.loaded)
+        val islandDockRight = metrics.slot((dockIconCount - 1).coerceAtLeast(0), onTop = true).first + metrics.tileW
+        DesktopIsland(
+            home = islandHome,
+            preferences = islandPreferences,
+            focus = islandFocus,
+            downTarget = settingsRequester,
+            restoreFocus = {
+                if (pillFocused || apps.isEmpty()) {
+                    val previous = when (lastHeaderFocus) {
+                        "network" -> networkRequester
+                        "wallpaper" -> wallpaperRequester
+                        else -> settingsRequester
+                    }
+                    if (!runCatching { previous.requestFocus() }.getOrDefault(false)) focusApp(lastFocusedIndex)
+                } else focusApp(lastFocusedIndex)
+            },
+            openTask = { task ->
+                vm.overlay = when (task) {
+                    IslandTask.Photos, IslandTask.Video -> Overlay.WallpaperPicker(localVideos = task == IslandTask.Video)
+                    IslandTask.Update -> Overlay.ControlCenter(CcPage.Update)
+                }
+            },
+            modifier = Modifier.align(AbsoluteAlignment.TopLeft),
+            musicOpened = onMusicOpened,
+            widthLimit = islandTitleWidthLimit(islandOptions.position, maxWidth.value, metrics.margin.value, islandDockRight.value),
+            surface = {
+                IslandSurface(
+                    material = IslandMaterial.fromDock(AerialSettings.plateStyle),
+                    screen = Size(maxWidth.value, maxHeight.value),
+                    frost = panelFrost,
+                    moving = Wallpapers.moves(),
+                    dockTint = { dockVideoTint?.value ?: Color(NEUTRAL_DOCK_TINT) },
+                )
+            },
+            placement = { wanted ->
+                val areas = islandClock?.areas
+                val visibleClock = areas?.filterKeys { part ->
+                    when (part) {
+                        IslandClockPart.Greeting -> AerialSettings.showHomeGreeting
+                        IslandClockPart.Time -> AerialSettings.showHomeTime
+                        IslandClockPart.Date -> AerialSettings.showHomeDate
+                        IslandClockPart.Weather -> AerialSettings.showWeather && app.orchard.tv.weather.Weather.now != null
+                        IslandClockPart.Capacity -> AerialSettings.showDeviceCapacity
+                        IslandClockPart.Block -> true
+                    }
+                }.orEmpty()
+                val pxPerDp = density.density
+                val clockRects = visibleClock.values.map { bounds ->
+                    Rect(bounds.left / pxPerDp, bounds.top / pxPerDp, bounds.right / pxPerDp, bounds.bottom / pxPerDp)
+                }
+                val greetingCenter = visibleClock[IslandClockPart.Greeting]?.center?.y?.div(pxPerDp)
+                    ?: (metrics.clockY + 10.dp).value
+                val largeAppTitle = AerialSettings.largeAppTitle
+                val dockTop = metrics.topRowY - maxOf(metrics.platePadV, 10.dp) -
+                    (if (largeAppTitle) 45.dp else 0.dp) -
+                    ((scroll.value + lift) / pxPerDp).dp
+                val gearTop = if (settingsPosition == 1) settingsSideY else TopStatusY
+                placeIsland(
+                    islandOptions.position, maxWidth.value, metrics.margin.value, islandDockRight.value,
+                    dockTop.value, greetingCenter, (gearTop + HomeSettingsButtonHeight + 6.dp).value, clockRects, wanted,
+                    lowerLeftLift = if (largeAppTitle) 0f else 28f,
+                )
+            },
+        )
 
         AnimatedVisibility(
             visible = moving != null,
@@ -1023,7 +1187,8 @@ fun HomeScreen(
         }
 
 
-        app.orchard.tv.announcements.AnnouncementHost(vm, onOpen, windowFocused)
+        app.orchard.tv.announcements.AnnouncementHost(vm, windowFocused)
+        app.orchard.tv.feedback.FeedbackHost(vm)
 
         ControlCenter(
             visible = overlay is Overlay.ControlCenter,
@@ -1166,12 +1331,19 @@ fun HomeScreen(
 
         WallpaperSheet(
             visible = overlay is Overlay.Wallpaper || overlay is Overlay.WallpaperPicker,
-            wallpaperOnly = overlay is Overlay.WallpaperPicker,
-            onDismiss = { vm.overlay = if (overlay is Overlay.WallpaperPicker) Overlay.None else Overlay.ControlCenter() },
+            picker = overlay as? Overlay.WallpaperPicker,
+            islandPreferences = islandPreferences,
+            islandApps = { apps + vm.hiddenApps + vm.folderApps.values.flatten() },
+            onDismiss = {
+                when (vm.overlay) {
+                    is Overlay.WallpaperPicker -> vm.overlay = Overlay.None
+                    Overlay.Wallpaper -> vm.overlay = Overlay.ControlCenter()
+                    else -> Unit
+                }
+            },
 
             hiddenCount = vm.hiddenApps.size,
             onHiddenApps = { vm.whenUnlocked { vm.overlay = Overlay.HiddenApps } },
-            onRefreshRateChanged = onRefreshRateChanged,
             // Locking needs nothing; unlocking, the PIN where one is set.
             onHomeLock = { on ->
                 if (on == AerialSettings.homeLocked) Unit

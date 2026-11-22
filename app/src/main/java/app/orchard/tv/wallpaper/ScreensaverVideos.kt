@@ -52,29 +52,48 @@ object ScreensaverVideos {
     internal fun uploadBudget(free: Long, stored: Long): Long =
         minOf((free - stored) / 2, free - KEEP_FREE_BYTES, MAX_FILE_BYTES).coerceAtLeast(0)
 
-    /**
-     * A film sent as the request body, [length] bytes, written straight into the library's directory:
-     * no copy in the cache, so a 2 GB film needs 2 GB free, not 4 (#1164). Returns null, having read
-     * nothing, when it cannot fit. The lock is not held while the bytes arrive.
-     */
-    fun receive(context: Context, input: InputStream, length: Long, name: String): ScreensaverVideo? {
-        if (length <= 0 || length > room(context) || titleOf(name) == null) return null
+    // A phone on a congested Wi-Fi connection may pause between reads on an otherwise healthy upload.
+    const val UPLOAD_IDLE_MS = 30_000
+
+    internal enum class UploadError(val key: String) {
+        UnsupportedType("unsupported_type"), EmptyFile("empty_file"), TooLarge("too_large"),
+        InsufficientRoom("insufficient_room"), Interrupted("interrupted"),
+        InvalidVideo("invalid_video"), StorageError("storage_error"),
+    }
+
+    internal data class UploadResult(val video: ScreensaverVideo? = null, val error: UploadError? = null)
+
+    internal fun uploadError(context: Context, name: String, length: Long): UploadError? = when {
+        titleOf(name) == null -> UploadError.UnsupportedType
+        length <= 0 -> UploadError.EmptyFile
+        length > MAX_FILE_BYTES -> UploadError.TooLarge
+        length > room(context) -> UploadError.InsufficientRoom
+        else -> null
+    }
+
+    /** Write straight to the library while the network streams the bytes. */
+    internal fun receive(context: Context, input: InputStream, length: Long, name: String): UploadResult {
+        uploadError(context, name, length)?.let { return UploadResult(error = it) }
         val part = File(directory(context), "import-${UUID.randomUUID().toString().replace("-", "")}.part")
         return try {
             part.outputStream().use { out ->
                 val buffer = ByteArray(256 * 1024)
                 var left = length
                 while (left > 0) {
-                    val n = input.read(buffer, 0, minOf(buffer.size.toLong(), left).toInt())
-                    if (n < 0) return null
+                    val n = try {
+                        input.read(buffer, 0, minOf(buffer.size.toLong(), left).toInt())
+                    } catch (_: IOException) {
+                        return UploadResult(error = UploadError.Interrupted)
+                    }
+                    if (n < 0) return UploadResult(error = UploadError.Interrupted)
                     out.write(buffer, 0, n)
                     left -= n
                 }
             }
-            add(context, part, name)
+            store(context, part, name)
         } catch (e: IOException) {
-            Log.w("AerialVideos", "screensaver video upload broke off", e)
-            null
+            Log.w("AerialVideos", "could not write incoming video", e)
+            UploadResult(error = UploadError.StorageError)
         } finally { part.delete() }
     }
 
@@ -114,14 +133,16 @@ object ScreensaverVideos {
 
     /** The upload is already on disk and is taken over. Validate it first, and publish a complete directory. */
     @Synchronized
-    fun add(context: Context, upload: File, name: String): ScreensaverVideo? {
+    internal fun store(context: Context, upload: File, name: String): UploadResult {
         val root = directory(context)
         // Only abandoned imports, never a film that has been published or one being copied now.
         root.listFiles()?.filter { it.name.startsWith("import-") && it.lastModified() < System.currentTimeMillis() - 3_600_000 }
             ?.forEach { it.deleteRecursively() }
         val size = upload.length()
-        if (size <= 0 || size > room(context, pending = size)) return null
-        val title = titleOf(name) ?: return null
+        if (size <= 0) return UploadResult(error = UploadError.EmptyFile)
+        if (size > MAX_FILE_BYTES) return UploadResult(error = UploadError.TooLarge)
+        if (size > room(context, pending = size)) return UploadResult(error = UploadError.InsufficientRoom)
+        val title = titleOf(name) ?: return UploadResult(error = UploadError.UnsupportedType)
         val metadata = MediaMetadataRetriever()
         val valid = try {
             metadata.setDataSource(upload.absolutePath)
@@ -131,8 +152,11 @@ object ScreensaverVideos {
                 ((metadata.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0) > 0 &&
                     (metadata.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0) > 0)
             hasVideo && (metadata.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0) > 0
-        } catch (_: Exception) { false } finally { runCatching { metadata.release() } }
-        if (!valid) return null
+        } catch (_: Exception) { false } finally { runCatching { metadata.release() } } || hasVideoTrack(upload)
+        if (!valid) {
+            Log.w("AerialVideos", "screensaver video refused: no video track found in $size bytes")
+            return UploadResult(error = UploadError.InvalidVideo)
+        }
 
         val id = UUID.randomUUID().toString().replace("-", "")
         val staging = File(root, "import-$id")
@@ -148,11 +172,28 @@ object ScreensaverVideos {
             }
             File(staging, "info.json").writeText(JSONObject().put("name", title).toString())
             check(staging.renameTo(target))
-            ScreensaverVideo(id, title, File(target, "video.mp4"))
+            UploadResult(video = ScreensaverVideo(id, title, File(target, "video.mp4")))
         } catch (e: Exception) {
             Log.w("AerialVideos", "could not store a screensaver video", e)
-            null
+            UploadResult(error = UploadError.StorageError)
         } finally { staging.deleteRecursively() }
+    }
+
+    /**
+     * The container's own reading, for TVs whose MediaMetadataRetriever reads nothing: Skyworth
+     * 8H93 G720S (HiSilicon V600, Android 5.0) refused every film, even a 2 s baseline H.264
+     * MP4, while its player plays them (issue #1558, the reporter's logcat).
+     */
+    private fun hasVideoTrack(file: File): Boolean {
+        // Shared with Lite, which runs from Android 4.0; MediaExtractor came in 4.1.
+        if (android.os.Build.VERSION.SDK_INT < 16) return false
+        val extractor = android.media.MediaExtractor()
+        return try {
+            extractor.setDataSource(file.absolutePath)
+            (0 until extractor.trackCount).any {
+                extractor.getTrackFormat(it).getString(android.media.MediaFormat.KEY_MIME)?.startsWith("video/") == true
+            }
+        } catch (_: Exception) { false } finally { runCatching { extractor.release() } }
     }
 
     @Synchronized

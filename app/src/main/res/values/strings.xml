@@ -20,10 +20,11 @@
     <string name="cc_settings">Settings</string>
     <string name="cc_volume">Volume</string>
     <string name="cc_muted">Muted</string>
+    <string name="cc_volume_external">On the sound system</string>
     <string name="cc_home_default">Halo TV is your home screen</string>
     <string name="cc_home_guarded">Home Guard is on</string>
     <string name="cc_home_not_default">Not the default home screen</string>
-    <string name="cc_setup_title">Make Halo TV Your Home Screen</string>
+    <string name="cc_setup_title">Home Guard Settings</string>
     <string name="cc_setup_body">Installed from the APK alone, Halo TV opens, but Home, power-on and wake still go to the old launcher.</string>
     <string name="cc_setup_guard">Turn On Home Guard</string>
     <string name="cc_setup_guard_where">Accessibility</string>
@@ -34,6 +35,7 @@
     <string name="cc_setup_scan_hint">Scan to read the Halo TV installation and setup guide.</string>
     <string name="cc_back">Back</string>
     <string name="cc_no_inputs">No inputs found on this TV</string>
+    <string name="cc_all_inputs_hidden">All inputs are hidden. Show them again in Input Settings.</string>
     <string name="cc_native_inputs">TV input menu</string>
     <string name="net_ethernet">Ethernet</string>
     <string name="net_wifi">Wi-Fi</string>
@@ -144,7 +146,8 @@
     <string name="st_names">App Names</string>
     <string name="st_names_focused">Selected App</string>
     <string name="st_names_all">All Apps</string>
-    <string name="st_names_hint">Names under every app, or only under the selected one, as on Apple TV. With every name shown, the top row\'s names sit on its glass plate too.</string>
+    <string name="st_names_hint">Focused: show the name below the selected icon. All: show every icon name. Large title: show the selected app above the left edge of the Dock.</string>
+    <string name="st_names_title">Large title</string>
     <string name="ss_kind">Style</string>
     <string name="wp_weather_city">Location</string>
     <string name="st_home_standard">Two Rows</string>
@@ -279,12 +282,7 @@
     <string name="wp_wallpaper_title">Wallpaper settings</string>
     <string name="wp_dynamic">Dynamic video wallpaper</string>
     <string name="wp_dynamic_hint">Scan the code on the right, upload a video from your phone, then select it here.</string>
-    <string name="st_refresh_rate">Refresh rate</string>
-    <string name="st_refresh_rate_hint">Applies to Halo TV only; video apps keep their own rate. Unsupported modes are disabled. Auto uses the highest mode Android reports as seamless (Android 12+); otherwise it follows system policy. Manual mode changes may briefly blank the screen.</string>
-    <string name="st_refresh_auto">Auto</string>
-    <string name="st_refresh_30">30 Hz</string>
-    <string name="st_refresh_60">60 Hz</string>
-    <string name="st_refresh_120">120 Hz</string>
+
     <string name="cc_about_attribution">Halo TV is an unofficial derivative of the open-source Aerial project.</string>
     <string name="donate_title">Support Halo TV</string>
     <string name="donate_open">Open</string>
@@ -616,6 +614,11 @@ WeChat: scan code  ·  Email: 1227888560@qq.com</string>
     <string name="quiz_score">%1$d of %2$d correct</string>
     <string name="quiz_back_to_questions">Back to the quiz</string>
     <string name="halo_dock_corners">Corner style</string>
+    <string name="halo_dock_size">Dock and icon size</string>
+    <string name="halo_dock_size_hint">Resize the Dock and app icons together. Default keeps the current size.</string>
+    <string name="halo_dock_size_small">Small</string>
+    <string name="halo_dock_size_default">Default</string>
+    <string name="halo_dock_size_large">Large</string>
     <string name="halo_dock_corners_round">Large radius</string>
     <string name="halo_dock_corners_compact">Small radius</string>
     <string name="quiz_parent_allowance_hint">A parent can choose extra viewing time below or leave Kids mode.</string>
@@ -638,4 +641,44 @@ WeChat: scan code  ·  Email: 1227888560@qq.com</string>
     <string name="halo_guard_restore_missing">Automatic recovery is not authorized. Enable Accessibility manually; if it stops after wake or restart, follow the QR guide to grant recovery access over ADB.</string>
     <string name="halo_guard_repair">Reconnect Home Guard</string>
     <string name="halo_guard_restricted">App info: check Allow restricted settings</string>
+    <string name="focus_classic_glass_slide">Classic glass slide</string>
+    <string name="flip_seconds_style">Seconds style</string>
+    <string name="flip_seconds_numeric">Numeric seconds</string>
+    <string name="flip_seconds_colon">Blinking colon</string>
+    <string name="halo_project_links_body">Source code: https://github.com/Null9797/halo-tv\nWebsite: https://halo-tv.pages.dev/\nQuark download: https://pan.quark.cn/s/a14e3ab2dd41</string>
+    <string name="halo_guard_global_off">The service is registered, but Android accessibility is off.</string>
+    <string name="halo_guard_restricted_blocked">Android is blocking restricted settings. Open App info and allow restricted settings if your TV provides this option.</string>
+    <string name="halo_guard_other_service">Another Aerial/Halo guard is enabled: %1$s. Keep only the guard you intend to use; this app will not disable it automatically.</string>
+    <string name="halo_guard_verify_home">A running service does not guarantee every Home key or boot is intercepted. Test Home and power-on after setup; some TVs require manufacturer auto-start permission.</string>
+    <string name="halo_reset_hint_apps">Only settings on this page will be reset. Home lock, hidden apps and files are kept.</string>
+    <string name="focus_liquid_slide_hint">The highlight slides to the selected app.</string>
+    <string name="focus_classic_glass_slide_hint">A glass highlight slides to the selected app.</string>
+    <string name="aerial_quality_shared_hint">Shared with the aerial screensaver. The wallpaper uses SDR even when Dolby Vision is chosen.</string>
+
+    <!-- User-initiated guard permission setup. -->
+    <string name="halo_setup_activate">Enable and repair Home Guard</string>
+    <string name="halo_setup_working">Checking and restoring…</string>
+    <string name="halo_setup_scope">Enables automatic recovery and repairs access where already authorized. Confirm the remaining permissions in system settings. Other apps and their permissions are preserved.</string>
+    <string name="halo_setup_next">Next permission: %1$s</string>
+    <string name="halo_setup_review">Review the status below. Unavailable permissions need the TV system or computer setup guide. Return here after granting access to check again.</string>
+    <string name="halo_setup_no_entry">This TV has no accessible permission page. Use its system settings or the computer setup guide below.</string>
+    <string name="halo_setup_allowed">Allowed</string>
+    <string name="halo_setup_pending">Needs approval</string>
+    <string name="halo_setup_unknown">Not readable</string>
+    <string name="halo_setup_connected">Connected</string>
+    <string name="halo_setup_waiting_bind">Allowed · not connected</string>
+    <string name="halo_setup_unsupported">Unavailable on this system</string>
+    <string name="halo_setup_manual">Check in system</string>
+    <string name="halo_setup_overlay">Display over other apps</string>
+    <string name="halo_setup_usage">Usage access</string>
+    <string name="halo_setup_battery">Allow background operation</string>
+    <string name="halo_setup_autostart">Vendor autostart / associated start</string>
+    <string name="halo_setup_vendor_hint">In system app management, allow HaloTV to autostart, start from other apps and run in the background. Availability varies by TV; opening this page does not mean access is granted.</string>
+    <string name="halo_setup_listener_hint">Notification access can help restart the guard after standby; HaloTV does not read notification content. Some low-memory systems cannot bind this service.</string>
+    <string name="halo_setup_lite_body">Lite uses the system default Home setting; it does not include the full edition Home Guard service. Choose HaloTV Lite as Home, then allow vendor autostart and background operation where available.</string>
+    <string name="halo_setup_app_details">Open system app management</string>
+    <string name="halo_setup_secure_hint">Computer authorization is needed for automatic repair. A saved recovery preference alone cannot grant secure settings access.</string>
+    <string name="a11y_delete">Delete</string>
+    <string name="aerial_quality_4k_trial">Try 4K SDR</string>
+    <string name="aerial_quality_4k_trial_hint">Auto keeps using 1080p on this device. To test 4K SDR, select it here. Playback falls back to 1080p if the test fails.</string>
 </resources>

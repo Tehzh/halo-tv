@@ -77,12 +77,11 @@ fun Modifier.liquidGlass(corner: Dp, bottomCorners: Boolean = true, seeThroughFi
     // Now the picture's glass, as over a still picture, once the picture is there: the frame
     // decoded in the app where the film was let go, which the film goes on from (owner, TCL
     // MT5879, issue #1238). Solid only until a picture exists.
-    val solid = Wallpapers.moves() && Wallpapers.filmGlassless && Wallpapers.frosted == null
-    // Where the film's frames cannot be had otherwise, the latest glass of the moving film, decoded
-    // in the app (Wallpapers.filmFrost), over the picture's, which may be another shot.
-    val latest = (if (Wallpapers.moves() && Wallpapers.filmGlassless) Wallpapers.filmFrost ?: Wallpapers.frosted else Wallpapers.frosted)
+    val moving = Wallpapers.moves()
+    val latest = (if (moving) Wallpapers.selectionFilmFrost else Wallpapers.frosted)
         .takeIf { Wallpapers.backdrop != null }
-    val held = remember(Wallpapers.selectedId, latest == null, snapshotKey) { latest }
+    val solid = moving && Wallpapers.filmGlassless && latest == null
+    val held = remember(Wallpapers.selectedId, Wallpapers.selectedAerialId, latest == null, snapshotKey) { latest }
     val (frost, under, swap) = rememberFrostSwap(held)
     var at by remember { mutableStateOf(Offset.Zero) }
     var root by remember { mutableStateOf(IntSize.Zero) }
@@ -119,6 +118,9 @@ fun Modifier.liquidGlass(corner: Dp, bottomCorners: Boolean = true, seeThroughFi
             val mask = smoothMask(w, h, radius, if (bottomCorners) radius else 0f)
             val brush = shader?.let { ShaderBrush(it) }
             val flat = mask.asImageBitmap()
+            // Hold this view's edge, just like its mask. Looking it up from every draw could
+            // rebake a full panel bitmap when a different settings page evicted the shared entry.
+            val edge = glassEdge(w, h, radius, 1.2.dp.toPx(), bottomCorners)
             // The glass in a layer the GPU keeps: drawn again only when it moves or its picture
             // fades, not with every frame of what lies on it. Drawn each frame, the Personalize
             // sheet cost MiTV-MFTR0's GPU about 29 ms a frame while focus moved along its cards.
@@ -130,16 +132,16 @@ fun Modifier.liquidGlass(corner: Dp, bottomCorners: Boolean = true, seeThroughFi
                 if (solid) {
                     drawImage(flat, dstSize = IntSize(w, h), colorFilter = ColorFilter.tint(if (seeThroughFilm || translucent) FilmGlass else FilmPanel))
                     if (seeThroughFilm || translucent) drawImage(filmSheen, dstSize = IntSize(w, h), filterQuality = FilterQuality.Low)
-                    drawGlassEdge(size, radius, bottomCorners)
+                    drawImage(edge)
                 } else if (shader == null || brush == null || root == IntSize.Zero) {
                     drawImage(flat, dstSize = IntSize(w, h), colorFilter = ColorFilter.tint(if (translucent) DesktopGlass else Palette.Glass))
                     if (translucent) drawImage(filmSheen, dstSize = IntSize(w, h), filterQuality = FilterQuality.Low)
-                    drawGlassEdge(size, radius, bottomCorners)
+                    drawImage(edge)
                 } else if (AerialSettings.lite) {
                     // Lite mode uses one tint instead of a retained frosted layer on low-end GPUs.
                     drawImage(flat, dstSize = IntSize(w, h), colorFilter = ColorFilter.tint(if (translucent) DesktopGlass else Palette.Glass))
                     if (translucent) drawImage(filmSheen, dstSize = IntSize(w, h), filterQuality = FilterQuality.Low)
-                    drawGlassEdge(size, radius, bottomCorners)
+                    drawImage(edge)
                 } else {
                     val t = swap()
                     if (drawnAt != at || drawnRoot != root || drawnT != t) {
@@ -165,7 +167,7 @@ fun Modifier.liquidGlass(corner: Dp, bottomCorners: Boolean = true, seeThroughFi
                             } else {
                                 drawRect(brush, colorFilter = PanelTint, blendMode = BlendMode.SrcIn)
                             }
-                            drawGlassEdge(size, radius, bottomCorners)
+                            drawImage(edge)
                         }
                     }
                     drawLayer(glass)

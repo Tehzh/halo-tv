@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.database.ContentObserver
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -63,6 +64,12 @@ object GuardSetup {
     /** Test hook: probe another port to watch the toggle without closing a working ADB link. */
     @Volatile var adbProbePort = 5555
 
+    /** When a Dangbei shutdown was announced (elapsed) and in which boot; see [shuttingDown]. */
+    private const val KEY_SHUTDOWN_AT = "shutdown_announced_at"
+    private const val KEY_SHUTDOWN_BOOT_ID = "shutdown_announced_boot_id"
+    private const val SHUTDOWN_HOLD_MS = 2 * 60_000L
+    @Volatile private var shutdownRecheck = false
+
     private const val KEY_OWN_SCREENSAVER = "own_screensaver"
     private const val KEY_HOME_IN_FRONT = "home_in_front"
     private const val KEY_HOME_IN_FRONT_AT = "home_in_front_at"
@@ -72,6 +79,10 @@ object GuardSetup {
     private const val KEY_HOME_IN_FRONT_BOOT_ID = "home_in_front_boot_id"
     private const val KEY_STOCK_HOME_BOOT_ID = "stock_home_boot_id"
     private const val KEY_INSTALLER_OPENED = "installer_opened_at"
+    private const val KEY_STOCK_VISIT_AT = "stock_visit_at"
+    private const val KEY_STOCK_VISIT_UNTIL = "stock_visit_until"
+    private const val KEY_STOCK_VISIT_BOOT = "stock_visit_boot"
+    private const val KEY_STOCK_VISIT_BOOT_ID = "stock_visit_boot_id"
     private const val KEY_SCREENSAVER_SWITCHED_OFF = "screensaver_switched_off"
     private const val KEY_SCREENSAVER_ENABLED = "screensaver_enabled"
     private const val KEY_OFF_IN_STANDBY = "guard_off_in_standby"
@@ -91,6 +102,8 @@ object GuardSetup {
     }
 
     /** Whether the guard is to stay out now: opted in and the screen is off. */
+    internal fun offInStandbyNow(context: Context): Boolean = standingOut(context)
+
     private fun standingOut(context: Context): Boolean =
         offInStandby(context) && context.getSystemService<PowerManager>()?.isInteractive == false
 
@@ -102,10 +115,13 @@ object GuardSetup {
      */
     @Volatile
     private var screenOnWatch: BroadcastReceiver? = null
+    // Process-local: a fresh process after shutdown must be able to recover normally.
+    @Volatile
+    private var shutdownPending = false
 
     // Synchronized: BootReceiver calls ensureEnabled off the main thread.
     @Synchronized
-    private fun watchScreenOn(context: Context) {
+    private fun watchScreenOn(context: Context, litNowCounts: Boolean = true) {
         if (screenOnWatch != null) return
         val app = context.applicationContext
         val receiver = object : BroadcastReceiver() {
@@ -113,14 +129,17 @@ object GuardSetup {
                 if (screenOnWatch !== this) return
                 runCatching { app.unregisterReceiver(this) }
                 screenOnWatch = null
+                shutdownPending = false
                 Log.i(TAG, "screen on; putting Home Guard back after standby")
+                clearShutdown(app)
+                GuardBootWatch.startSession(app)
                 ensureEnabled(app)
             }
         }
         screenOnWatch = receiver
         app.registerReceiver(receiver, IntentFilter(Intent.ACTION_SCREEN_ON))
         // Lit in between: the broadcast is already gone.
-        if (context.getSystemService<PowerManager>()?.isInteractive == true) receiver.onReceive(app, Intent(Intent.ACTION_SCREEN_ON))
+        if (litNowCounts && context.getSystemService<PowerManager>()?.isInteractive == true) receiver.onReceive(app, Intent(Intent.ACTION_SCREEN_ON))
     }
 
     /** Called by the guard at SCREEN_OFF: takes it out of the list and waits for the screen. */
@@ -137,6 +156,48 @@ object GuardSetup {
                 .split(':').filter { it.isNotBlank() && ComponentName.unflattenFromString(it)?.flattenToString() != me }
             Settings.Secure.putString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, others.joinToString(":"))
         }.onFailure { Log.w(TAG, "could not take Home Guard out", it) }
+    }
+
+    /**
+     * Called by the guard when the firmware announces a shutdown with the screen still on (Dangbei,
+     * issue #1497): out of the list now, back at the next SCREEN_ON or the next start.
+     */
+    fun stepOutForShutdown(service: android.accessibilityservice.AccessibilityService) {
+        Log.i(TAG, "shutdown announced; taking Home Guard out")
+        shutdownPending = true
+        GuardBootWatch.stop()
+        // On disk at once: the firmware force-stops Aerial 0.4 s later and starts it straight
+        // again as the Home, and that new process put the guard back 0.5 s after, a second before
+        // the screen went off; the crash came with that change (DBF3 Air on 1.98, issue #1497).
+        if (isUserUnlocked(service)) service.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putLong(KEY_SHUTDOWN_AT, SystemClock.elapsedRealtime())
+            .putString(KEY_SHUTDOWN_BOOT_ID, app.orchard.tv.system.BootOpen.BOOT_ID).commit()
+        watchScreenOn(service, litNowCounts = false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) runCatching { service.disableSelf() }
+    }
+
+    /**
+     * A shutdown was announced in this boot in the last two minutes and the screen has not lit
+     * since: the guard stays out (issue #1497). Dangbei's "shutdown" is a suspend, so the boot id
+     * stays; SCREEN_ON after it clears the note, and a real restart has another boot id.
+     */
+    private fun shuttingDown(context: Context): Boolean {
+        if (!isUserUnlocked(context)) return shutdownPending
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val at = prefs.getLong(KEY_SHUTDOWN_AT, 0L)
+        if (at == 0L) return shutdownPending
+        val sameBoot = prefs.getString(KEY_SHUTDOWN_BOOT_ID, null) == app.orchard.tv.system.BootOpen.BOOT_ID
+        val held = sameBoot && SystemClock.elapsedRealtime() - at in 0 until SHUTDOWN_HOLD_MS
+        // A cancelled shutdown must not leave this process permanently unable to recover.
+        if (!held) shutdownPending = false
+        return held
+    }
+
+    private fun clearShutdown(context: Context) {
+        shutdownPending = false
+        if (!isUserUnlocked(context)) return
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .remove(KEY_SHUTDOWN_AT).remove(KEY_SHUTDOWN_BOOT_ID).apply()
     }
 
     /**
@@ -197,6 +258,40 @@ object GuardSetup {
             .putString(KEY_STOCK_HOME_BOOT_ID, app.orchard.tv.system.BootOpen.BOOT_ID).apply()
 
     /**
+     * The viewer's visit to the stock launcher, opened on purpose from Aerial (HomeGuardService
+     * .allowStockLauncher), kept on disk until [untilElapsed] (elapsed realtime); null ends it. A
+     * guard killed and revived in the middle of it had lost it in memory and took the launcher
+     * away: Haier WATERFALL_T962 (YunOS, Android 5.1, 920 MB), whose stock launcher is 酷喵, killed
+     * Aerial again and again, and each revival pulled 酷喵 back to Aerial a second after the tile
+     * opened it (issue #1491, the reporter's log).
+     */
+    fun noteStockVisit(context: Context, untilElapsed: Long?) {
+        if (!isUserUnlocked(context)) return
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (untilElapsed == null) {
+            if (!prefs.contains(KEY_STOCK_VISIT_UNTIL)) return
+            prefs.edit().remove(KEY_STOCK_VISIT_AT).remove(KEY_STOCK_VISIT_UNTIL).remove(KEY_STOCK_VISIT_BOOT)
+                .remove(KEY_STOCK_VISIT_BOOT_ID).apply()
+            return
+        }
+        prefs.edit()
+            .putLong(KEY_STOCK_VISIT_AT, SystemClock.elapsedRealtime())
+            .putLong(KEY_STOCK_VISIT_UNTIL, untilElapsed)
+            .putLong(KEY_STOCK_VISIT_BOOT, System.currentTimeMillis() - SystemClock.elapsedRealtime())
+            // At once: the firmware that makes this matter kills Aerial moments after the tile.
+            .putString(KEY_STOCK_VISIT_BOOT_ID, app.orchard.tv.system.BootOpen.BOOT_ID).commit()
+    }
+
+    /** How long the visit noted by [noteStockVisit] still runs, in this boot; 0 when there is none. */
+    fun stockVisitLeftMs(context: Context): Long {
+        if (!isUserUnlocked(context)) return 0L
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val at = prefs.getLong(KEY_STOCK_VISIT_AT, -1L)
+        if (!thisBoot(prefs, at, KEY_STOCK_VISIT_BOOT, KEY_STOCK_VISIT_BOOT_ID)) return 0L
+        return (prefs.getLong(KEY_STOCK_VISIT_UNTIL, 0L) - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+    }
+
+    /**
      * Whether, in this boot, a stock launcher's home came to the front after Aerial's Home last left
      * it. Xiaomi MiTV-MTEQ0 (Android 10) pushed PatchWall back over Aerial 40 s after power-on and
      * stopped Aerial 2 s later; revived, the guard read "Home was not in front when Aerial died" as
@@ -226,9 +321,14 @@ object GuardSetup {
      * launcher visit that Aerial's process does not outlast, as #1276's take-over already does.
      */
     fun startAfterStopOverStock(context: Context): Boolean {
+        if (shuttingDown(context)) return false
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N || HomeGuardService.isRunning) return false
+        if (!GuardRecoveryPolicy.enabled(context)) return false
+        if (!isUserUnlocked(context)) return false
         if (SystemClock.elapsedRealtime() < 3 * 60_000L) return false
-        if (context.getSystemService<PowerManager>()?.isInteractive != true) return false
+        if (!GuardForegroundRecovery.canShowHome(context) || GuardForegroundRecovery.updating(context) ||
+            stockVisitLeftMs(context) > 0 || MainActivity.leftForAnApp
+        ) return false
         if (!stockHomeSinceHomeLeft(context) || !stockHomeSeenWithin(context, 5_000L)) return false
         return runCatching { context.startActivity(MainActivity.bringBackIntent(context)) }.isSuccess
     }
@@ -307,8 +407,11 @@ object GuardSetup {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_KEEP_ADB, false)
 
     fun setKeepAdb(context: Context, keep: Boolean) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_KEEP_ADB, keep).apply()
-        if (keep) ensureAdb(context)
+        val saved = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_KEEP_ADB, keep).commit()
+        adbRecoveryState = if (saved) "preference saved" else "preference save failed"
+        if (!saved) DiagLog.i("guard: keep_adb preference could not be saved to disk")
+        if (keep && saved) { ensureAdb(context); AdbRecoveryWatch.startSession(context) }
+        else AdbRecoveryWatch.stop()
     }
 
     /**
@@ -325,6 +428,7 @@ object GuardSetup {
         if (SystemClock.elapsedRealtime() < ADB_BOOT_WINDOW_MS || screenOnForMs < ADB_WAKE_SLACK_MS) return false
         if ((context.getSystemService(Context.POWER_SERVICE) as? PowerManager)?.isInteractive != true) return false
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_KEEP_ADB, false).apply()
+        AdbRecoveryWatch.stop()
         Log.i(TAG, "ADB debugging switched off with the TV in use; keep_adb is off now")
         DiagLog.i("guard: ADB switched off with the TV in use; keep_adb switched off, not turning it back on")
         return true
@@ -338,18 +442,29 @@ object GuardSetup {
         Build.VERSION.SDK_INT < Build.VERSION_CODES.N ||
             context.getSystemService(UserManager::class.java).isUserUnlocked
 
+    @Volatile internal var adbRecoveryState = "not checked"; private set
+
+    internal fun adbRecoveryAllowed(context: Context): Boolean = isUserUnlocked(context) &&
+        keepAdb(context) && !shuttingDown(context) &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
+
     fun ensureAdb(context: Context) {
         if (adbDancing) return // the toggle below writes a 0 on purpose; nothing may undo it
-        if (!isUserUnlocked(context) || !keepAdb(context)) return
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) return
+        if (!isUserUnlocked(context) || !keepAdb(context) || shuttingDown(context)) return
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) {
+            adbRecoveryState = "WRITE_SECURE_SETTINGS missing"; return
+        }
         val resolver = context.contentResolver
         if (Settings.Global.getInt(resolver, Settings.Global.ADB_ENABLED, 0) == 0) {
             runCatching {
-                Settings.Global.putInt(resolver, Settings.Global.ADB_ENABLED, 1)
-                Log.i(TAG, "ADB debugging had been switched off; turned it back on")
-            }.onFailure { Log.w(TAG, "could not turn ADB back on", it) }
+                val saved = Settings.Global.putInt(resolver, Settings.Global.ADB_ENABLED, 1)
+                val retained = Settings.Global.getInt(resolver, Settings.Global.ADB_ENABLED, 0) == 1
+                adbRecoveryState = if (saved && retained) "enabled setting retained" else "firmware rejected enabled setting"
+                DiagLog.i("guard: keep_adb $adbRecoveryState")
+            }.onFailure { adbRecoveryState = "write failed: ${it.javaClass.simpleName}"; Log.w(TAG, "could not turn ADB back on", it) }
             return
         }
+        adbRecoveryState = "enabled setting retained (transport not verified)"
         ensureAdbListening(context)
     }
 
@@ -373,7 +488,7 @@ object GuardSetup {
         Thread {
             if (adbdListens(adbProbePort)) return@Thread
             synchronized(adbDanceLock) {
-                if (adbDanced || SystemClock.elapsedRealtime() > ADB_BOOT_WINDOW_MS) return@Thread
+                if (adbDanced || SystemClock.elapsedRealtime() > ADB_BOOT_WINDOW_MS || !adbRecoveryAllowed(context)) return@Thread
                 adbDanced = true
                 adbDancing = true
                 try {
@@ -382,6 +497,7 @@ object GuardSetup {
                         // at once; adbDancing holds it off until the 0 has done its work.
                         Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 0)
                         Thread.sleep(1_000)
+                        if (!adbRecoveryAllowed(context)) return@runCatching
                         Settings.Global.putInt(context.contentResolver, Settings.Global.ADB_ENABLED, 1)
                         Log.i(TAG, "adb_enabled was on but adbd was not listening; toggled it to restart it")
                     }.onFailure { Log.w(TAG, "could not toggle ADB debugging", it) }
@@ -410,9 +526,10 @@ object GuardSetup {
      */
     fun rescanIfMissing(context: Context) {
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP_MR1) return
+        if (!GuardRecoveryPolicy.enabled(context)) return
+        if (!isUserUnlocked(context)) return
         val me = ComponentName(context, HomeGuardService::class.java)
-        val enabled = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty()
-            .split(':').any { ComponentName.unflattenFromString(it) == me }
+        val enabled = runCatching { guardListed(context, me) }.getOrDefault(false)
         if (!enabled) return
         val installed = runCatching {
             context.getSystemService<android.view.accessibility.AccessibilityManager>()?.installedAccessibilityServiceList
@@ -425,6 +542,10 @@ object GuardSetup {
         runCatching {
             pm.setComponentEnabledSetting(marker, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
             Handler(Looper.getMainLooper()).postDelayed({
+                // Restoring our own component override needs no secure-settings grant. The
+                // owner may have enabled accessibility manually, without granting WSS over ADB.
+                if (!isUserUnlocked(context)) return@postDelayed
+                if (pm.getComponentEnabledSetting(marker) != PackageManager.COMPONENT_ENABLED_STATE_ENABLED) return@postDelayed
                 runCatching { pm.setComponentEnabledSetting(marker, PackageManager.COMPONENT_ENABLED_STATE_DEFAULT, PackageManager.DONT_KILL_APP) }
             }, 1500)
         }.onFailure { Log.w(TAG, "could not change a component's state", it) }
@@ -436,36 +557,107 @@ object GuardSetup {
      * makes Android bind it again.
      */
     private val rebindPending = java.util.concurrent.atomic.AtomicBoolean()
+    private val runtimeRebindAt = java.util.concurrent.atomic.AtomicLong(Long.MIN_VALUE / 2)
+
+    internal fun consumeRuntimeRebind(): Boolean =
+        SystemClock.elapsedRealtime() - runtimeRebindAt.getAndSet(Long.MIN_VALUE / 2) in 0 until 120_000L
+    private const val BIND_GRACE_MS = 5_000L
+    private const val REBIND_COOLDOWN_MS = 15_000L
+    private var lastEnableRequestAt = Long.MIN_VALUE / 2
+    private var lastRebindAttemptAt = Long.MIN_VALUE / 2
+
+    /** Recheck user intent when a delayed recovery callback runs. */
+    internal fun recoveryAllowed(context: Context): Boolean = !shuttingDown(context) && isUserUnlocked(context) &&
+        GuardRecoveryPolicy.enabled(context) &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
+
+    private fun guardListed(context: Context, component: ComponentName): Boolean =
+        Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty()
+            .split(':').any { ComponentName.unflattenFromString(it) == component }
+
+    internal fun registered(context: Context): Boolean? =
+        runCatching { guardListed(context, ComponentName(context, HomeGuardService::class.java)) }.getOrNull()
+
+    private fun enableAccessibility(context: Context) {
+        val resolver = context.contentResolver
+        if (Settings.Secure.getInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) != 1) {
+            check(Settings.Secure.putInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 1))
+        }
+        check(Settings.Secure.getInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) == 1) {
+            "System did not retain accessibility_enabled; Home Guard is not enabled"
+        }
+    }
+
+    internal fun runtimeRebindAllowed(context: Context): Boolean =
+        recoveryAllowed(context) && GuardForegroundRecovery.canShowHome(context) &&
+            !GuardForegroundRecovery.updating(context) && runCatching {
+            val globallyOn = Settings.Secure.getInt(context.contentResolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) == 1
+            globallyOn && guardListed(context, ComponentName(context, HomeGuardService::class.java))
+        }.getOrDefault(false)
+
+    fun rebindIfStalled(context: Context, runtime: Boolean = false): Boolean =
+        rebind(context, runtime, currentlyBound = false)
+
+    internal fun rebindSilentGuard(context: Context): Boolean =
+        Build.VERSION.SDK_INT >= 24 && rebind(context, runtime = true, currentlyBound = true)
 
     @Synchronized
-    fun rebindIfStalled(context: Context) {
-        if (HomeGuardService.isRunning || rebindPending.get()) return
+    private fun rebind(context: Context, runtime: Boolean, currentlyBound: Boolean): Boolean {
+        if (!recoveryAllowed(context) || (runtime && !runtimeRebindAllowed(context))) return false
+        if (HomeGuardService.isRunning != currentlyBound || rebindPending.get()) return false
+        val now = SystemClock.elapsedRealtime()
+        // Several recovery entry points can arrive together after an update/wake. Give a newly
+        // enabled service time to bind, and do not repeatedly unbind a slow firmware's attempt.
+        if (now - lastEnableRequestAt in 0 until BIND_GRACE_MS ||
+            now - lastRebindAttemptAt in 0 until REBIND_COOLDOWN_MS) return false
         rescanIfMissing(context)
-        if (standingOut(context)) { watchScreenOn(context); return }
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) return
+        if (standingOut(context)) { watchScreenOn(context); return false }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) return false
         val me = ComponentName(context, HomeGuardService::class.java).flattenToString()
         val resolver = context.contentResolver
-        val entries = Settings.Secure.getString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty()
-            .split(':').filter { it.isNotBlank() }
+        val entries = runCatching {
+            Settings.Secure.getString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty()
+                .split(':').filter { it.isNotBlank() }
+        }.getOrElse { Log.w(TAG, "could not inspect Home Guard before rebind", it); return false }
         val others = entries.filter { ComponentName.unflattenFromString(it)?.flattenToString() != me }
-        if (others.size == entries.size) return // not enabled at all; ensureEnabled handles that
-        if (!rebindPending.compareAndSet(false, true)) return
-        runCatching {
+        if (others.size == entries.size) return false // not enabled at all; ensureEnabled handles that
+        if (!rebindPending.compareAndSet(false, true)) return false
+        lastRebindAttemptAt = now
+        return runCatching {
             check(Settings.Secure.putString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, others.joinToString(":")))
+            check(!guardListed(context, ComponentName(context, HomeGuardService::class.java))) {
+                "System refused to remove Home Guard for rebind"
+            }
+            // A successful removal is a recovery attempt, not proof that Android bound it.
+            if (runtime) runtimeRebindAt.set(SystemClock.elapsedRealtime())
+            else lastRevivedAt = SystemClock.elapsedRealtime()
             // Give Android time to observe the removal. Re-read the list so other services survive.
             check(Handler(Looper.getMainLooper()).postDelayed({
                 try {
-                    if (standingOut(context)) {
+                    if (!recoveryAllowed(context)) {
+                        Log.i(TAG, "Home Guard rebind cancelled after permission or identity change")
+                    } else if (standingOut(context)) {
                         watchScreenOn(context)
+                    } else if (runtime && GuardForegroundRecovery.updating(context)) {
+                        Log.i(TAG, "runtime Home Guard rebind deferred to update recovery")
+                    } else if (runtime && !GuardForegroundRecovery.canShowHome(context)) {
+                        watchScreenOn(context, litNowCounts = false)
+                        Log.i(TAG, "runtime Home Guard rebind paused until wake")
+                    } else if (runtime && others.isNotEmpty() &&
+                        Settings.Secure.getInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) != 1
+                    ) {
+                        Log.i(TAG, "runtime Home Guard rebind cancelled because accessibility was turned off")
                     } else {
                         val current = Settings.Secure.getString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty()
                             .split(':').filter { it.isNotBlank() }
                         if (current.none { ComponentName.unflattenFromString(it)?.flattenToString() == me }) {
                             check(Settings.Secure.putString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, (current + me).joinToString(":")))
                         }
-                        if (Settings.Secure.getInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) != 1) {
-                            check(Settings.Secure.putInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 1))
+                        check(Settings.Secure.getString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty()
+                            .split(':').any { ComponentName.unflattenFromString(it)?.flattenToString() == me }) {
+                            "System refused Home Guard rebind; check restricted settings and vendor autostart"
                         }
+                        enableAccessibility(context)
                     }
                 } catch (e: Exception) {
                     Log.w(TAG, "could not finish rebinding Home Guard", e)
@@ -473,11 +665,12 @@ object GuardSetup {
                     rebindPending.set(false)
                 }
             }, 1500))
-            Log.i(TAG, "Home Guard was enabled but not running; asked Android to bind it again")
+            Log.i(TAG, "Asked Android to bind Home Guard again, previously bound=$currentlyBound")
+            true
         }.onFailure {
             rebindPending.set(false)
             Log.w(TAG, "could not request Home Guard rebind", it)
-        }
+        }.getOrDefault(false)
     }
 
     /**
@@ -487,7 +680,7 @@ object GuardSetup {
      * out of the list and put back, as rebindIfStalled does.
      */
     fun restartAccessibility(context: Context) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) return
+        if (!recoveryAllowed(context)) return
         val resolver = context.contentResolver
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
             val me = ComponentName(context, HomeGuardService::class.java).flattenToString()
@@ -496,7 +689,8 @@ object GuardSetup {
             runCatching {
                 Settings.Secure.putString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, others().joinToString(":"))
                 Handler(Looper.getMainLooper()).postDelayed({
-                        runCatching { Settings.Secure.putString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, (others() + me).joinToString(":")) }
+                    if (!recoveryAllowed(context)) return@postDelayed
+                    runCatching { Settings.Secure.putString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, (others() + me).joinToString(":")) }
                         .onFailure { Log.w(TAG, "could not put Home Guard back", it) }
                 }, 1500)
             }.onFailure { Log.w(TAG, "could not take Home Guard out", it) }
@@ -506,6 +700,9 @@ object GuardSetup {
             Settings.Secure.putInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0)
             // See rebindIfStalled: two writes in a row are coalesced.
             Handler(Looper.getMainLooper()).postDelayed({
+                // Restore the global switch even after a handoff: the old service was removed,
+                // but other owners' accessibility services must not be left disabled.
+                if (!isUserUnlocked(context) || ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) return@postDelayed
                 runCatching { Settings.Secure.putInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 1) }
                     .onFailure { Log.w(TAG, "could not switch accessibility back on", it) }
             }, 1500)
@@ -571,6 +768,14 @@ object GuardSetup {
         if (!isUserUnlocked(context)) return
         val resolver = context.contentResolver
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (app.orchard.tv.system.SystemRegistrationRepair.repair(context)) {
+            prefs.edit().putBoolean(KEY_OWN_SCREENSAVER, true).apply()
+            // Registration repair must also respect an existing "Never" idle policy, including
+            // boot recovery before AerialSettings has loaded its in-memory values.
+            if (context.getSharedPreferences("settings", Context.MODE_PRIVATE).getInt("screensaver_minutes", 5) == 0) {
+                setSystemScreensaverOff(context, true)
+            }
+        }
         val key = "screensaver_components"
         val current = Settings.Secure.getString(resolver, key).orEmpty()
         val mine = ComponentName(context, AerialDream::class.java).flattenToString()
@@ -598,14 +803,16 @@ object GuardSetup {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         runCatching {
             if (off) {
-                val mine = ComponentName(context, AerialDream::class.java).flattenToString()
-                if (Settings.Secure.getString(resolver, "screensaver_components") != mine) return
+                val mine = ComponentName(context, AerialDream::class.java)
+                val current = Settings.Secure.getString(resolver, "screensaver_components")
+                    ?.let(ComponentName::unflattenFromString)
+                if (current != mine) return
                 if (Settings.Secure.getInt(resolver, KEY_SCREENSAVER_ENABLED, 1) == 0) return
-                Settings.Secure.putInt(resolver, KEY_SCREENSAVER_ENABLED, 0)
+                check(Settings.Secure.putInt(resolver, KEY_SCREENSAVER_ENABLED, 0))
                 prefs.edit().putBoolean(KEY_SCREENSAVER_SWITCHED_OFF, true).apply()
                 Log.i(TAG, "screensaver set to never; switched the system's off")
             } else if (prefs.getBoolean(KEY_SCREENSAVER_SWITCHED_OFF, false)) {
-                Settings.Secure.putInt(resolver, KEY_SCREENSAVER_ENABLED, 1)
+                check(Settings.Secure.putInt(resolver, KEY_SCREENSAVER_ENABLED, 1))
                 prefs.edit().remove(KEY_SCREENSAVER_SWITCHED_OFF).apply()
                 Log.i(TAG, "screensaver delay chosen; switched the system's back on")
             }
@@ -621,17 +828,30 @@ object GuardSetup {
      */
     fun screensaverModeChanged(context: Context) {
         if (!isUserUnlocked(context)) return
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        if (!prefs.getBoolean(KEY_OWN_SCREENSAVER, false)) return
-        if (!systemChosen(context)) { keepScreensaver(context); return }
+        if (!systemChosen(context)) {
+            keepScreensaver(context)
+            val never = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+                .getInt("screensaver_minutes", 5) == 0
+            setSystemScreensaverOff(context, never)
+            return
+        }
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) return
         val resolver = context.contentResolver
-        val mine = ComponentName(context, AerialDream::class.java).flattenToString()
-        val firmware = SystemScreensaver.firmwareDream(context) ?: return
-        if (Settings.Secure.getString(resolver, "screensaver_components").orEmpty() != mine) return
-        runCatching {
-            Settings.Secure.putString(resolver, "screensaver_components", firmware)
-            Log.i(TAG, "screensaver set to the system's; the dream is $firmware again")
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val mine = ComponentName(context, AerialDream::class.java)
+        val firmware = SystemScreensaver.firmwareDream(context)
+        if (firmware != null) runCatching {
+            val current = Settings.Secure.getString(resolver, "screensaver_components")
+                ?.let(ComponentName::unflattenFromString)
+            if (current == mine) {
+                check(Settings.Secure.putString(resolver, "screensaver_components", firmware))
+                // The owner may originally have selected our dream outside the app (#1609).
+                prefs.edit().putBoolean(KEY_OWN_SCREENSAVER, true).apply()
+                Log.i(TAG, "restored the firmware screensaver")
+            }
         }.onFailure { Log.w(TAG, "could not give the system screensaver back", it) }
+        // Only restore a disabled setting that HaloTV previously changed.
+        setSystemScreensaverOff(context, false)
     }
 
     /**
@@ -663,6 +883,7 @@ object GuardSetup {
     private val RECEIVER_RECHECK_MS = longArrayOf(5_000L, 15_000L)
 
     private fun restoreReceiversNow(context: Context) {
+        if (!recoveryAllowed(context)) return
         val pm = context.packageManager
         for (receiver in listOf(BootReceiver::class.java, ConfigReceiver::class.java, HomeGuardService::class.java, RevivalListener::class.java, RevivalSyncService::class.java)) {
             val component = ComponentName(context, receiver)
@@ -700,17 +921,37 @@ object GuardSetup {
     /** Returns whether Home Guard had been switched off and was put back. */
     @Synchronized
     fun ensureEnabled(context: Context): Boolean {
+        if (!isUserUnlocked(context)) return false
+        if (shuttingDown(context)) {
+            Log.i(TAG, "shutdown announced a moment ago; Home Guard stays out until the screen lights")
+            watchScreenOn(context, litNowCounts = false)
+            // If no shutdown follows, back when the hold is over rather than at the next start.
+            if (!shutdownRecheck) {
+                shutdownRecheck = true
+                val app = context.applicationContext
+                Handler(Looper.getMainLooper()).postDelayed({ shutdownRecheck = false; ensureEnabled(app) }, SHUTDOWN_HOLD_MS + 1_000L)
+            }
+            return false
+        }
+        // ADB and the chosen system screensaver are independent owner preferences.
         ensureAdb(context)
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) return false
-        restoreReceivers(context)
+        // Save intent before removing an invalid same-package class written by an old script.
+        // An entry belonging to another package is never adopted as authorization.
+        val recoverGuard = GuardRecoveryPolicy.enabled(context)
         keepScreensaver(context)
+        if (!recoverGuard) return false
+        GuardBootWatch.start(context)
+        restoreReceivers(context)
         RevivalSync.ensure(context)
         ensureListenerBeforeNougat(context)
         if (standingOut(context)) { watchScreenOn(context); return false }
         if (rebindPending.get()) return false
         val me = ComponentName(context, HomeGuardService::class.java).flattenToString()
         val resolver = context.contentResolver
-        val current = Settings.Secure.getString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty()
+        val current = runCatching {
+            Settings.Secure.getString(resolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES).orEmpty()
+        }.getOrElse { Log.w(TAG, "could not inspect Home Guard before recovery", it); return false }
         val entries = current.split(':').filter { it.isNotBlank() }
         val alreadyOn = entries.any { ComponentName.unflattenFromString(it)?.flattenToString() == me }
         return runCatching {
@@ -721,12 +962,12 @@ object GuardSetup {
                     "System refused to retain Home Guard; check restricted settings and vendor autostart permission"
                 }
                 lastRevivedAt = SystemClock.elapsedRealtime()
-                Log.i(TAG, "Home Guard had been switched off; turned it back on")
+                lastEnableRequestAt = lastRevivedAt
             }
-            if (Settings.Secure.getInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) != 1) {
-                check(Settings.Secure.putInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 1))
-            }
-            !alreadyOn
+            val globalWasOn = Settings.Secure.getInt(resolver, Settings.Secure.ACCESSIBILITY_ENABLED, 0) == 1
+            enableAccessibility(context)
+            if (!alreadyOn) Log.i(TAG, "Home Guard had been switched off; enabled setting retained; waiting for Android to bind it")
+            !alreadyOn || !globalWasOn
         }.onFailure { Log.w(TAG, "could not re-enable Home Guard", it) }.getOrDefault(false)
     }
 }

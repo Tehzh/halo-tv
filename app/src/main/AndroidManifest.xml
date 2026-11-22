@@ -32,6 +32,8 @@
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Optional Kids mode reminder, only posted when notifications are already allowed. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Brightness on TVs that keep it in the standard system setting; granted over ADB. -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS"
         tools:ignore="ProtectedPermissions" />

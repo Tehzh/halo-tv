@@ -17,54 +17,92 @@ import android.view.accessibility.AccessibilityEvent
 import app.orchard.tv.R
 import kotlin.math.min
 
-/** Shared, single-frame native welcome. No timers, players or live blur, also safe on API 14. */
+/** Static first-open welcome, shared with API-14 Lite; no timers, players or animation. */
 class HaloWelcomeView(context: Context, private val completed: () -> Unit) : View(context) {
     companion object {
         private const val PREFS = "first_run_guide"
-        private const val COMPLETE = "welcome3_completed"
-        fun shouldShow(context: Context): Boolean =
-            !context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(COMPLETE, false)
+        // Completing a previous HaloTV welcome also completes onboarding after an upgrade.
+        private const val COMPLETE = "welcome_light_completed"
+        fun shouldShow(context: Context): Boolean {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            if (prefs.getBoolean(COMPLETE, false)) return false
+            // Artwork changes must not put a confirmation screen between a restored guard and
+            // Home. Only use this installation's completed 3.x welcome, never another package's
+            // data or a permission grant; a genuinely new installation still sees the welcome.
+            if (prefs.getBoolean("welcome3_completed", false)) {
+                prefs.edit().putBoolean(COMPLETE, true).apply()
+                return false
+            }
+            return true
+        }
     }
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private var backgroundArt: Bitmap? = null
+    private var handwriting: Bitmap? = null
+    private var logo: Bitmap? = null
     private var scale = 1f
     private var ox = 0f
     private var oy = 0f
-    private val button = RectF(294f, 410f, 666f, 462f)
+    private val full = RectF(0f, 0f, 960f, 540f)
+    private val logoRect = RectF(46f, 30f, 102f, 86f)
+    private val helloRect = RectF(20f, 94f, 371f, 211f)
+    private val button = RectF(46f, 330f, 334f, 383f)
+    private val pressedButton = RectF(49f, 332f, 331f, 381f)
+    private val focusRect = RectF(43f, 327f, 337f, 386f)
+    private val regular = Typeface.create("sans-serif", Typeface.NORMAL)
+    private val bold = Typeface.create("sans-serif", Typeface.BOLD)
+    private val script = Typeface.create("cursive", Typeface.ITALIC)
+    private val buttonFill = LinearGradient(0f, 330f, 0f, 383f,
+        0xFF142354.toInt(), 0xFF030D42.toInt(), Shader.TileMode.CLAMP)
     private var armed = false
     private var finishing = false
-    private val bold = Typeface.create("sans-serif", Typeface.BOLD)
-    private val regular = Typeface.create("sans-serif", Typeface.NORMAL)
-    private val ink = 0xFF071D37.toInt()
+    private val ink = 0xFF07113C.toInt()
+    @Suppress("DEPRECATION")
+    private val chinese = resources.configuration.locale.language == "zh"
+    private val headline = context.getString(R.string.welcome_light_title)
+    private val subtitle = context.getString(R.string.welcome_light_subtitle)
+    private val start = context.getString(R.string.welcome_light_start)
+    private val remote = context.getString(R.string.welcome_light_remote)
+    private val credits = context.getString(R.string.welcome_light_credit)
+    private val disclaimer = context.getString(R.string.welcome3_disclaimer)
+    private val greeting = context.getString(R.string.welcome_light_hello)
 
     init {
         isFocusable = true
         isFocusableInTouchMode = true
         isClickable = true
-        // Keep the supplied navy artwork and white text unchanged under Android auto-darkening.
         if (Build.VERSION.SDK_INT >= 29) isForceDarkAllowed = false
-        contentDescription = listOf(context.getString(R.string.welcome3_eyebrow), "HaloTV 3.0",
-            context.getString(R.string.welcome3_tagline), context.getString(R.string.welcome3_credit),
-            context.getString(R.string.welcome3_thanks), context.getString(R.string.welcome3_start),
-            context.getString(R.string.welcome3_disclaimer)).joinToString(". ")
+        contentDescription = listOf(greeting, headline, subtitle, credits, start, disclaimer).joinToString(". ")
         if (Build.VERSION.SDK_INT >= 16) importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_YES
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
-        if (backgroundArt == null) backgroundArt = context.assets.open("welcome_horizon.jpg").use {
-            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply {
-                inPreferredConfig = Bitmap.Config.RGB_565
-            })
-        }
+        loadArt()
         requestFocus()
     }
+
+    private fun loadArt() {
+        if (backgroundArt == null) backgroundArt = decode("brand-light.jpg", Bitmap.Config.ARGB_8888)
+        if (handwriting == null && chinese) handwriting = decode("hello.png", Bitmap.Config.ARGB_8888)
+        if (logo == null) logo = decode("logo.png", Bitmap.Config.ARGB_8888)
+    }
+
+    private fun decode(name: String, config: Bitmap.Config): Bitmap? = runCatching {
+        context.assets.open("welcome/$name").use {
+            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inPreferredConfig = config })
+        }
+    }.getOrNull()
 
     override fun onDetachedFromWindow() {
         armed = false
         backgroundArt?.recycle()
         backgroundArt = null
+        handwriting?.recycle()
+        handwriting = null
+        logo?.recycle()
+        logo = null
         super.onDetachedFromWindow()
     }
 
@@ -75,58 +113,59 @@ class HaloWelcomeView(context: Context, private val completed: () -> Unit) : Vie
     }
 
     override fun onDraw(canvas: Canvas) {
-        canvas.drawColor(0xFF020C21.toInt())
+        canvas.drawColor(0xFFEAE7FA.toInt())
         canvas.save()
         canvas.translate(ox, oy)
         canvas.scale(scale, scale)
-        paint.shader = null
         paint.style = Paint.Style.FILL
-        paint.alpha = 255
-        backgroundArt?.let { canvas.drawBitmap(it, null, RectF(0f, 0f, 960f, 540f), paint) }
-        label(canvas, R.string.welcome3_eyebrow, 198f, 22f)
-        paint.shader = LinearGradient(0f, 216f, 0f, 273f,
-            intArrayOf(0xFFFFFFFF.toInt(), 0xFFB5E7FF.toInt()), null, Shader.TileMode.CLAMP)
-        text(canvas, "HaloTV 3.0", 272f, 74f, true)
         paint.shader = null
-        label(canvas, R.string.welcome3_tagline, 309f, 26f)
-        label(canvas, R.string.welcome3_credit, 352f, 16f, 0xFFBACFE7.toInt())
-        label(canvas, R.string.welcome3_thanks, 375f, 16f, 0xFFBACFE7.toInt())
-        // A pre-baked halo is unnecessary: a few nested rounded strokes render only on focus/press.
+        paint.alpha = 255
+        backgroundArt?.let { canvas.drawBitmap(it, null, full, paint) }
+        paint.alpha = 255
+        logo?.let { canvas.drawBitmap(it, null, logoRect, paint) }
+        text(canvas, "HaloTV", 115f, 64f, 25f, true)
+
+        // Keep the complete calligraphic greeting visible from the very first frame.
+        if (handwriting != null) canvas.drawBitmap(handwriting!!, null, helloRect, paint)
+        else text(canvas, greeting, 48f, 182f, 80f, false, maxWidth = 355f, typeface = script)
+        text(canvas, headline, 51f, 239f, 42f, true, maxWidth = 433f)
+        text(canvas, subtitle, 51f, 285f, 25f, false, maxWidth = 440f)
+
+        paint.color = 0xFF0A1644.toInt()
+        paint.shader = buttonFill
+        paint.alpha = 255
+        val face = if (armed) pressedButton else button
+        canvas.drawRoundRect(face, 27f, 27f, paint)
+        paint.shader = null
         if (hasFocus()) {
-            for (outset in 18 downTo 1) {
-                paint.color = 0x0650B8FF
-                val glow = RectF(button).apply { inset(-outset.toFloat(), -outset.toFloat()) }
-                canvas.drawRoundRect(glow, 35f, 35f, paint)
-            }
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 3f
+            paint.color = 0xFFFFFFFF.toInt()
+            paint.alpha = 255
+            canvas.drawRoundRect(focusRect, 31f, 31f, paint)
+            paint.style = Paint.Style.FILL
         }
-        paint.alpha = 255
-        val rect = RectF(button).apply { if (armed) inset(3f, 2f) }
-        paint.shader = LinearGradient(0f, rect.top, 0f, rect.bottom,
-            0xFFCEF0FF.toInt(), 0xFF91D8FF.toInt(), Shader.TileMode.CLAMP)
-        canvas.drawRoundRect(rect, 27f, 27f, paint)
-        paint.shader = null
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 1.2f
-        paint.color = 0xFFE6F9FF.toInt()
-        canvas.drawRoundRect(rect, 27f, 27f, paint)
-        paint.style = Paint.Style.FILL
-        text(canvas, context.getString(R.string.welcome3_start), 445f, 24f, true, ink)
-        label(canvas, R.string.welcome3_disclaimer, 501f, 14f, 0xFFABC5E1.toInt())
+        text(canvas, start, 190f, 366f, 27f, true, 0xFFFFFFFF.toInt(), 256f, Paint.Align.CENTER)
+        text(canvas, remote, 51f, 412f, 17f, false, maxWidth = 400f)
+        // Exactly the same left baseline as the headline, supporting text and remote hint.
+        text(canvas, credits, 51f, 485f, 13f, false, maxWidth = 858f)
+        text(canvas, disclaimer, 51f, 504f, 13f, false, maxWidth = 858f)
         canvas.restore()
     }
 
-    private fun label(c: Canvas, id: Int, y: Float, size: Float, color: Int = 0xFFF0F6FF.toInt()) =
-        text(c, context.getString(id), y, size, false, color)
-
-    private fun text(c: Canvas, value: String, y: Float, size: Float, heavy: Boolean,
-                     color: Int = 0xFFF0F6FF.toInt()) {
-        paint.typeface = if (heavy) bold else regular
+    private fun text(c: Canvas, value: String, x: Float, y: Float, size: Float, heavy: Boolean,
+                     color: Int = ink, maxWidth: Float = 850f,
+                     align: Paint.Align = Paint.Align.LEFT, typeface: Typeface? = null) {
+        paint.shader = null
+        paint.style = Paint.Style.FILL
+        paint.typeface = typeface ?: if (heavy) bold else regular
         paint.textSize = size
         paint.color = color
-        paint.textAlign = Paint.Align.CENTER
+        paint.alpha = 255
+        paint.textAlign = align
         val measured = paint.measureText(value)
-        if (measured > 850f) paint.textSize = size * 850f / measured
-        c.drawText(value, 480f, y, paint)
+        if (measured > maxWidth) paint.textSize = size * maxWidth / measured
+        c.drawText(value, x, y, paint)
     }
 
     override fun onFocusChanged(gain: Boolean, direction: Int, old: android.graphics.Rect?) {
@@ -136,8 +175,8 @@ class HaloWelcomeView(context: Context, private val completed: () -> Unit) : Vie
     }
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        val confirm = event.keyCode in intArrayOf(KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER,
-            KeyEvent.KEYCODE_NUMPAD_ENTER, KeyEvent.KEYCODE_BUTTON_A)
+        val confirm = event.keyCode == KeyEvent.KEYCODE_DPAD_CENTER || event.keyCode == KeyEvent.KEYCODE_ENTER ||
+            event.keyCode == KeyEvent.KEYCODE_NUMPAD_ENTER || event.keyCode == KeyEvent.KEYCODE_BUTTON_A
         if (confirm) {
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) { armed = true; invalidate() }
             if (event.action == KeyEvent.ACTION_UP) {
@@ -165,7 +204,6 @@ class HaloWelcomeView(context: Context, private val completed: () -> Unit) : Vie
     override fun performClick(): Boolean {
         if (finishing) return true
         finishing = true
-        // One tiny preference write before leaving avoids replay after an immediate power loss.
         val saved = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putBoolean(COMPLETE, true).commit()
         if (!saved) { finishing = false; return true }

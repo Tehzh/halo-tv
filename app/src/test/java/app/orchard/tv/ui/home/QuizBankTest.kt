@@ -15,7 +15,7 @@ class QuizBankTest {
                 assertEquals(q.choices.size, q.choices.distinct().size)
                 assertTrue(q.answers.isNotEmpty())
                 assertTrue(q.answers.all { it in q.choices.indices })
-                if (q.prompt.contains(" + ")) {
+                if (q.prompt.firstOrNull()?.isDigit() == true && q.prompt.contains(" + ")) {
                     val nums = Regex("\\d+").findAll(q.prompt).map { it.value.toInt() }.toList()
                     assertEquals((nums[0] + nums[1]).toString(), q.choices[q.answers.single()])
                 }

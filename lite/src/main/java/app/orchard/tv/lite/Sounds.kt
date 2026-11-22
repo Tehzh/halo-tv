@@ -20,6 +20,7 @@ object Sounds {
     private var move = 0
     private var select = 0
     private var back = 0
+    private val soft = IntArray(3)
     private val loaded = java.util.Collections.synchronizedSet(HashSet<Int>())
     private val streams = IntArray(3)
     private var streamIndex = 0
@@ -38,7 +39,7 @@ object Sounds {
             streams.forEach { if (it != 0) pool?.stop(it) }
             streams.fill(0); preparedKind = kind
         }
-        if (kind == UiSounds.Aerial) ownPool()
+        if (kind == UiSounds.Aerial || kind == UiSounds.Soft) ownPool()
     }
 
     @Suppress("DEPRECATION")
@@ -50,6 +51,9 @@ object Sounds {
             move = it.load(app, R.raw.ui_move, 1)
             select = it.load(app, R.raw.ui_select, 1)
             back = it.load(app, R.raw.ui_back, 1)
+            soft[0] = it.load(app, R.raw.soft_move, 1)
+            soft[1] = it.load(app, R.raw.soft_select, 1)
+            soft[2] = it.load(app, R.raw.soft_back, 1)
             pool = it
         }
     }
@@ -74,9 +78,9 @@ object Sounds {
                 val on = runCatching { Settings.System.getInt(app.contentResolver, Settings.System.SOUND_EFFECTS_ENABLED, 1) != 0 }.getOrDefault(true)
                 if (on) audio?.playSoundEffect(effect, -1f)
             }
-            UiSounds.Aerial -> {
+            UiSounds.Aerial, UiSounds.Soft -> {
                 val p = ownPool()
-                val (id, volume) = when (own) { 0 -> move to 0.7f; 1 -> select to 1f; else -> back to 0.9f }
+                val (id, volume) = if (LiteSettings.uiSounds == UiSounds.Soft) soft[own] to 0.7f else when (own) { 0 -> move to 0.7f; 1 -> select to 1f; else -> back to 0.9f }
                 if (id != 0 && loaded.contains(id)) {
                     streams[streamIndex] = p.play(id, volume, volume, 1, 0, 1f)
                     streamIndex = (streamIndex + 1) % streams.size

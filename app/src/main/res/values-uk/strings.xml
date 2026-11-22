@@ -15,10 +15,11 @@
     <string name="cc_settings">Налаштування</string>
     <string name="cc_volume">Гучність</string>
     <string name="cc_muted">Звук вимкнено</string>
+    <string name="cc_volume_external">На аудіосистемі</string>
     <string name="cc_home_default">Halo TV — ваш головний екран</string>
     <string name="cc_home_guarded">Home Guard увімкнено</string>
     <string name="cc_home_not_default">Не головний екран за замовчуванням</string>
-    <string name="cc_setup_title">Зробіть Halo TV головним екраном</string>
+    <string name="cc_setup_title">Захист головного екрана</string>
     <string name="cc_setup_body">Якщо Halo TV встановлено лише з APK, він відкривається, але кнопка «Додому», вмикання та вихід зі сну досі ведуть до попереднього лаунчера.</string>
     <string name="cc_setup_guard">Увімкнути Home Guard</string>
     <string name="cc_setup_guard_where">Спеціальні можливості</string>
@@ -29,6 +30,7 @@
     <string name="cc_setup_scan_hint">Відскануйте код, щоб переглянути посібник зі встановлення та налаштування Halo TV.</string>
     <string name="cc_back">Назад</string>
     <string name="cc_no_inputs">На цьому телевізорі немає джерел сигналу</string>
+    <string name="cc_all_inputs_hidden">Усі джерела приховано. Їх можна знову показати в налаштуваннях джерел.</string>
     <string name="cc_native_inputs">Меню джерел телевізора</string>
     <string name="net_ethernet">Ethernet</string>
     <string name="net_wifi">Wi-Fi</string>
@@ -138,7 +140,8 @@
     <string name="st_names">Назви застосунків</string>
     <string name="st_names_focused">Вибраний застосунок</string>
     <string name="st_names_all">Усі застосунки</string>
-    <string name="st_names_hint">Назви під кожним застосунком або лише під вибраним, як на Apple TV.</string>
+    <string name="st_names_hint">Вибране: назва під вибраною піктограмою. Усі: назви під усіма піктограмами. Великий заголовок: назва вибраного застосунку ліворуч над Dock.</string>
+    <string name="st_names_title">Великий заголовок</string>
     <string name="ss_kind">Вигляд</string>
     <string name="wp_weather_city">Місцезнаходження</string>
     <string name="st_home_standard">Два ряди</string>
@@ -273,12 +276,7 @@
     <string name="wp_wallpaper_title">Налаштування шпалер</string>
     <string name="wp_dynamic">Динамічні відеошпалери</string>
     <string name="wp_dynamic_hint">Відскануйте код праворуч, завантажте відео з телефона й виберіть його тут.</string>
-    <string name="st_refresh_rate">Частота оновлення</string>
-    <string name="st_refresh_rate_hint">Діє лише для Halo TV; відеозастосунки використовують системний режим. Непідтримувані режими вимкнені. Авто обирає найвищий режим, який Android позначає як безпечний для перемикання без затемнення (Android 12+), інакше діє системний режим. Ручне перемикання може на мить вимкнути екран.</string>
-    <string name="st_refresh_auto">Авто</string>
-    <string name="st_refresh_30">30 Гц</string>
-    <string name="st_refresh_60">60 Гц</string>
-    <string name="st_refresh_120">120 Гц</string>
+
     <string name="cc_about_attribution">Halo TV — неофіційна модифікація проєкту Aerial з відкритим кодом.</string>
     <string name="donate_title">Підтримати Halo TV</string>
     <string name="donate_open">Відкрити</string>
@@ -610,6 +608,11 @@ WeChat: scan code  ·  Email: 1227888560@qq.com</string>
     <string name="quiz_score">Правильних відповідей: %1$d з %2$d</string>
     <string name="quiz_back_to_questions">Повернутися до вікторини</string>
     <string name="halo_dock_corners">Стиль кутів</string>
+    <string name="halo_dock_size">Розмір Dock і значків</string>
+    <string name="halo_dock_size_hint">Dock і значки змінюють розмір разом. Типовий варіант зберігає поточний розмір.</string>
+    <string name="halo_dock_size_small">Малий</string>
+    <string name="halo_dock_size_default">Типовий</string>
+    <string name="halo_dock_size_large">Великий</string>
     <string name="halo_dock_corners_round">Великий радіус</string>
     <string name="halo_dock_corners_compact">Малий радіус</string>
     <string name="quiz_parent_allowance_hint">Батьки можуть додати час перегляду нижче або вийти з дитячого режиму.</string>
@@ -636,4 +639,44 @@ WeChat: scan code  ·  Email: 1227888560@qq.com</string>
     <string name="halo_guard_restore_missing">Немає дозволу на автовідновлення. Увімкніть спеціальні можливості; якщо захист вимикається, скористайтеся QR-інструкцією ADB.</string>
     <string name="halo_guard_repair">Перепідключити захист</string>
     <string name="halo_guard_restricted">Про додаток: дозволити обмежені налаштування</string>
+    <string name="focus_classic_glass_slide">Класичне скло</string>
+    <string name="flip_seconds_style">Вигляд секунд</string>
+    <string name="flip_seconds_numeric">Цифри секунд</string>
+    <string name="flip_seconds_colon">Миготливе двокрапка</string>
+    <string name="halo_project_links_body">Вихідний код: https://github.com/Null9797/halo-tv\nСайт: https://halo-tv.pages.dev/\nЗавантаження Quark: https://pan.quark.cn/s/a14e3ab2dd41</string>
+    <string name="halo_guard_global_off">Службу зареєстровано, але спеціальні можливості Android вимкнено.</string>
+    <string name="halo_guard_restricted_blocked">Android блокує обмежені налаштування. Дозвольте їх у відомостях про застосунок, якщо телевізор має цю можливість.</string>
+    <string name="halo_guard_other_service">Увімкнено іншу службу Aerial/Halo: %1$s. Залиште лише потрібну; застосунок не вимикає інші служби автоматично.</string>
+    <string name="halo_guard_verify_home">Робота служби не гарантує перехоплення Home та запуск після ввімкнення. Перевірте їх після налаштування; деякі ТВ потребують дозволу автозапуску виробника.</string>
+    <string name="halo_reset_hint_apps">Скидаються лише налаштування цієї сторінки; блокування, приховані застосунки й файли зберігаються.</string>
+    <string name="focus_liquid_slide_hint">Підсвічування плавно переходить до вибраного застосунку.</string>
+    <string name="focus_classic_glass_slide_hint">Скляне підсвічування плавно переходить до вибраного застосунку.</string>
+    <string name="aerial_quality_shared_hint">Спільне із заставкою аерозйомки. Шпалери використовують SDR навіть за вибору Dolby Vision.</string>
+
+    <!-- User-initiated guard permission setup. -->
+    <string name="halo_setup_activate">Увімкнути й відновити захист</string>
+    <string name="halo_setup_working">Перевірка й відновлення…</string>
+    <string name="halo_setup_scope">Вмикає відновлення й виправляє вже дозволений доступ. Решту дозволів підтвердьте в системі. Інші застосунки не змінюються.</string>
+    <string name="halo_setup_next">Наступний дозвіл: %1$s</string>
+    <string name="halo_setup_review">Перевірте стани нижче. Недоступні дозволи налаштуйте через систему ТВ або комп’ютер. Потім поверніться для перевірки.</string>
+    <string name="halo_setup_no_entry">На ТВ немає доступної сторінки дозволу. Скористайтеся системними налаштуваннями чи інструкцією для комп’ютера.</string>
+    <string name="halo_setup_allowed">Дозволено</string>
+    <string name="halo_setup_pending">Потрібен дозвіл</string>
+    <string name="halo_setup_unknown">Не вдалося прочитати</string>
+    <string name="halo_setup_connected">Підключено</string>
+    <string name="halo_setup_waiting_bind">Дозволено · немає зв’язку</string>
+    <string name="halo_setup_unsupported">Недоступно в системі</string>
+    <string name="halo_setup_manual">Перевірте в системі</string>
+    <string name="halo_setup_overlay">Поверх інших застосунків</string>
+    <string name="halo_setup_usage">Доступ до статистики</string>
+    <string name="halo_setup_battery">Робота у фоні</string>
+    <string name="halo_setup_autostart">Автозапуск виробника</string>
+    <string name="halo_setup_vendor_hint">У керуванні застосунками дозвольте HaloTV автозапуск, запуск іншими застосунками й роботу у фоні. Відкриття сторінки не надає дозвіл.</string>
+    <string name="halo_setup_listener_hint">Доступ до сповіщень допомагає відновити захист після очікування; вміст не читається. На деяких системах із малою пам’яттю служба недоступна.</string>
+    <string name="halo_setup_lite_body">Lite використовує системний вибір домашнього екрана й не містить служби захисту повної версії. Виберіть HaloTV Lite та дозвольте автозапуск і роботу у фоні.</string>
+    <string name="halo_setup_app_details">Керування застосунком</string>
+    <string name="halo_setup_secure_hint">Для автовідновлення потрібен дозвіл через комп’ютер. Сам перемикач не надає доступу до захищених налаштувань.</string>
+    <string name="a11y_delete">Видалити</string>
+    <string name="aerial_quality_4k_trial">Спробувати 4K SDR</string>
+    <string name="aerial_quality_4k_trial_hint">На цьому пристрої режим «Авто» використовує 1080p. 4K SDR можна спробувати вручну. У разі збою ввімкнеться 1080p.</string>
 </resources>

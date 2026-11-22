@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="quiz_settings">Налаштування вікторини</string>
+    <string name="quiz_stage">Вік або клас</string>
+    <string name="quiz_stage_any">Будь-який</string>
+    <string name="quiz_stage_preschool">Дошкільний</string>
+    <string name="quiz_stage_12">1–2 класи</string>
+    <string name="quiz_stage_34">3–4 класи</string>
+    <string name="quiz_stage_56">5–6 класи</string>
+    <string name="quiz_subject">Тип запитань</string>
+    <string name="quiz_subject_all">Усі</string>
+    <string name="quiz_subject_math">Математика</string>
+    <string name="quiz_subject_english">Англійська</string>
+    <string name="quiz_subject_poetry">Поезія</string>
+</resources>

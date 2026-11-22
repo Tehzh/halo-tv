@@ -184,6 +184,8 @@ object Kids {
         allowed = allowedFor(kind)
         suspended = prefs.getBoolean("suspended", false)
         quizRewardMax = prefs.getInt("quiz_reward_max", 10).coerceIn(1, 120)
+        quizStage = prefs.getInt("quiz_stage", 0).coerceIn(0, 4)
+        quizSubject = prefs.getInt("quiz_subject", 0).coerceIn(0, 3)
         elderReminderMinutes = prefs.getInt("elder_reminder_minutes", 0).coerceIn(0, KidsTime.DAY)
         allowedPackages = prefs.getStringSet("allowed_packages", null)?.toSet() ?: emptySet()
         blockOthers = prefs.getBoolean("block_others", true)
@@ -199,6 +201,11 @@ object Kids {
     }
 
     private fun put(block: SharedPreferences.Editor.() -> Unit) = prefs.edit().apply(block).apply()
+
+    var quizStage = 0; private set
+    var quizSubject = 0; private set
+    fun chooseQuizStage(value: Int) { quizStage = value.coerceIn(0, 4); put { putInt("quiz_stage", quizStage) } }
+    fun chooseQuizSubject(value: Int) { quizSubject = value.coerceIn(0, 3); put { putInt("quiz_subject", quizSubject) } }
 
     var quizRewardMax = 10; private set
     var elderReminderMinutes = 0; private set
@@ -286,7 +293,7 @@ object Kids {
 
     internal fun questions(): List<QuizQuestion> {
         val old = prefs.getString("quiz_seen", "").orEmpty().lineSequence().filter { it.isNotBlank() }.toList()
-        val next = QuizBank.round(old.toHashSet())
+        val next = QuizBank.round(old.toHashSet(), stage = quizStage, subject = quizSubject)
         put { putString("quiz_seen", (old + next.map { it.prompt }).distinct().takeLast(180).joinToString("\n")) }
         return next
     }

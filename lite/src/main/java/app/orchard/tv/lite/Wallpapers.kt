@@ -11,7 +11,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
@@ -21,7 +20,7 @@ class Wallpaper(val id: String, val kind: WallpaperKind, val title: String, val 
 
 /** The full app's screensaver kinds that Lite has (no system screensaver: Lite is no DreamService). */
 enum class ScreensaverMode(val key: String) {
-    Photos("photos"), Clock("clock"), FlipClock("flip_clock"), Videos("videos");
+    Photos("photos"), OnlinePictures("bing_online"), FlipClock("flip_clock"), Videos("videos");
 
     companion object {
         fun of(key: String?) = entries.firstOrNull { it.key == key } ?: FlipClock
@@ -50,6 +49,9 @@ object Wallpapers {
     private lateinit var prefs: SharedPreferences
     private lateinit var dailyDir: File
     private lateinit var photoDir: File
+    private val onlineRequests = OnlineWallpaperRequests()
+    private var selectionGeneration = 0L
+    @Volatile private var pictureVersion = 0L
 
     @Volatile var selectedId = LATEST_DAILY; private set
     @Volatile var items: List<Wallpaper> = emptyList(); private set
@@ -68,15 +70,16 @@ object Wallpapers {
         dailyDir = File(app.filesDir, "daily").apply { mkdirs() }
         photoDir = File(app.filesDir, "photos").apply { mkdirs() }
         selectedId = prefs.getString("selected", LATEST_DAILY) ?: LATEST_DAILY
-        chosenScreensaver = when (val key = prefs.getString("screensaver", null)) {
-            null, FOLLOW -> null
-            "aerial" -> ScreensaverMode.FlipClock
-            else -> ScreensaverMode.of(key)
+        val savedSaver = prefs.getString("screensaver", null)
+        chosenScreensaver = savedSaver?.takeUnless { it == FOLLOW }?.let(ScreensaverMode::of)
+        if (savedSaver == "clock" || savedSaver == "aerial") {
+            prefs.edit().putString("screensaver", ScreensaverMode.FlipClock.key).apply()
         }
         rebuildList()
     }
 
     fun select(id: String) {
+        selectionGeneration++
         selectedId = id
         prefs.edit().putString("selected", id).apply()
     }
@@ -116,7 +119,8 @@ object Wallpapers {
     /** The key the baked backdrop is kept under: the picture, and its file's age. */
     private fun bakeKey(): String {
         val wp = resolve() ?: return "grad:$FALLBACK"
-        return wp.id + "@" + (fileFor(wp)?.lastModified() ?: 0)
+        val revision = if (wp.id == ONLINE) "@${prefs.getLong("online_revision", 0)}" else ""
+        return wp.id + "@" + (fileFor(wp)?.lastModified() ?: 0) + revision
     }
 
     fun rebuildList() {
@@ -159,18 +163,37 @@ object Wallpapers {
         })
     }
 
-    @Synchronized fun storeOnline(bitmap: Bitmap): String {
+    internal fun beginOnlineRequest() = onlineRequests.begin(selectedId, selectionGeneration)!!
+    internal fun finishOnlineRequest(request: OnlineWallpaperRequests.Ticket) = onlineRequests.finish(request)
+    internal fun contentRevision(id: String = selectedId): Long =
+        if (id == ONLINE) prefs.getLong("online_revision", 0) else 0
+
+    /** Encode off the UI thread, keeping the currently valid file untouched until commit. */
+    internal fun prepareOnline(bitmap: Bitmap): File {
         // One replaceable private cache; never add online imagery to the upload library.
         val target = onlineFile()
         val temp = File.createTempFile("bing-", ".part", target.parentFile)
         try {
+            check(!Thread.currentThread().isInterrupted)
             check(FileOutputStream(temp).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) })
-            check(temp.renameTo(target))
-            synchronized(thumbs) { thumbs.remove(ONLINE) }
-            return ONLINE
-        } finally {
+            check(!Thread.currentThread().isInterrupted)
+            return temp
+        } catch (e: Exception) {
             temp.delete()
+            throw e
         }
+    }
+
+    /** Main-thread validation and publication cannot interleave with another selection. */
+    internal fun commitOnline(temp: File, request: OnlineWallpaperRequests.Ticket): String? {
+        if (!onlineRequests.accepts(request, selectedId, selectionGeneration)) return null
+        if (!temp.renameTo(onlineFile())) return null
+        pictureVersion++
+        synchronized(thumbs) { thumbs.remove(ONLINE) }
+        prefs.edit().remove("baked").putLong("online_revision", prefs.getLong("online_revision", 0) + 1).apply()
+        rebuildList()
+        select(ONLINE)
+        return ONLINE
     }
 
     private val thumbs = object : LinkedHashMap<String, Bitmap>(16, 0.75f, true) {
@@ -180,11 +203,18 @@ object Wallpapers {
     /** A 384×216 thumbnail, for Personalize and the phone page. Off the main thread. */
     fun thumbnail(id: String): Bitmap? {
         synchronized(thumbs) { thumbs[id] }?.let { return it }
+        val revision = pictureVersion
         val wp = resolve(id) ?: return null
         val b = picture(wp, 384, 216) ?: return null
-        synchronized(thumbs) { thumbs[id] = b }
+        synchronized(thumbs) { if (revision == pictureVersion) thumbs[id] = b }
         return b
     }
+
+    /** Use the existing online wallpaper cache, independently from the local photo selection. */
+    fun onlineSaverPictures(): List<Wallpaper> = items
+        .filter { it.kind == WallpaperKind.Daily || it.kind == WallpaperKind.Online }
+        .ifEmpty { items.filter { it.kind == WallpaperKind.Builtin } }
+        .shuffled()
 
     /** The photo screensaver's pictures: the owner's photos when there are any, else the daily ones, else the built-ins (issue #27). */
     fun saverPictures(): List<Wallpaper> {
@@ -242,11 +272,20 @@ object Wallpapers {
         }.filter { File(dailyDir, it.first + ".jpg").exists() }
     }.getOrDefault(emptyList())
 
-    /** Bing's dates are China's, as yyyyMMdd. */
-    private fun hasTodaysDaily(): Boolean {
-        val fmt = SimpleDateFormat("yyyyMMdd", Locale.US).apply { timeZone = TimeZone.getTimeZone("Asia/Shanghai") }
-        return File(dailyDir, fmt.format(Date()) + ".jpg").exists()
-    }
+    /**
+     * Whether the newest photo on hand is still the current one. Bing's `startdate` is not China's
+     * day: the photo up from 00:00 on the 20th is dated the 19th, its `fullstartdate` 202611191600
+     * being UTC (the full app's issue #1630), so today's never seemed to be there. The next one is
+     * due a day after the newest one's start; an index from before has no start and is fetched.
+     */
+    private fun hasTodaysDaily(): Boolean = runCatching {
+        val arr = JSONArray(File(dailyDir, "index.json").readText())
+        val fmt = SimpleDateFormat("yyyyMMddHHmm", Locale.US).apply { timeZone = TimeZone.getTimeZone("UTC"); isLenient = false }
+        val newest = (0 until arr.length()).mapNotNull { i ->
+            arr.getJSONObject(i).optString("start").takeIf { it.length == 12 }?.let { runCatching { fmt.parse(it)?.time }.getOrNull() }
+        }.maxOrNull() ?: return@runCatching false
+        System.currentTimeMillis() - newest < 24 * 60 * 60 * 1000L
+    }.getOrDefault(false)
 
     /**
      * Fetches the last eight of Bing's photos (cn.bing.com, reachable from China), as the full app:
@@ -286,7 +325,8 @@ object Wallpapers {
                 }
                 val copyright = img.optString("copyright")
                 val title = img.optString("title").ifBlank { copyright.substringBefore(" (").ifBlank { date } }
-                index.put(JSONObject().put("date", date).put("title", title).put("caption", copyright))
+                index.put(JSONObject().put("date", date).put("title", title).put("caption", copyright)
+                    .put("start", img.optString("fullstartdate")))
             }
             if (pinned != null && (0 until index.length()).none { index.getJSONObject(it).getString("date") == pinned.first }) {
                 index.put(JSONObject().put("date", pinned.first).put("title", pinned.second).put("caption", pinned.third))

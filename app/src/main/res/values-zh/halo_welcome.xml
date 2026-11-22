@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_light_hello">你好</string>
+    <string name="welcome_light_title">欢迎来到 HaloTV</string>
+    <string name="welcome_light_subtitle">你的电视，从此有了新的模样。</string>
+    <string name="welcome_light_start">开启我的桌面</string>
+    <string name="welcome_light_remote">按遥控器确认键开始</string>
+    <string name="welcome_light_credit">基于 Aerial 开源项目二次开发 · 感谢原作者及所有贡献者</string>
+</resources>

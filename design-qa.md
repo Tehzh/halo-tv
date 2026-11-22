@@ -1,28 +1,13 @@
-# Welcome screen visual QA
+# HaloTV static welcome design QA
 
 final result: passed
 
-## Target and evidence
+Scope: preserve the accepted final light welcome composition and replace the timed entrance with an immediately complete static screen. No redesign or new asset generation.
 
-- Exact selected first visual: exec-a9105188-5c07-4aa5-a262-508fc2f7e4ab.png.
-- Native release captures: local/qa/welcome-standard-final.png and local/qa/welcome-lite-final.png.
-- Combined normalized comparison inspected: local/qa/welcome-comparison-final.jpg (all screens normalized to the same 960×540 viewport).
-- Guard was launched and inspected before the final typography polish; final Guard and Standard share the same welcome implementation, packaged artwork and strings, with only manifest HOME declaration differing.
+Accepted design: `exec-0b4040cc-cbd9-4bce-972d-428f4dabc9ff.png` (1672×941).
+Prior approved native end-state: Desktop `HaloTV-3.3.1-欢迎页动效测试/欢迎页原生绘制-1920x1080.png`.
+Current native output: `app/build/reports/welcome-preview/welcome-1920x1080.png`.
 
-## Iterations
+Compare current first-frame output with the prior approved static end-state at identical dimensions, alongside the accepted design. Check native typography, shared text baseline, pastel color, source artwork quality, full copy and focused CTA. The host render regression advances five seconds and requires identical pixels; the complete static view must be present from attachment. No emulator or television operation.
 
-1. Initial native comparison found system force-dark in Lite darkened text/artwork until they became unreadable (P1). Disabled platform auto-darkening on the welcome View only, guarded at API 29. The recaptured Lite screen matches the full app.
-2. Matched headline width, tagline and credit sizes more closely to the selected target and strengthened the primary-button halo. Recaptured both final release screens and compared them against the target in a single combined image.
-3. No remaining P0/P1/P2 visual differences. P3: native font glyph metrics and the generated background/button glow differ slightly from the raster mockup; strings, positions, palette, overall composition and primary-button geometry are retained.
-
-## Behavior and compatibility
-
-- Old finished-guide flag does not suppress the new welcome; verified by unit test.
-- Primary action persists the new completion flag; repeated actions execute completion once; tested.
-- A key release that originated on a previous screen cannot dismiss the welcome; tested.
-- Native release start and restart verified in an isolated Android TV emulator; user TV was not modified.
-- No continuous welcome animation, no decoder, no timer. Artwork released on detach.
-- Phone online preview action test: Bing = preview/apply; video = preview/useVideo. No save/download action is created.
-- Server source no longer imports online images/videos into the user's local library, even when an old page sends download=true.
-- All three release APKs built, lint has zero errors, welcome tests 3/3 and existing Lite tests 7/7 passed.
-- Lite minSdk remains 14, V1 signature retained. Device testing on physical Android 4.x hardware is not available.
+Current static first-frame PNG is byte-identical to the previously reviewed final native frame (SHA-256 `226c86bb9d2404264d3799ecbd41e4884c09b1390399807cfbdbe0c36169f4c9`). A new same-input reference/current comparison is saved as Desktop `设计与静态首帧对照.jpg`. Native fonts, spacing, colors, artwork and copy are preserved; no P0/P1/P2 visual drift. The five-second host regression confirms the static first frame remains unchanged at the same viewport. Real TV behavior remains unverified.

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_light_hello">Hello</string>
+    <string name="welcome_light_title">Welcome to HaloTV</string>
+    <string name="welcome_light_subtitle">Your TV, with a fresh new look.</string>
+    <string name="welcome_light_start">Enter my desktop</string>
+    <string name="welcome_light_remote">Press OK on your remote to begin</string>
+    <string name="welcome_light_credit">Based on Aerial · Thanks to the original author and all contributors</string>
+</resources>

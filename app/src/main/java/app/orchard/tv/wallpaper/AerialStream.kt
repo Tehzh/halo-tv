@@ -127,7 +127,7 @@ object AerialStream {
      * the placeholder copies its frames out through the GPU (MStar's DIP), and keeps doing so on the
      * SurfaceView it is handed later: the film plays, but not in Dolby Vision (issue #754).
      */
-    fun player(context: Context, quality: AerialQuality, decodeOnScreen: Boolean = false): ExoPlayer {
+    fun player(context: Context, quality: AerialQuality, decodeOnScreen: Boolean = false, wallpaper: Boolean = false): ExoPlayer {
         val cache = cache(context)
         val source = CacheDataSource.Factory()
             .setCache(cache)
@@ -138,7 +138,7 @@ object AerialStream {
         // 24 MB is 10–13 s of 1080p film, which is also when the next film starts loading; the 4K
         // files get about as many seconds.
         val load = DefaultLoadControl.Builder()
-            .setBufferDurationsMs(10_000, 30_000, 1_000, 2_000)
+            .setBufferDurationsMs(10_000, 30_000, if (wallpaper) 250 else 1_000, if (wallpaper) 1_000 else 2_000)
             .setTargetBufferBytes(
                 when (quality) {
                     AerialQuality.DolbyVision -> 48
@@ -148,7 +148,7 @@ object AerialStream {
             )
             .setPrioritizeTimeOverSizeThresholds(false)
             .build()
-        val builder = if (decodeOnScreen) ExoPlayer.Builder(context, OnScreenRenderers(context)) else ExoPlayer.Builder(context)
+        val builder = if (decodeOnScreen) ExoPlayer.Builder(context, OnScreenRenderers(context)) else ExoPlayer.Builder(context, DefaultRenderersFactory(context).setEnableDecoderFallback(true))
         return builder
             .setLoadControl(load)
             .setMediaSourceFactory(
@@ -156,6 +156,8 @@ object AerialStream {
             )
             .build()
             .apply {
+                playbackParameters = androidx.media3.common.PlaybackParameters.DEFAULT
+                setAudioAttributes(androidx.media3.common.AudioAttributes.DEFAULT, false)
                 volume = 0f
                 repeatMode = Player.REPEAT_MODE_ALL
                 videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING

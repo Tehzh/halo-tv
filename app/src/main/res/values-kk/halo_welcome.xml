@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_light_hello">Сәлем</string>
+    <string name="welcome_light_title">HaloTV-ге қош келдіңіз</string>
+    <string name="welcome_light_subtitle">Теледидарыңыздың жаңа келбеті.</string>
+    <string name="welcome_light_start">Жұмыс үстелін ашу</string>
+    <string name="welcome_light_remote">Бастау үшін пульттегі OK түймесін басыңыз</string>
+    <string name="welcome_light_credit">Aerial негізінде · Авторға және барлық қатысушыларға рақмет</string>
+</resources>

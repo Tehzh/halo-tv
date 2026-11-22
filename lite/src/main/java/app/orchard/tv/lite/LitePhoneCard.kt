@@ -29,12 +29,13 @@ internal object LiteSettingsGeometry {
     fun contentWidth() = Ui.screenW - Ui.pxi(OUTER * 2 + NAV + PHONE + GAP * 2 + CONTENT_PAD * 2)
 }
 
-/** One persistent local-network QR card. It has no animation and retries only while offline. */
+/** One persistent local-network QR card. It has no animation and refreshes the address while visible. */
 internal class LitePhoneCard(context: Context, private val compact: Boolean = false) : LinearLayout(context) {
     private val qr = ImageView(context)
     private val address = context.label("", 10f, 500).apply { visibility = View.GONE }
     private val hint = context.label(context.getString(R.string.wp_phone_offline), 10f, 400, Ui.SECONDARY)
     private var picture: Bitmap? = null
+    private var shownUrl: String? = null
     private var attached = false
     private var generation = 0
     private val retry = Runnable { if (attached) load() }
@@ -93,32 +94,44 @@ internal class LitePhoneCard(context: Context, private val compact: Boolean = fa
     }
 
     override fun onAttachedToWindow() {
-        super.onAttachedToWindow(); attached = true; load()
+        super.onAttachedToWindow(); attached = true
+        if (isShown) load()
+    }
+
+    override fun onVisibilityChanged(changedView: android.view.View, visibility: Int) {
+        super.onVisibilityChanged(changedView, visibility)
+        if (!attached) return
+        if (isShown) load() else { generation++; removeCallbacks(retry) }
     }
 
     private fun load() {
         removeCallbacks(retry)
         val request = ++generation
+        val previousUrl = shownUrl
+        val hasPicture = picture != null
         Thread({
             val url = PhoneServer.address(context.applicationContext)
-            val bitmap = url?.let { runCatching { PhoneServer.qr(it) }.getOrNull() }
+            val bitmap = if (url != previousUrl || !hasPicture) url?.let { runCatching { PhoneServer.qr(it) }.getOrNull() } else null
             post {
-                if (!attached || request != generation) { bitmap?.recycle(); return@post }
-                val old = picture
-                picture = bitmap
-                qr.setImageDrawable(bitmap?.let { BitmapDrawable(resources, it).apply { setFilterBitmap(false) } })
-                old?.recycle()
-                hint.visibility = if (url == null || bitmap == null) VISIBLE else GONE
+                if (!attached || !isShown || request != generation) { bitmap?.recycle(); return@post }
+                if (url != shownUrl || picture == null) {
+                    val old = picture
+                    picture = bitmap
+                    shownUrl = url
+                    qr.setImageDrawable(bitmap?.let { BitmapDrawable(resources, it).apply { setFilterBitmap(false) } })
+                    old?.recycle()
+                }
+                hint.visibility = if (url == null || picture == null) VISIBLE else GONE
                 address.text = url?.removePrefix("http://").orEmpty()
                 address.visibility = if (url == null) GONE else VISIBLE
-                if (url == null || bitmap == null) postDelayed(retry, 5000)
+                postDelayed(retry, 5000)
             }
         }, "HaloLite-QR").start()
     }
 
     override fun onDetachedFromWindow() {
         attached = false; generation++; removeCallbacks(retry)
-        qr.setImageDrawable(null); picture?.recycle(); picture = null
+        qr.setImageDrawable(null); picture?.recycle(); picture = null; shownUrl = null
         super.onDetachedFromWindow()
     }
 }

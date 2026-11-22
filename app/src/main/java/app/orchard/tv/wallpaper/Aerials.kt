@@ -1,6 +1,8 @@
 package app.orchard.tv.wallpaper
 
 import android.content.Context
+import android.graphics.Point
+import android.hardware.display.DisplayManager
 import app.orchard.tv.settings.AerialSettings
 import android.media.MediaCodecInfo
 import android.media.MediaCodecList
@@ -8,6 +10,7 @@ import android.media.MediaFormat
 import android.os.Build
 import android.view.Display
 import android.view.WindowManager
+import androidx.annotation.RequiresApi
 import androidx.core.content.getSystemService
 import org.json.JSONObject
 import java.util.Locale
@@ -58,18 +61,61 @@ enum class AerialQuality(val key: String) {
  * on, and decoded by anything else they come out green and purple.
  */
 object AerialFormats {
-    @Volatile
-    private var probed: Set<AerialQuality>? = null
+    private data class Capabilities(val formats: Set<AerialQuality>, val vendorHevc: Boolean)
 
-    fun supported(context: Context): Set<AerialQuality> = probed ?: probe(context).also { probed = it }
+    @Volatile private var probed: Capabilities? = null
+    @Volatile private var legacyTrialFailure: String? = null
 
-    /** [chosen], or for Auto the best supported; a choice the TV cannot play falls back too. */
-    fun resolve(context: Context, chosen: AerialQuality): AerialQuality {
-        val ok = supported(context)
-        return if (chosen != AerialQuality.Auto && chosen in ok) chosen
-        else listOf(AerialQuality.DolbyVision, AerialQuality.Uhd).firstOrNull { it in ok && (chosen == AerialQuality.Auto || it.ordinal < chosen.ordinal) }
-            ?: AerialQuality.Hd
+    private fun capabilities(context: Context): Capabilities = probed ?: synchronized(this) {
+        probed ?: probe(context).also { probed = it }
     }
+
+    fun supported(context: Context): Set<AerialQuality> = capabilities(context).formats
+
+    fun hasLegacySdrTrial(context: Context): Boolean {
+        val sdk = Build.VERSION.SDK_INT
+        if (sdk !in 21..23) return false
+        val caps = capabilities(context)
+        if (!caps.vendorHevc || AerialQuality.Uhd in caps.formats) return false
+        return runCatching {
+            context.getSystemService<DisplayManager>()?.displays?.any { display ->
+                val size = Point()
+                @Suppress("DEPRECATION")
+                display.getRealSize(size)
+                isUhdAerialOutput(size.x, size.y) ||
+                    (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && display.mode.let {
+                        isUhdAerialOutput(it.physicalWidth, it.physicalHeight)
+                    })
+            } == true
+        }.getOrDefault(false)
+    }
+
+    fun resetLegacyTrial() { legacyTrialFailure = null }
+
+    /** A failed manual trial stays capped across wallpaper and screensaver until selected again. */
+    fun recordLegacyFailure(context: Context, chosen: AerialQuality, playing: AerialQuality, reason: String): Boolean {
+        if (chosen != AerialQuality.Uhd || playing != AerialQuality.Uhd || !hasLegacySdrTrial(context)) return false
+        legacyTrialFailure = reason
+        return true
+    }
+
+    fun legacyTrialStatus(context: Context): String = when {
+        !hasLegacySdrTrial(context) -> "unavailable"
+        legacyTrialFailure != null -> "fallback:$legacyTrialFailure"
+        else -> "manual_available"
+    }
+
+    fun policyReason(context: Context, chosen: AerialQuality, actual: AerialQuality): String? = when {
+        chosen == AerialQuality.Uhd && hasLegacySdrTrial(context) ->
+            if (actual == AerialQuality.Uhd) "legacy_4k_trial" else legacyTrialFailure ?: "decoder_capability"
+        chosen == AerialQuality.Auto || chosen == actual -> null
+        else -> "decoder_capability"
+    }
+
+    /** A TV with incomplete capabilities may try SDR only when the user selects it. */
+    fun resolve(context: Context, chosen: AerialQuality): AerialQuality =
+        resolveAerialQuality(chosen, supported(context),
+            chosen == AerialQuality.Uhd && hasLegacySdrTrial(context) && legacyTrialFailure == null)
 
     /**
      * What the aerial wallpaper plays: as chosen, but never Dolby Vision. A TV in Dolby Vision mode
@@ -99,32 +145,43 @@ object AerialFormats {
         else -> AerialQuality.Hd
     }
 
-    private fun probe(context: Context): Set<AerialQuality> {
+    private fun probe(context: Context): Capabilities {
         val found = mutableSetOf(AerialQuality.Hd)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return found
         val codecs = runCatching { MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.filter { !it.isEncoder } }.getOrDefault(emptyList())
         fun caps(mime: String) = codecs.mapNotNull { info ->
-            if (info.supportedTypes.none { it.equals(mime, ignoreCase = true) }) null
-            else runCatching { info.getCapabilitiesForType(mime) }.getOrNull()
+            runCatching {
+                if (info.supportedTypes.any { it.equals(mime, ignoreCase = true) }) info.getCapabilitiesForType(mime) else null
+            }.getOrNull()?.let { info to it }
         }
-        val uhd = caps(MediaFormat.MIMETYPE_VIDEO_HEVC).any { c ->
-            runCatching { c.videoCapabilities?.areSizeAndRateSupported(3840, 2160, 30.0) == true }.getOrDefault(false)
+        // VideoCapabilities is available from API 21. In particular, a 4K HDMI mode says
+        // nothing about whether this firmware can decode a 3840×2160 HEVC stream.
+        val sdk = Build.VERSION.SDK_INT
+        val hevc = caps(MediaFormat.MIMETYPE_VIDEO_HEVC)
+        val vendorHevc = sdk in 21..23 && hevc.any { (codec, _) -> acceptsAerialSdr(sdk, codec.name, true) }
+        val uhd = hevc.any { (codec, c) ->
+            runCatching {
+                val sizeAndRate = c.videoCapabilities?.areSizeAndRateSupported(3840, 2160, 30.0) == true
+                acceptsAerialSdr(sdk, codec.name, sizeAndRate)
+            }.getOrDefault(false)
         }
         if (uhd) found += AerialQuality.Uhd
-        val dvDecoder = caps(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION).any { c ->
+        if (!uhd || Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return Capabilities(found, vendorHevc)
+        val dvDecoder = caps(MediaFormat.MIMETYPE_VIDEO_DOLBY_VISION).any { (_, c) ->
             c.profileLevels.any {
                 it.profile == MediaCodecInfo.CodecProfileLevel.DolbyVisionProfileDvheStn &&
                     it.level >= MediaCodecInfo.CodecProfileLevel.DolbyVisionLevelUhd30
             }
         }
-        val dvDisplay = runCatching {
-            @Suppress("DEPRECATION")
-            context.getSystemService<WindowManager>()?.defaultDisplay?.hdrCapabilities?.supportedHdrTypes
-                ?.contains(Display.HdrCapabilities.HDR_TYPE_DOLBY_VISION) == true
-        }.getOrDefault(false)
-        if (uhd && dvDecoder && dvDisplay) found += AerialQuality.DolbyVision
-        return found
+        if (dvDecoder && supportsDolbyVisionDisplay(context)) found += AerialQuality.DolbyVision
+        return Capabilities(found, vendorHevc)
     }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    @Suppress("DEPRECATION")
+    private fun supportsDolbyVisionDisplay(context: Context): Boolean = runCatching {
+        context.getSystemService<WindowManager>()?.defaultDisplay?.hdrCapabilities?.supportedHdrTypes
+            ?.contains(Display.HdrCapabilities.HDR_TYPE_DOLBY_VISION) == true
+    }.getOrDefault(false)
 }
 
 object Aerials {

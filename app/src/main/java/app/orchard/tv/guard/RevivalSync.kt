@@ -39,12 +39,13 @@ object RevivalSync {
     fun ensure(context: Context) {
         // Accounts live in credential storage.
         if (!GuardSetup.isUserUnlocked(context)) return
+
         runCatching {
             // Normally app.orchard.tv; an isolated test build must not share the owner's account.
             val accountType = context.packageName
             val accounts = AccountManager.get(context)
             val account = accounts.getAccountsByType(accountType).firstOrNull()
-                ?: Account("Aerial", accountType).also {
+                ?: Account("HaloTV", accountType).also {
                     if (!accounts.addAccountExplicitly(it, null, null)) return
                     Log.i(TAG, "added the account that lets the sync framework revive Aerial")
                 }
@@ -65,6 +66,7 @@ class RevivalSyncService : Service() {
             // Credential storage is still locked; the guard and the boot receiver catch up on unlock.
             if (!GuardSetup.isUserUnlocked(context)) return
             GuardSetup.ensureAdb(context)
+            if (!GuardRecoveryPolicy.enabled(context)) return
             // Runs after every settings write, mostly while the guard is fine (or not bound yet, right
             // after Aerial is opened). Only a guard Android had switched off counts as a revival, or
             // the LeTV check (GuardSetup.revivedOften) trips after a few writes.

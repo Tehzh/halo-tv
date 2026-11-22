@@ -42,12 +42,7 @@ object DiagLog {
         if (on) init(context) else file = null
     }
 
-    /**
-     * Experiments for a black Home, set over ADB (ConfigReceiver) and read when Home starts:
-     * mode_switch lets Home change the display's refresh rate (off in a diagnostic build, the only
-     * Android 12+ display change Aerial makes); soft_layer draws Home in software, past the GPU.
-     */
-    fun modeSwitch(context: Context): Boolean = prefs(context).getBoolean("mode_switch", !BuildConfig.DIAG)
+    /** Draw Home in software for diagnosis, bypassing the GPU. */
     fun softLayer(context: Context): Boolean = prefs(context).getBoolean("soft_layer", false)
 
     /**
@@ -62,8 +57,22 @@ object DiagLog {
     fun init(context: Context) {
         if (file != null || !enabled(context)) return
         val dir = context.getExternalFilesDir(null) ?: context.filesDir
-        file = File(dir, "aerial-diag.log")
-        i("log file ${file?.absolutePath}")
+        val f = File(dir, "aerial-diag.log")
+        // The lines from before the file: a boot's while the user was still locked, when the
+        // preference saying the file is wanted cannot be read yet. XGIMI RS Pro 2 (Android 9) stayed
+        // black at boot, logcat cannot be read there, and the file began at the rescue (issue #1391).
+        val earlier = synchronized(lines) { lines.toList() }
+        if (earlier.isNotEmpty()) {
+            writer.execute {
+                runCatching {
+                    val fresh = !f.exists()
+                    f.appendText(earlier.joinToString("\n", prefix = "-- earlier in this process:\n", postfix = "\n"))
+                    if (fresh) f.setReadable(true, false)
+                }
+            }
+        }
+        file = f
+        i("log file ${f.absolutePath}")
     }
 
     fun i(message: String) {

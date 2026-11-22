@@ -2,6 +2,7 @@ package app.orchard.tv.lite
 
 import android.app.ActivityManager
 import android.content.Context
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.media.AudioManager
@@ -15,6 +16,9 @@ import java.net.NetworkInterface
 internal object LiteBackgroundCleaner {
     enum class Outcome { Done, Unsupported, Protected, Failed }
     data class Result(val outcome: Outcome, val requested: Int = 0, val before: Long = 0)
+
+    internal fun componentPackages(value: String?): Set<String> = value.orEmpty().split(':')
+        .mapNotNull { ComponentName.unflattenFromString(it)?.packageName }.toSet()
 
     fun available(context: Context): Long = ActivityManager.MemoryInfo().also {
         (context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(it)
@@ -39,6 +43,12 @@ internal object LiteBackgroundCleaner {
                 .mapNotNull { it.serviceInfo?.packageName }.toMutableSet()
             Settings.Secure.getString(context.contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
                 ?.substringBefore('/')?.let { protected.add(it) }
+            // Preserve enabled services and the current Home, including third-party components.
+            for (key in listOf(Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, "enabled_notification_listeners")) {
+                componentPackages(Settings.Secure.getString(context.contentResolver, key)).let(protected::addAll)
+            }
+            pm.resolveActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), 0)
+                ?.activityInfo?.packageName?.let(protected::add)
             val processes = am.runningAppProcesses.orEmpty()
             val active = processes.filter { it.importance < ActivityManager.RunningAppProcessInfo.IMPORTANCE_BACKGROUND }
                 .flatMap { it.pkgList.orEmpty().asIterable() }.toSet()

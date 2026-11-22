@@ -1,5 +1,10 @@
 package app.orchard.tv.guard
 
+import android.app.usage.UsageEvents
+import android.app.usage.UsageStatsManager
+import android.content.Context
+import androidx.core.content.getSystemService
+
 /**
  * What usage stats say is in front: the activity that last moved to the front, and whether it has
  * moved to the back since with nothing brought up after it. LeTV X4-50 (eUI, Android 6.0) shows no
@@ -13,18 +18,46 @@ internal object UsageFront {
 
     data class Front(val pkg: String, val cls: String, val at: Long, val closed: Boolean)
 
+    fun read(context: Context, now: Long, lookbackMs: Long, settleMs: Long = 0): Front? = runCatching {
+        val events = context.getSystemService<UsageStatsManager>()?.queryEvents(now - lookbackMs, now) ?: return null
+        val picker = Picker()
+        val event = UsageEvents.Event()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            picker.add(event.eventType, event.packageName, event.className, event.timeStamp)
+        }
+        picker.result(now, settleMs)
+    }.getOrNull()
+
     class Picker {
         private var front: Front? = null
+        private var pausedAt: Long? = null
 
         fun add(type: Int, pkg: String, cls: String?, at: Long) {
             if (cls == null) return
             val f = front
             when (type) {
-                MOVE_TO_FOREGROUND -> front = Front(pkg, cls, at, closed = false)
-                MOVE_TO_BACKGROUND -> if (f != null && f.pkg == pkg && f.cls == cls && at >= f.at) front = f.copy(closed = true)
+                MOVE_TO_FOREGROUND -> {
+                    if (f != null && at < (pausedAt ?: f.at)) return
+                    front = Front(pkg, cls, at, closed = false)
+                    pausedAt = null
+                }
+                MOVE_TO_BACKGROUND -> if (f != null && f.pkg == pkg && f.cls == cls && at >= f.at) {
+                    front = f.copy(closed = true)
+                    pausedAt = at
+                }
             }
         }
 
-        fun result(): Front? = front
+        fun result(now: Long = Long.MAX_VALUE, activitySettleMs: Long = 0): Front? {
+            val f = front ?: return null
+            val paused = pausedAt
+            // ACTIVITY_PAUSED also precedes another activity in the same app. MiTV-ASTP0
+            // (Android 9) reports SmartTube's BrowseActivity paused before its settings
+            // activity resumes; taking that gap for an exit brings Home over the dialog.
+            return if (f.closed && paused != null && now - paused < activitySettleMs) {
+                f.copy(closed = false)
+            } else f
+        }
     }
 }

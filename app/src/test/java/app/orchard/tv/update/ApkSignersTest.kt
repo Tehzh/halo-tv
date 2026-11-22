@@ -1,5 +1,7 @@
 package app.orchard.tv.update
 
+import app.orchard.tv.BuildConfig
+
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.Signature
@@ -13,7 +15,7 @@ import org.robolectric.annotation.Config
 @Config(sdk = [27, 30, 34])
 @Suppress("DEPRECATION")
 class ApkSignersTest {
-    private fun release() = Signature(javaClass.getResourceAsStream("/halo-release-cert.der")!!.use { it.readBytes() })
+    private fun release() = Signature(javaClass.getResourceAsStream("/halo-independent-cert.der")!!.use { it.readBytes() })
     private fun legacyInfo() = PackageInfo().apply { signatures = arrayOf(release()) }
     @Test fun officialReleaseCertificateMatchesThePublishedPin() {
         val signers = ApkSigners.current(legacyInfo())

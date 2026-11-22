@@ -15,10 +15,11 @@
     <string name="cc_settings">Параметрлер</string>
     <string name="cc_volume">Дыбыс деңгейі</string>
     <string name="cc_muted">Дыбыс өшірулі</string>
+    <string name="cc_volume_external">Аудиожүйеде</string>
     <string name="cc_home_default">Halo TV — сіздің басты экраныңыз</string>
     <string name="cc_home_guarded">Home Guard қосулы</string>
     <string name="cc_home_not_default">Әдепкі басты экран емес</string>
-    <string name="cc_setup_title">Halo TV-ді басты экран жасаңыз</string>
+    <string name="cc_setup_title">Басты экранды қорғау</string>
     <string name="cc_setup_body">Halo TV тек APK-дан орнатылса, ол ашылады, бірақ «Басты бет» түймесі, қосу және күту режимінен шығу бұрынғы лаунчерге апара береді.</string>
     <string name="cc_setup_guard">Home Guard қосу</string>
     <string name="cc_setup_guard_where">Арнайы мүмкіндіктер</string>
@@ -29,6 +30,7 @@
     <string name="cc_setup_scan_hint">Halo TV орнату және баптау нұсқаулығын көру үшін кодты сканерлеңіз.</string>
     <string name="cc_back">Артқа</string>
     <string name="cc_no_inputs">Бұл теледидарда сигнал көздері табылмады</string>
+    <string name="cc_all_inputs_hidden">Барлық сигнал көздері жасырылған. Оларды сигнал көздерінің баптауларында қайта көрсетуге болады.</string>
     <string name="cc_native_inputs">Теледидардың сигнал көздері мәзірі</string>
     <string name="net_ethernet">Ethernet</string>
     <string name="net_wifi">Wi-Fi</string>
@@ -138,7 +140,8 @@
     <string name="st_names">Қолданба атаулары</string>
     <string name="st_names_focused">Таңдалған қолданба</string>
     <string name="st_names_all">Барлық қолданбалар</string>
-    <string name="st_names_hint">Атаулар әр қолданбаның астында немесе тек таңдалғанның астында, Apple TV сияқты.</string>
+    <string name="st_names_hint">Таңдалған: атауы таңдалған белгішенің астында. Барлығы: барлық белгіше атаулары. Үлкен тақырып: таңдалған қолданба атауы Dock үстінде сол жақта.</string>
+    <string name="st_names_title">Үлкен тақырып</string>
     <string name="ss_kind">Түрі</string>
     <string name="wp_weather_city">Орналасқан жер</string>
     <string name="st_home_standard">Екі қатар</string>
@@ -273,12 +276,7 @@
     <string name="wp_wallpaper_title">Тұсқағаз параметрлері</string>
     <string name="wp_dynamic">Қозғалмалы бейне тұсқағаз</string>
     <string name="wp_dynamic_hint">Оң жақтағы кодты сканерлеп, телефоннан бейне жүктеңіз, содан кейін оны осы жерден таңдаңыз.</string>
-    <string name="st_refresh_rate">Жаңарту жиілігі</string>
-    <string name="st_refresh_rate_hint">Тек Halo TV қолданбасына әсер етеді; бейне қолданбалары жүйе режимін қолданады. Қолдау көрсетілмейтін режимдер өшірілген. Авто Android қауіпсіз деп белгілеген ең жоғары режимді таңдайды (Android 12+), әйтпесе жүйе режимін қолданады. Қолмен ауыстырғанда экран қысқа уақытқа сөнуі мүмкін.</string>
-    <string name="st_refresh_auto">Авто</string>
-    <string name="st_refresh_30">30 Гц</string>
-    <string name="st_refresh_60">60 Гц</string>
-    <string name="st_refresh_120">120 Гц</string>
+
     <string name="cc_about_attribution">Halo TV — Aerial ашық бастапқы жобасының бейресми өзгертілген нұсқасы.</string>
     <string name="donate_title">Halo TV жобасын қолдау</string>
     <string name="donate_open">Ашу</string>
@@ -610,6 +608,11 @@ WeChat: scan code  ·  Email: 1227888560@qq.com</string>
     <string name="quiz_score">Дұрыс жауап: %1$d / %2$d</string>
     <string name="quiz_back_to_questions">Сұрақтарға қайту</string>
     <string name="halo_dock_corners">Бұрыш стилі</string>
+    <string name="halo_dock_size">Dock пен белгішелер өлшемі</string>
+    <string name="halo_dock_size_hint">Dock пен қолданба белгішелері бірге өзгереді. Әдепкі нұсқа ағымдағы өлшемді сақтайды.</string>
+    <string name="halo_dock_size_small">Кіші</string>
+    <string name="halo_dock_size_default">Әдепкі</string>
+    <string name="halo_dock_size_large">Үлкен</string>
     <string name="halo_dock_corners_round">Үлкен радиус</string>
     <string name="halo_dock_corners_compact">Кіші радиус</string>
     <string name="quiz_parent_allowance_hint">Ата-ана төменде қосымша көру уақытын таңдай алады немесе балалар режимінен шыға алады.</string>
@@ -636,4 +639,44 @@ WeChat: scan code  ·  Email: 1227888560@qq.com</string>
     <string name="halo_guard_restore_missing">Автоқалпына келтіруге рұқсат жоқ. Арнайы мүмкіндіктерді қосыңыз; қорғау өшсе, QR нұсқаулығымен ADB рұқсатын беріңіз.</string>
     <string name="halo_guard_repair">Қорғауды қайта қосу</string>
     <string name="halo_guard_restricted">Қолданба ақпараты: шектеулі параметрлерді тексеру</string>
+    <string name="focus_classic_glass_slide">Классикалық әйнек</string>
+    <string name="flip_seconds_style">Секундтар көрінісі</string>
+    <string name="flip_seconds_numeric">Секунд сандары</string>
+    <string name="flip_seconds_colon">Жыпылықтайтын қос нүкте</string>
+    <string name="halo_project_links_body">Бастапқы код: https://github.com/Null9797/halo-tv\nВеб-сайт: https://halo-tv.pages.dev/\nQuark жүктеуі: https://pan.quark.cn/s/a14e3ab2dd41</string>
+    <string name="halo_guard_global_off">Қызмет тіркелген, бірақ Android арнайы мүмкіндіктері өшірулі.</string>
+    <string name="halo_guard_restricted_blocked">Android шектеулі параметрлерді бұғаттады. Теледидар қолдаса, қолданба туралы ақпараттан оларға рұқсат беріңіз.</string>
+    <string name="halo_guard_other_service">Басқа Aerial/Halo қызметі қосылған: %1$s. Тек қажет қызметті қалдырыңыз; қолданба басқаларын автоматты өшірмейді.</string>
+    <string name="halo_guard_verify_home">Қызметтің іске қосылуы Home мен теледидарды қосқандағы өтуді әрдайым қамтамасыз етпейді. Оларды тексеріңіз; кейбір ТВ өндірушінің автоматты іске қосу рұқсатын талап етеді.</string>
+    <string name="halo_reset_hint_apps">Тек осы бет баптаулары қалпына келеді; басты экран құлпы, жасырын қолданбалар мен файлдар сақталады.</string>
+    <string name="focus_liquid_slide_hint">Бөлектеу таңдалған қолданбаға сырғып өтеді.</string>
+    <string name="focus_classic_glass_slide_hint">Әйнек бөлектеу таңдалған қолданбаға сырғып өтеді.</string>
+    <string name="aerial_quality_shared_hint">Әуе бейнесі экран сақтағышымен ортақ. Dolby Vision таңдалса да, тұсқағаз SDR қолданады.</string>
+
+    <!-- User-initiated guard permission setup. -->
+    <string name="halo_setup_activate">Қорғауды қосу және қалпына келтіру</string>
+    <string name="halo_setup_working">Тексеру және қалпына келтіру…</string>
+    <string name="halo_setup_scope">Автоматты қалпына келтіруді қосып, рұқсат етілген қолжетімділікті түзетеді. Қалған рұқсаттарды жүйеде растаңыз. Басқа қолданбалар өзгермейді.</string>
+    <string name="halo_setup_next">Келесі рұқсат: %1$s</string>
+    <string name="halo_setup_review">Төмендегі күйді тексеріңіз. Қолжетімсіз рұқсаттарды теледидар жүйесі не компьютер арқылы баптап, осы бетке оралыңыз.</string>
+    <string name="halo_setup_no_entry">Бұл теледидарда рұқсат беті қолжетімсіз. Жүйе баптауларын немесе компьютер нұсқаулығын пайдаланыңыз.</string>
+    <string name="halo_setup_allowed">Рұқсат етілді</string>
+    <string name="halo_setup_pending">Рұқсат қажет</string>
+    <string name="halo_setup_unknown">Оқу мүмкін емес</string>
+    <string name="halo_setup_connected">Қосылды</string>
+    <string name="halo_setup_waiting_bind">Рұқсат бар · қосылмаған</string>
+    <string name="halo_setup_unsupported">Жүйеде қолжетімсіз</string>
+    <string name="halo_setup_manual">Жүйеде тексеріңіз</string>
+    <string name="halo_setup_overlay">Басқа қолданбалардың үстінде</string>
+    <string name="halo_setup_usage">Пайдалану статистикасы</string>
+    <string name="halo_setup_battery">Фонда жұмыс істеу</string>
+    <string name="halo_setup_autostart">Өндірушінің автоқосылуы</string>
+    <string name="halo_setup_vendor_hint">Жүйеде HaloTV автоқосылуын, басқа қолданбалардан іске қосылуын және фонда жұмысын рұқсат етіңіз. Бетті ашу рұқсат бермейді.</string>
+    <string name="halo_setup_listener_hint">Хабарландыру рұқсаты күту режимінен кейін қорғауды қалпына келтіруге көмектеседі; мазмұны оқылмайды. Жады аз кейбір жүйелерде қызмет қолжетімсіз.</string>
+    <string name="halo_setup_lite_body">Lite жүйелік негізгі экранды пайдаланады; толық нұсқаның қорғау қызметі жоқ. HaloTV Lite негізгі экран етіп таңдап, автоқосылу мен фондық жұмысты рұқсат етіңіз.</string>
+    <string name="halo_setup_app_details">Қолданбаны жүйеде басқару</string>
+    <string name="halo_setup_secure_hint">Автоматты қалпына келтіру үшін компьютерден рұқсат қажет. Қосқыш қорғалған баптауларға рұқсат бермейді.</string>
+    <string name="a11y_delete">Жою</string>
+    <string name="aerial_quality_4k_trial">4K SDR сынау</string>
+    <string name="aerial_quality_4k_trial_hint">Бұл құрылғыда авто режим 1080p пайдаланады. 4K SDR режимін қолмен сынауға болады. Сәтсіз болса, 1080p қосылады.</string>
 </resources>

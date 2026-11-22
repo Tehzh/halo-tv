@@ -3,6 +3,8 @@ package app.orchard.tv.ui.control
 import androidx.compose.ui.focus.onFocusChanged
 import app.orchard.tv.ui.components.smoothBackground
 
+import app.orchard.tv.guard.GuardActivation
+import app.orchard.tv.guard.GuardBootWatch
 import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
@@ -55,6 +57,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.runtime.CompositionLocalProvider
 import app.orchard.tv.ui.components.LocalPressableEnabled
 import androidx.compose.ui.layout.layout
@@ -99,6 +103,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import app.orchard.tv.guard.GuardHealth
+import app.orchard.tv.guard.GuardRecoveryPolicy
 import app.orchard.tv.guard.GuardSetup
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -190,7 +195,8 @@ fun ControlCenter(
         else if (!vm.resumed || vm.screensaverVisible) {
             prepared = false
             warming = false
-        } else if (!prepared) {
+        }
+        else if (!prepared) {
             delay(1800)
             prepared = true
             warming = true
@@ -203,8 +209,9 @@ fun ControlCenter(
         if (reducedMotion) snap() else tween(if (visible) 160 else 130, easing = Motion.EaseOut),
         label = "cc-opacity",
     )
-    val panelPlaced by remember(visible, warming) {
-        derivedStateOf { visible || warming || panelAlpha.value > 0f }
+    val active = vm.resumed && !vm.screensaverVisible
+    val panelPlaced by remember(visible, warming, active) {
+        derivedStateOf { active && (visible || warming || panelAlpha.value > 0f) }
     }
     // One draw instead of a 45% Home veil plus a second 28% full-screen fade layer.
     if (panelPlaced && !warming) {
@@ -213,20 +220,22 @@ fun ControlCenter(
         }
     }
     Box(Modifier.fillMaxSize().padding(top = 24.dp, end = 32.dp), contentAlignment = Alignment.TopEnd) {
-        if ((prepared || visible) && vm.resumed && !vm.screensaverVisible) {
-            CompositionLocalProvider(LocalPressableEnabled provides visible) {
+        // Reuse within a Home visit only. Keeping the whole panel while another app is in front
+        // retains its textures and subscriptions and competes with that app's startup memory.
+        if ((prepared || visible) && active) {
+            CompositionLocalProvider(LocalPressableEnabled provides (visible && active)) {
                 Column(
                     Modifier.width(420.dp)
                         .layout { measurable, constraints ->
-                            val placeable = measurable.measure(constraints)
                             if (panelPlaced) {
+                                val placeable = measurable.measure(constraints)
                                 layout(placeable.width, placeable.height) { placeable.place(0, 0) }
                             } else layout(0, 0) { }
                         }
                         .graphicsLayer {
                             alpha = if (warming && !visible) 0.01f else panelAlpha.value
-                            // Cache the group only during its short opacity transition. Once opaque,
-                            // Auto stops using the extra framebuffer while the video moves behind it.
+                            // The glass already owns its small cached layer. Do not retain a second
+                            // framebuffer around the entire panel after the opening fade finishes.
                             compositingStrategy = CompositingStrategy.Auto
                         }
                         .then(if (visible) Modifier.consumeTaps() else Modifier)
@@ -243,12 +252,12 @@ fun ControlCenter(
                     ) { p ->
                         Box(Modifier.padding(16.dp)) {
                             when (p) {
-                                CcPage.Main -> if (Restricted.active) KidsPage(vm, now, visible)
-                                    else MainPage(vm, now, takeFocus = visible, poll = visible, onOpen = onOpen)
-                                CcPage.Inputs -> InputsPage(vm, visible, onOpen)
-                                CcPage.InputSettings -> InputSettingsPage(vm, visible)
-                                CcPage.Update -> UpdatePage(vm, visible)
-                                CcPage.Setup -> SetupPage(vm, visible, onOpen)
+                                CcPage.Main -> if (Restricted.active) KidsPage(vm, now, visible && active)
+                                    else MainPage(vm, now, takeFocus = visible && active, poll = visible && active, onOpen = onOpen)
+                                CcPage.Inputs -> InputsPage(vm, visible && active, onOpen)
+                                CcPage.InputSettings -> InputSettingsPage(vm, visible && active)
+                                CcPage.Update -> UpdatePage(vm, visible && active)
+                                CcPage.Setup -> SetupPage(vm, visible && active, onOpen)
                             }
                         }
                     }
@@ -265,10 +274,11 @@ fun ControlCenter(
 @Composable
 private fun KidsPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean) {
     val first = remember { FocusRequester() }
+    val otherBrightness = remember { FocusRequester() }
     val context = LocalContext.current
     val laser = remember { HisenseLaserPanel.usable(context) }
     val showsVolume = remember { OutputDevice.showsVolume(context) }
-    val showsBrightness = remember { OutputDevice.showsBrightness() }
+    val showsBrightness = remember { OutputDevice.showsBrightness() && !SystemProbe.hidesBrightness(context) }
     PollBrightness(vm, laser, enabled = takeFocus)
     LaunchedEffect(takeFocus) {
         if (!takeFocus) return@LaunchedEffect
@@ -284,16 +294,18 @@ private fun KidsPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean) 
         }
         Spacer(Modifier.height(12.dp))
         // A box or stick has neither a panel nor, with its volume fixed, a sound level of its own (#1307).
+        val initial = restrictedFocusTarget(showsVolume, showsBrightness)
         if (showsVolume) {
             VolumeRow(vm, first)
             Spacer(Modifier.height(6.dp))
         }
-        if (showsBrightness) BrightnessRow(vm, remember { FocusRequester() }, laser)
+        if (showsBrightness) BrightnessRow(vm, if (initial == RestrictedFocusTarget.Brightness) first else otherBrightness, laser)
         Spacer(Modifier.height(6.dp))
         MenuRow(
             Glyph.Shield,
             stringResource(if (Restricted.kind == RestrictedKind.Kids) R.string.cc_kids_leave else R.string.cc_elders_leave),
             onClick = vm::leaveKidsMode,
+            focusRequester = first.takeIf { initial == RestrictedFocusTarget.Leave },
         )
     }
 }
@@ -325,12 +337,18 @@ private fun MainPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean, 
     }
     val laser = remember { HisenseLaserPanel.usable(context) }
     val showsVolume = remember { OutputDevice.showsVolume(context) }
-    val showsBrightness = remember { OutputDevice.showsBrightness() }
+    val showsBrightness = remember { OutputDevice.showsBrightness() && !SystemProbe.hidesBrightness(context) }
     PollBrightness(vm, laser, enabled = poll)
     val scope = rememberCoroutineScope()
     val first = remember { FocusRequester() }
     val volumeFocus = remember { FocusRequester() }
     val brightnessFocus = remember { FocusRequester() }
+    LaunchedEffect(poll) {
+        if (poll) {
+            delay(300)
+            vm.refreshSources(maxAgeMs = 30_000)
+        }
+    }
     LaunchedEffect(takeFocus) {
         if (!takeFocus) return@LaunchedEffect
         withFrameNanos { }
@@ -364,10 +382,18 @@ private fun MainPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean, 
     }
     Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState())) {
         Spacer(Modifier.height(5.dp))
-        WallpaperFeatureCard(focusRequester = first) { vm.overlay = Overlay.WallpaperPicker }
+        WallpaperFeatureCard(focusRequester = first) { vm.overlay = Overlay.WallpaperPicker() }
         Spacer(Modifier.height(5.dp))
-        ControlMenuRow(Glyph.Switches, stringResource(R.string.cc_halo_settings), onClick = { vm.overlay = Overlay.Wallpaper })
-        app.orchard.tv.announcements.AnnouncementEntry(vm)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(Modifier.weight(1f)) {
+                ControlMenuRow(Glyph.Switches, stringResource(R.string.cc_halo_settings),
+                    onClick = { vm.overlay = Overlay.Wallpaper })
+            }
+            Box(Modifier.weight(1f)) {
+                ControlMenuRow(Glyph.Shield, stringResource(R.string.cc_setup_title),
+                    onClick = { vm.overlay = Overlay.ControlCenter(CcPage.Setup) }, trailing = "›")
+            }
+        }
         Spacer(Modifier.height(7.dp))
         Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Color.White.copy(alpha = 0.075f)).padding(vertical = 5.dp), horizontalArrangement = Arrangement.SpaceBetween) {
             RoundButton(Glyph.Input, stringResource(R.string.cc_inputs)) {
@@ -436,14 +462,11 @@ private fun MainPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean, 
         Spacer(Modifier.height(5.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(Modifier.weight(1f)) {
-                ControlMenuRow(Glyph.Shield, stringResource(R.string.cc_setup_title),
-                    onClick = { vm.overlay = Overlay.ControlCenter(CcPage.Setup) }, trailing = "›")
-            }
-            Box(Modifier.weight(1f)) {
                 val label = if (Updates.available == null) R.string.halo_update_manage else R.string.halo_update_new
                 ControlMenuRow(Glyph.Download, stringResource(label),
                     onClick = { vm.overlay = Overlay.ControlCenter(CcPage.Update) }, trailing = "›")
             }
+            Box(Modifier.weight(1f)) { app.orchard.tv.announcements.AnnouncementEntry(vm) }
         }
 
         Spacer(Modifier.height(8.dp))
@@ -557,16 +580,37 @@ private fun HaloNoticeDialog(onDismiss: () -> Unit) {
                 Spacer(Modifier.weight(1f))
                 BasicText(stringResource(R.string.cc_about_attribution), style = Type.Caption.copy(color = Color(0xFFA4BAD1)))
             }
-            BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
-                val contentHeight = maxHeight
-                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).focusRequester(focus).focusable()) {
-                    Column(Modifier.fillMaxWidth().heightIn(min = contentHeight).padding(horizontal = 34.dp, vertical = 28.dp),
-                        verticalArrangement = Arrangement.SpaceEvenly) {
-                        BasicText(stringResource(R.string.halo_notice_title), style = Type.LargeTitle.copy(color = ink))
-                        listOf(R.string.halo_notice_body, R.string.halo_free_notice, R.string.bing_source_notice, R.string.aerial_source_about).forEach { id ->
-                            Box(Modifier.fillMaxWidth().padding(vertical = 5.dp).clip(RoundedCornerShape(14.dp)).background(Palette.Fill).padding(horizontal = 20.dp, vertical = 20.dp)) {
-                                BasicText(stringResource(id), style = Type.Body.copy(color = ink, fontSize = 17.sp, lineHeight = 25.sp))
+            BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().padding(horizontal = 24.dp, vertical = 18.dp)) {
+                val paragraphs = listOf(R.string.halo_notice_body, R.string.halo_free_notice, R.string.bing_source_notice,
+                    R.string.aerial_source_about, R.string.halo_project_links_body).map { stringResource(it) }
+                val title = stringResource(R.string.halo_notice_title)
+                val density = LocalDensity.current
+                val measurer = rememberTextMeasurer(cacheSize = 16)
+                val titleStyle = Type.LargeTitle.copy(color = ink, fontSize = 24.sp, lineHeight = 28.sp)
+                // Fit the complete text once for this window, including system-bar insets and
+                // translated paragraphs. No truncation, scrolling, timers or extra bitmap cache.
+                val fontSize = remember(paragraphs, title, maxWidth, maxHeight, density, measurer) {
+                    with(density) {
+                        val width = (maxWidth - 32.dp).roundToPx().coerceAtLeast(1)
+                        val titleHeight = measurer.measure(title, titleStyle,
+                            constraints = Constraints(maxWidth = maxWidth.roundToPx().coerceAtLeast(1))).size.height
+                        val fixedHeight = titleHeight + (18.dp.roundToPx() + 6.dp.roundToPx()) * paragraphs.size + 8.dp.roundToPx()
+                        (29 downTo 16).firstOrNull { half ->
+                            val size = half / 2f
+                            val style = Type.Body.copy(fontSize = size.sp, lineHeight = (size * 1.35f).sp)
+                            val textHeight = paragraphs.sumOf { text ->
+                                measurer.measure(text, style, constraints = Constraints(maxWidth = width)).size.height
                             }
+                            textHeight + fixedHeight <= maxHeight.roundToPx()
+                        }?.div(2f) ?: 8f
+                    }
+                }
+                Column(Modifier.fillMaxSize().focusRequester(focus).focusable(), verticalArrangement = Arrangement.SpaceBetween) {
+                    BasicText(title, style = titleStyle)
+                    paragraphs.forEach { text ->
+                        Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Palette.Fill)
+                            .padding(horizontal = 16.dp, vertical = 9.dp)) {
+                            BasicText(text, style = Type.Body.copy(color = ink, fontSize = fontSize.sp, lineHeight = (fontSize * 1.35f).sp))
                         }
                     }
                 }
@@ -622,6 +666,12 @@ private fun UpdatePage(vm: HomeViewModel, takeFocus: Boolean) {
                 },
                 onClick = { Updates.install(context) },
             )
+        }
+        if (canInstall && Updates.downloaded && state !is Updates.Install.Downloading && state != Updates.Install.Waiting) {
+            MenuRow(Glyph.Download, stringResource(R.string.halo_update_compatible),
+                onClick = { Updates.installCompatible(context) })
+            BasicText(stringResource(R.string.halo_update_compatible_hint), style = Type.Caption,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp))
         }
         if (canInstall) {
             MenuRow(
@@ -845,19 +895,80 @@ private fun SetupPage(vm: HomeViewModel, takeFocus: Boolean, onOpen: (android.co
         withFrameNanos { }
         runCatching { first.requestFocus() }
     }
-    var health by remember { mutableStateOf(GuardHealth.read(context)) }
+    var permissionStatus by remember { mutableStateOf(GuardActivation.read(context)) }
+    val health = permissionStatus.health
+    var busy by remember { mutableStateOf(false) }
+    val guided = vm.guardSetupGuided
+    val visited = vm.guardSetupVisited
+    var autoRecovery by remember { mutableStateOf(GuardRecoveryPolicy.enabled(context)) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
+    var healthRefresh by remember { mutableStateOf(0) }
+    // Only this visible setup page refreshes briefly while Android binds the service. No daemon.
+    LaunchedEffect(healthRefresh, takeFocus) {
+        if (!takeFocus) return@LaunchedEffect
+        if (guided && GuardRecoveryPolicy.enabled(context)) withContext(Dispatchers.IO) {
+            runCatching { GuardSetup.ensureEnabled(context) }
+            GuardBootWatch.startSession(context)
+        }
+        repeat(10) {
+            permissionStatus = withContext(Dispatchers.IO) { GuardActivation.read(context) }
+            autoRecovery = GuardRecoveryPolicy.enabled(context)
+            delay(1200)
+        }
+    }
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) health = GuardHealth.read(context)
+            if (event == Lifecycle.Event.ON_RESUME) healthRefresh++
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
+    val setupView = androidx.compose.ui.platform.LocalView.current
+    DisposableEffect(setupView) {
+        val observer = setupView.viewTreeObserver
+        val listener = android.view.ViewTreeObserver.OnWindowFocusChangeListener { focused ->
+            // OEM settings side panels may never pause Home, so ON_RESUME is not sufficient.
+            if (focused) healthRefresh++
+        }
+        observer.addOnWindowFocusChangeListener(listener)
+        onDispose {
+            if (observer.isAlive) observer.removeOnWindowFocusChangeListener(listener)
+        }
+    }
     val repairScope = rememberCoroutineScope()
+    val activate = {
+        if (!busy) vm.whenUnlocked {
+            busy = true
+            vm.guardSetupGuided = true
+            vm.guardSetupVisited = emptySet()
+            repairScope.launch {
+                try {
+                    GuardActivation.repair(context)
+                } catch (e: kotlinx.coroutines.CancellationException) { throw e
+                } catch (_: Exception) {
+                    Toast.makeText(context, R.string.halo_setup_review, Toast.LENGTH_LONG).show()
+                } finally {
+                    busy = false
+                    healthRefresh++
+                }
+            }
+        }
+    }
+    val openStep: (GuardActivation.Step) -> Unit = { step ->
+        vm.whenUnlocked {
+            vm.guardSetupVisited = vm.guardSetupVisited + step
+            val intent = runCatching { GuardActivation.intent(context, step) }.getOrNull()
+            if (intent != null) onOpen(intent)
+            else Toast.makeText(context, R.string.halo_setup_no_entry, Toast.LENGTH_LONG).show()
+        }
+    }
+    fun stateLabel(allowed: Boolean?): Int = when (allowed) {
+        true -> R.string.halo_setup_allowed
+        false -> R.string.halo_setup_pending
+        null -> R.string.halo_setup_unknown
+    }
     val guard = remember { SystemProbe.guardSettingsIntent(context) }
     val home = remember { SystemProbe.homeSettingsIntent(context) }
-    val revival = remember { SystemProbe.revivalSettingsIntent(context) }
     var qr by remember { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(Unit) {
         val url = "https://github.com/Null9797/halo-tv/blob/main/INSTALL.md"
@@ -866,31 +977,76 @@ private fun SetupPage(vm: HomeViewModel, takeFocus: Boolean, onOpen: (android.co
     Column(Modifier.heightIn(max = 470.dp).verticalScroll(rememberScrollState()).padding(3.dp)) {
         MenuRow(Glyph.ChevronLeft, stringResource(R.string.cc_setup_title), focusRequester = first, onClick = { vm.overlay = Overlay.ControlCenter(CcPage.Main) })
         BasicText(stringResource(R.string.cc_setup_body), style = Type.Caption, modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp))
+        MenuRow(Glyph.Shield, stringResource(if (busy) R.string.halo_setup_working else R.string.halo_setup_activate), onClick = activate)
+        BasicText(stringResource(R.string.halo_setup_scope), style = Type.Caption,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
+        if (guided && !busy) {
+            val next = GuardActivation.needed(permissionStatus, visited).firstOrNull()
+            if (next != null) MenuRow(Glyph.ChevronRight, stringResource(R.string.halo_setup_next, stringResource(next.title)),
+                onClick = { openStep(next) })
+            else BasicText(stringResource(R.string.halo_setup_review), style = Type.Caption,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
+        }
         val status = when {
             health.running -> R.string.halo_guard_running
             health.enabled == true -> R.string.halo_guard_unbound
+            health.enabled == false && health.configured == true -> R.string.halo_guard_global_off
             health.enabled == null -> R.string.halo_guard_unknown
             else -> R.string.halo_guard_disabled
         }
         BasicText(stringResource(status), style = Type.Callout, modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
-        BasicText(stringResource(if (health.canRestore) R.string.halo_guard_restore_allowed else R.string.halo_guard_restore_missing),
+        BasicText(stringResource(if (health.secureSettingsGranted) R.string.halo_guard_restore_allowed else R.string.halo_guard_restore_missing),
             style = Type.Caption, modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp))
-        if (health.canRestore && !health.running) MenuRow(Glyph.Shield, stringResource(R.string.halo_guard_repair), onClick = {
-            vm.whenUnlocked {
-                repairScope.launch {
-                    runCatching { GuardSetup.ensureEnabled(context); GuardSetup.rebindIfStalled(context) }
-                    delay(2200)
-                    health = GuardHealth.read(context)
+        if (!health.secureSettingsGranted) BasicText(stringResource(R.string.halo_setup_secure_hint),
+            style = Type.Caption, modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp))
+        if (health.restrictedSettingsBlocked == true) BasicText(stringResource(R.string.halo_guard_restricted_blocked),
+            style = Type.Caption, modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp))
+        if (health.otherGuardPackages.isNotEmpty()) BasicText(stringResource(R.string.halo_guard_other_service, health.otherGuardPackages.joinToString()),
+            style = Type.Caption, modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp))
+        BasicText(stringResource(R.string.halo_guard_verify_home), style = Type.Caption,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp))
+        MenuRow(Glyph.Shield, stringResource(R.string.halo_guard_auto_recovery),
+            trailing = stringResource(if (!autoRecovery) R.string.st_off else if (health.canRestore) R.string.st_on else R.string.halo_setup_pending), onClick = {
+                vm.whenUnlocked {
+                    autoRecovery = !autoRecovery
+                    GuardRecoveryPolicy.setEnabled(context, autoRecovery)
+                    if (autoRecovery) repairScope.launch(Dispatchers.IO) {
+                        runCatching { GuardSetup.ensureEnabled(context) }
+                        delay(5500)
+                        runCatching { GuardSetup.rebindIfStalled(context) }
+                    }
+                    healthRefresh++
                 }
-            }
-        })
+            })
+        BasicText(stringResource(R.string.halo_guard_auto_recovery_hint), style = Type.Caption,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 3.dp))
         if (Build.VERSION.SDK_INT >= 33 && !health.running) MenuRow(Glyph.Info, stringResource(R.string.halo_guard_restricted), onClick = {
             vm.whenUnlocked { onOpen(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                 android.net.Uri.parse("package:${context.packageName}"))) }
         })
         guard?.let { MenuRow(Glyph.Shield, stringResource(R.string.cc_setup_guard), onClick = { vm.whenUnlocked { onOpen(it) } }, trailing = stringResource(R.string.cc_setup_guard_where) + " ›") }
         home?.let { MenuRow(Glyph.Check, stringResource(R.string.cc_setup_home), onClick = { vm.whenUnlocked { onOpen(it) } }, trailing = "›") }
-        revival?.let { MenuRow(Glyph.Moon, stringResource(R.string.cc_setup_revival), onClick = { vm.whenUnlocked { onOpen(it) } }, trailing = stringResource(R.string.cc_setup_revival_where) + " ›") }
+        MenuRow(Glyph.Moon, stringResource(R.string.cc_setup_revival),
+            trailing = stringResource(when {
+                permissionStatus.listenerUnsupported -> R.string.halo_setup_unsupported
+                permissionStatus.listenerConnected -> R.string.halo_setup_connected
+                health.revivalAllowed -> R.string.halo_setup_waiting_bind
+                else -> R.string.halo_setup_pending
+            }), onClick = { openStep(GuardActivation.Step.Notification) })
+        BasicText(stringResource(R.string.halo_setup_listener_hint), style = Type.Caption,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
+        listOf(
+            GuardActivation.Step.Overlay to permissionStatus.overlay,
+            GuardActivation.Step.Usage to permissionStatus.usage,
+            GuardActivation.Step.Battery to permissionStatus.battery,
+        ).forEach { (step, allowed) ->
+            MenuRow(Glyph.Shield, stringResource(step.title), trailing = stringResource(stateLabel(allowed)),
+                onClick = { openStep(step) })
+        }
+        MenuRow(Glyph.Power, stringResource(R.string.halo_setup_autostart), trailing = stringResource(R.string.halo_setup_manual),
+            onClick = { openStep(GuardActivation.Step.Autostart) })
+        BasicText(stringResource(R.string.halo_setup_vendor_hint), style = Type.Caption,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 14.dp, end = 14.dp, top = 14.dp)) {
             Box(Modifier.size(104.dp).clip(RoundedCornerShape(12.dp)).background(Color.White).padding(8.dp)) {
                 qr?.let { Image(it, contentDescription = null, contentScale = ContentScale.Fit, filterQuality = FilterQuality.None, modifier = Modifier.fillMaxSize()) }
@@ -934,6 +1090,7 @@ private fun SliderRow(
     level: Float,
     value: String,
     steps: Int,
+    external: Boolean = false,
     onStep: (Int) -> Unit,
     onClick: () -> Unit,
     focusRequester: FocusRequester? = null,
@@ -944,7 +1101,7 @@ private fun SliderRow(
     val atLevel by rememberUpdatedState(level)
     val doStep by rememberUpdatedState(onStep)
     val step = { by: Int ->
-        if ((by > 0 && atLevel >= 0.999f) || (by < 0 && atLevel <= 0.001f)) Sounds.limit() else Sounds.step()
+        if (!external && ((by > 0 && atLevel >= 0.999f) || (by < 0 && atLevel <= 0.001f))) Sounds.limit() else Sounds.step()
         doStep(by)
     }
     val stepCount by rememberUpdatedState(steps.coerceAtLeast(1))
@@ -983,15 +1140,17 @@ private fun SliderRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             GlyphIcon(glyph, fg, 18.dp, level = level)
-            Canvas(Modifier.weight(1f).height(6.dp)) {
+            if (!external) Canvas(Modifier.weight(1f).height(6.dp)) {
                 val r = CornerRadius(size.height / 2)
                 drawRoundRect(fg.copy(alpha = 0.2f), cornerRadius = r)
                 drawRoundRect(fg, size = Size(size.width * fraction, size.height), cornerRadius = r)
             }
             BasicText(
                 value,
-                style = Type.Headline.copy(color = fg, textAlign = TextAlign.End),
-                modifier = Modifier.widthIn(min = 28.dp),
+                style = (if (external) Type.Callout else Type.Headline).copy(color = fg, textAlign = TextAlign.End),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = if (external) Modifier.weight(1f) else Modifier.widthIn(min = 28.dp),
             )
         }
     }
@@ -1000,11 +1159,18 @@ private fun SliderRow(
 @Composable
 private fun VolumeRow(vm: HomeViewModel, focusRequester: FocusRequester, modifier: Modifier = Modifier) {
     val volume = vm.volume
+    // A sound system over HDMI-CEC holds the volume; the TV's own level stands still, so neither
+    // it nor its mute is shown, and the steps still go to the sound system (issue #1562).
     SliderRow(
-        glyph = if (volume.muted) Glyph.SpeakerMuted else Glyph.Speaker,
-        level = if (volume.muted) 0f else volume.fraction,
-        value = if (volume.muted) stringResource(R.string.cc_muted) else volume.level.toString(),
+        glyph = if (volume.muted && !volume.external) Glyph.SpeakerMuted else Glyph.Speaker,
+        level = if (volume.muted || volume.external) 0f else volume.fraction,
+        value = when {
+            volume.external -> stringResource(R.string.cc_volume_external)
+            volume.muted -> stringResource(R.string.cc_muted)
+            else -> volume.level.toString()
+        },
         steps = volume.max,
+        external = volume.external,
         onStep = vm::adjustVolume,
         onClick = vm::toggleMute,
         focusRequester = focusRequester,
@@ -1109,6 +1275,9 @@ private fun InputsPage(vm: HomeViewModel, takeFocus: Boolean, onOpen: (android.c
             onClick = { vm.overlay = Overlay.ControlCenter(CcPage.Main) })
         Spacer(Modifier.height(8.dp))
         val shown = vm.shownSources
+        if (shown.isEmpty() && vm.sources.isNotEmpty()) {
+            BasicText(stringResource(R.string.cc_all_inputs_hidden), style = Type.Callout, modifier = Modifier.padding(14.dp))
+        }
         if (vm.sources.none { it.kind != SourceKind.Usb }) {
             MenuRow(Glyph.Input, stringResource(R.string.cc_native_inputs), onClick = {
                 if (SystemProbe.openInputPicker(context)) vm.overlay = Overlay.None

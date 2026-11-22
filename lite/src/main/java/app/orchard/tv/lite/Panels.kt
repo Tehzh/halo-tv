@@ -102,7 +102,7 @@ private fun LinearLayout.add(v: View, w: Int = LinearLayout.LayoutParams.MATCH_P
 }
 
 /** Control Center pages, including Lite-only verified online and phone updates. */
-enum class CcPage { Main, Boot, Inputs, Color, Update, Power }
+enum class CcPage { Main, Boot, Inputs, Color, Update, Power, Setup }
 
 /**
  * Control Center, as the full app's ControlCenter main page: the time and date with the network,
@@ -134,14 +134,23 @@ class ControlCenter(
     private val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val col = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL; setPadding(Ui.pxi(16f), Ui.pxi(16f), Ui.pxi(16f), Ui.pxi(16f)) }
 
+    private var kidsTimeLabel: TextView? = null
+    private var kidsDateLabel: TextView? = null
+
+    fun refreshTime() {
+        kidsTimeLabel?.text = timeText(context)
+        kidsDateLabel?.text = dateText()
+    }
+
+    private var setupStatus: TextView? = null
+    private var guardStatus: TextView? = null
+    private val guardListener: () -> Unit = ::refreshSetupStatus
     private var cleaning = false
     private var updateEntry: MenuRow? = null
     private var announcementEntry: MenuRow? = null
     private val announcementListener: () -> Unit = {
         announcementEntry?.apply {
-            text = context.getString(if (Announcements.unread() != null) R.string.halo_ann_new else R.string.halo_ann_entry)
-            showRow(this, Announcements.latest() != null)
-            invalidate()
+            unreadDot = Announcements.unread() != null
         }
     }
     private var onlineButton: MenuRow? = null
@@ -152,6 +161,10 @@ class ControlCenter(
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        if (setupStatus != null) {
+            LiteHomeGuard.observe(guardListener)
+            refreshSetupStatus()
+        }
         Announcements.observe(announcementListener)
         announcementListener()
         LiteOnlineUpdates.observe(updateListener)
@@ -159,7 +172,24 @@ class ControlCenter(
         refreshUpdateUi()
     }
 
+    override fun onWindowFocusChanged(hasWindowFocus: Boolean) {
+        super.onWindowFocusChanged(hasWindowFocus)
+        if (hasWindowFocus) refreshSetupStatus()
+    }
+
+    private fun refreshSetupStatus() {
+        val status = setupStatus ?: return
+        status.setText(if (isHome(context)) R.string.cc_home_default else R.string.cc_home_not_default)
+        guardStatus?.setText(when {
+            !LiteHomeGuard.supported() -> R.string.lite_guard_unsupported
+            !LiteHomeGuard.authorized(context) -> R.string.lite_guard_off
+            LiteHomeGuard.connected() -> R.string.lite_guard_connected
+            else -> R.string.lite_guard_waiting
+        })
+    }
+
     override fun onDetachedFromWindow() {
+        LiteHomeGuard.removeObserver(guardListener)
         Announcements.removeObserver(announcementListener)
         LiteOnlineUpdates.removeObserver(updateListener)
         super.onDetachedFromWindow()
@@ -185,9 +215,14 @@ class ControlCenter(
             CcPage.Color -> color()
             CcPage.Update -> update()
             CcPage.Power -> power()
+            CcPage.Setup -> setupHome()
         }
         // In Kids mode on leaving it, as the full app.
-        focusFirst(if (page == CcPage.Main && Kids.active && OutputDevice.showsVolume(context)) 1 else 0)
+        focusFirst(when {
+            page == CcPage.Inputs -> 1
+            page == CcPage.Main && Kids.active && OutputDevice.showsVolume(context) -> 1
+            else -> 0
+        })
     }
 
     private fun volumeRow(): SliderRow = SliderRow(
@@ -200,8 +235,8 @@ class ControlCenter(
 
     /** Kids and Elders mode's page, as the full app's KidsPage: the time, volume, the day's time left, leaving. */
     private fun kidsMain() {
-        col.add(context.label(timeText(context), 27.3f, 600, spacingEm = 0.05f))
-        col.add(context.label(dateText(), 13f, 500, Ui.SECONDARY), top = 4f)
+        col.add(context.label(timeText(context), 27.3f, 600, spacingEm = 0.05f).also { kidsTimeLabel = it })
+        col.add(context.label(dateText(), 13f, 500, Ui.SECONDARY).also { kidsDateLabel = it }, top = 4f)
         kidsTimeLine(context)?.let { col.add(context.label(it, 13f, 500, Ui.SECONDARY), top = 6f) }
         // A box or stick with its volume fixed has no sound level of its own (OutputDevice, #1307).
         val volume = if (OutputDevice.showsVolume(context)) volumeRow() else null
@@ -214,20 +249,23 @@ class ControlCenter(
     }
 
     private fun main() {
+        fun paired(left: Control, right: Control) {
+            val line = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+            line.addView(left, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            line.addView(right, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { leftMargin = Ui.pxi(8f) })
+            col.add(line, top = 6f)
+            row(left, right)
+        }
         val (netGlyph, _, netLevel, _) = network(context)
         val hero = WallpaperHero(context).apply { action = wallpaper }
         col.add(hero)
         row(hero)
         val pers = MenuRow(context, Glyph.Switches, context.getString(R.string.halo_lite_settings_title), "›", plate = true)
             .apply { action = personalize }
-        col.add(pers, top = 7f)
-        row(pers)
-
-        val announcements = MenuRow(context, Glyph.Info,
-            context.getString(if (Announcements.unread() != null) R.string.halo_ann_new else R.string.halo_ann_entry), "›", plate = true).apply { action = showAnnouncements }
-        announcementEntry = announcements
-        col.add(announcements, top = 6f); row(announcements)
-        showRow(announcements, Announcements.latest() != null)
+        val homeRow = MenuRow(context, Glyph.Shield, context.getString(R.string.cc_setup_title), "›", plate = true).apply {
+            action = { locked { goTo(CcPage.Setup) } }
+        }
+        paired(pers, homeRow)
 
         // The round buttons, spread across the panel.
         val buttons = LinearLayout(context).apply {
@@ -240,11 +278,9 @@ class ControlCenter(
         }
         val inputs = RoundButton(context, Glyph.Input, context.getString(R.string.cc_inputs)).apply {
             action = {
-                if (SystemIntents.xiaomiInputs(context).isNotEmpty()) goTo(CcPage.Inputs)
-                // The TV's own input list where its remote's key shows one (SystemIntents): the
-                // panel goes away then, as it does for an app; another make's picker keeps it.
-                else if (SystemIntents.openInputsPanel(context)) close()
-                else if (!SystemIntents.openInputPicker(context)) noInputs()
+                if (SystemIntents.xiaomiInputs(context).isNotEmpty() || SystemIntents.hasMstarInputFirmware(context)) goTo(CcPage.Inputs)
+                else if (SystemIntents.openInputsPanel(context) || SystemIntents.openInputPicker(context)) close()
+                else goTo(CcPage.Inputs)
             }
         }
         val netButton = RoundButton(context, netGlyph, context.getString(R.string.cc_network)).apply {
@@ -252,19 +288,16 @@ class ControlCenter(
             action = {
                 locked {
                     // The TV's own network page where its remote's key shows one (SystemIntents).
-                    if (SystemIntents.openNetworkPanel(context)) close()
-                    else open(SystemIntents.network(context, netGlyph == Glyph.Ethernet))
+                    if (SystemIntents.openNetwork(context, netGlyph == Glyph.Ethernet)) close()
+                    else Toast.makeText(context, R.string.lite_system_network_unavailable, Toast.LENGTH_LONG).show()
                 }
             }
         }
         val settings = RoundButton(context, Glyph.Gear, context.getString(R.string.cc_system_settings)).apply {
             action = {
                 locked {
-                    if (!SystemIntents.openSettingsPanel(context)) {
-                        val intent = SystemIntents.settings(context)
-                        SystemIntents.noteSettingsOpened(intent)
-                        open(intent)
-                    }
+                    if (SystemIntents.openSettings(context)) close()
+                    else Toast.makeText(context, R.string.lite_system_settings_unavailable, Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -282,22 +315,16 @@ class ControlCenter(
         col.add(buttons, top = 7f)
         row(*topButtons.toTypedArray())
 
-        fun paired(left: Control, right: Control) {
-            val line = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
-            line.addView(left, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            line.addView(right, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { leftMargin = Ui.pxi(8f) })
-            col.add(line, top = 6f)
-            row(left, right)
-        }
+        val showsBrightness = OutputDevice.showsBrightness() && !Brightness.hidden(context)
         val volume = if (OutputDevice.showsVolume(context)) SliderRow(
             context,
             glyph = { if (it <= 0f) Glyph.SpeakerMuted else Glyph.Speaker },
             read = { audio.getStreamVolume(AudioManager.STREAM_MUSIC) to audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC) },
             write = { audio.setStreamVolume(AudioManager.STREAM_MUSIC, it, AudioManager.FLAG_PLAY_SOUND) },
             shown = { v, _ -> if (v == 0) context.getString(R.string.cc_muted) else v.toString() },
-            requireConfirm = OutputDevice.showsBrightness(),
+            requireConfirm = showsBrightness,
         ) else null
-        val brightness: Control? = if (!OutputDevice.showsBrightness()) null else if (Brightness.level(context) != null) {
+        val brightness: Control? = if (!showsBrightness) null else if (Brightness.level(context) != null) {
             SliderRow(context, glyph = { Glyph.Sun },
                 read = { Math.round((Brightness.level(context) ?: 0f) * 100) to 100 },
                 write = { to -> Brightness.adjust(context, if (to > Math.round((Brightness.level(context) ?: 0f) * 100)) 1 else -1) },
@@ -333,17 +360,17 @@ class ControlCenter(
             row(boot)
         }
 
-        val homeRow = MenuRow(context, Glyph.Home, context.getString(R.string.lite_home_default), "›", plate = true).apply {
-            action = {
-                val intent = if (Build.VERSION.SDK_INT >= 21) Intent(Settings.ACTION_HOME_SETTINGS) else Intent(Settings.ACTION_SETTINGS)
-                open(intent)
-            }
-        }
         val updateRow = MenuRow(context, Glyph.Download, context.getString(R.string.lite_update), "›", plate = true).apply {
             action = { goTo(CcPage.Update) }
         }
         updateEntry = updateRow
-        paired(homeRow, updateRow)
+        val announcements = MenuRow(context, Glyph.Info,
+            context.getString(R.string.halo_feedback_entry), "›", plate = true).apply {
+            action = showAnnouncements
+            unreadDot = Announcements.unread() != null
+        }
+        announcementEntry = announcements
+        paired(updateRow, announcements)
 
         // Whether Lite is the TV's Home, and the version.
         val status = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(Ui.pxi(14f), 0, Ui.pxi(14f), 0) }
@@ -353,6 +380,48 @@ class ControlCenter(
             LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { leftMargin = Ui.pxi(8f) })
         status.addView(context.label("Halo TV " + version(context).substringBefore('-') + " · Lite", 11f, 500, Ui.TERTIARY))
         col.add(status, top = 8f)
+    }
+
+    private fun setupHome() {
+        fun action(title: Int, glyph: Glyph, block: () -> Unit) {
+            val button = MenuRow(context, glyph, context.getString(title), "›", plate = true).apply {
+                action = { locked(block) }
+            }
+            col.add(button, top = 6f)
+            row(button)
+        }
+        fun explanation(text: String) {
+            col.add(context.label(text, 13f, 400, Ui.SECONDARY).apply {
+                setSingleLine(false)
+                ellipsize = null
+            }, top = 10f)
+        }
+        fun permissionPage(intent: Intent) {
+            val info = runCatching { context.packageManager.resolveActivity(intent, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo }.getOrNull()
+            if (info != null && info.exported && (info.permission == null ||
+                context.checkCallingOrSelfPermission(info.permission) == android.content.pm.PackageManager.PERMISSION_GRANTED)) open(intent)
+            else Toast.makeText(context, R.string.halo_setup_no_entry, Toast.LENGTH_LONG).show()
+        }
+        action(R.string.cc_setup_title, Glyph.ChevronLeft) { goTo(CcPage.Main) }
+        setupStatus = context.label(context.getString(if (isHome(context)) R.string.cc_home_default else R.string.cc_home_not_default), 13f, 500)
+        col.add(setupStatus!!, top = 10f)
+        guardStatus = context.label("", 13f, 500).apply { setSingleLine(false) }
+        col.add(guardStatus!!, top = 6f)
+        refreshSetupStatus()
+        if (LiteHomeGuard.supported()) {
+            action(R.string.lite_guard_open, Glyph.Shield) { permissionPage(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+            explanation(context.getString(R.string.lite_guard_hint))
+        }
+        action(R.string.cc_setup_home, Glyph.Home) {
+            if (Build.VERSION.SDK_INT >= 19) permissionPage(Intent(Settings.ACTION_HOME_SETTINGS))
+            else if (!SystemIntents.openSettings(context))
+                Toast.makeText(context, R.string.halo_setup_no_entry, Toast.LENGTH_LONG).show()
+        }
+        action(R.string.halo_setup_app_details, Glyph.Gear) {
+            permissionPage(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:${context.packageName}")))
+        }
+        explanation(context.getString(R.string.halo_setup_vendor_hint))
+        explanation(context.getString(R.string.halo_setup_review))
     }
 
     private fun cleanBackground() {
@@ -533,7 +602,7 @@ class ControlCenter(
         }
     }
 
-    /** The inputs Lite can open itself (SystemIntents.xiaomiInputs), as the full app's list. */
+    /** Direct ports where known, plus native picker/settings routes for firmware-only inputs. */
     private fun inputs() {
         val back = MenuRow(context, Glyph.ChevronLeft, context.getString(R.string.cc_inputs)).apply { action = { goTo(CcPage.Main) } }
         col.addView(back)
@@ -543,6 +612,22 @@ class ControlCenter(
             col.add(input, top = 6f)
             row(input)
         }
+        col.add(note(context, context.getString(R.string.lite_inputs_help)), top = 12f)
+        val native = MenuRow(context, Glyph.Input, context.getString(R.string.lite_inputs_native)).apply {
+            action = { if (SystemIntents.openInputPicker(context)) close() else noInputs() }
+        }
+        col.add(native, top = 8f)
+        row(native)
+        val settings = MenuRow(context, Glyph.Gear, context.getString(R.string.lite_inputs_settings)).apply {
+            action = {
+                locked {
+                    if (SystemIntents.openSettings(context)) close()
+                    else Toast.makeText(context, R.string.lite_system_settings_unavailable, Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+        col.add(settings, top = 6f)
+        row(settings)
     }
 
     companion object {
@@ -578,9 +663,7 @@ class ControlCenter(
             }.getOrDefault(false)
         }
 
-        fun isHome(context: Context): Boolean = runCatching {
-            context.packageManager.resolveActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), 0)?.activityInfo?.packageName == context.packageName
-        }.getOrDefault(false)
+        fun isHome(context: Context): Boolean = LiteHomeGuard.isDefaultHome(context)
 
         fun version(context: Context): String = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull() ?: ""
     }
@@ -683,6 +766,7 @@ class Personalize(
     private val cardNotes = HashMap<Thumb, String?>()
     private var cardNote: TextView? = null
     private val nav = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
+    private val phoneCard = LitePhoneCard(context)
     private val media = initialTab == 0 || initialTab == 3
     private var saverPicker: LocalSaverPicker? = null
     private fun selectSaverMedia(video: Boolean) {
@@ -701,6 +785,9 @@ class Personalize(
 
     /** How much of the screen's bottom the sheet hides whole once in: its height less its round top corners. */
     val covers = Ui.screenH
+
+    @Volatile private var thumbnailGeneration = 0
+    private var thumbnailTask: java.util.concurrent.Future<*>? = null
 
     init {
         setBackgroundColor(0xFF1D2A3A.toInt())
@@ -731,7 +818,7 @@ class Personalize(
         viewportView.addView(col, LayoutParams(-1, -2))
         scroller = col
         viewport = Ui.screenH - Ui.pxi(48f)
-        inner.addView(LitePhoneCard(context), LinearLayout.LayoutParams(Ui.pxi(LiteSettingsGeometry.PHONE), -1))
+        inner.addView(phoneCard, LinearLayout.LayoutParams(Ui.pxi(LiteSettingsGeometry.PHONE), -1))
 
         onFocusMoved = { c ->
             hints[c]?.let { (hint, view) -> view.text = hint ?: view.tag as? String ?: "" }
@@ -786,13 +873,23 @@ class Personalize(
 
     /** New daily photos or photos from the phone: their cards too. */
     fun wallpapersChanged() {
-        synchronized(faces) { faces.remove(Wallpapers.LATEST_DAILY); faces.remove(Wallpapers.ROTATE_PHOTOS) }
+        faces.evictAll()
         refreshChips()
     }
 
     // ---- the rows ----
 
+    override fun onDetachedFromWindow() {
+        thumbnailGeneration++
+        thumbnailTask?.cancel(false)
+        thumbnailTask = null
+        super.onDetachedFromWindow()
+    }
+
     private fun build() {
+        thumbnailGeneration++
+        thumbnailTask?.cancel(false)
+        phoneCard.visibility = if (!media && tab == 6) View.GONE else View.VISIBLE
         col.removeAllViews()
         nav.removeAllViews()
         clearRows()
@@ -807,6 +904,7 @@ class Personalize(
             Triple(Glyph.Calendar, string(R.string.halo_lite_clock_weather), 2),
             Triple(Glyph.Switches, string(R.string.lite_category_remote), 4),
             Triple(Glyph.Shield, string(R.string.lite_family_modes), 5),
+            Triple(Glyph.Gear, string(R.string.halo_cat_performance), 8),
             Triple(Glyph.Info, string(R.string.halo_notice_title), 6),
         ))
         visibleTabs = sections.map { it.third }
@@ -859,8 +957,11 @@ class Personalize(
                 LiteSettings.homePlate) { LiteSettings.chooseHomePlate(it); onLayout() }
             choices(R.string.halo_dock_corners, null, listOf(false to R.string.halo_dock_corners_round, true to R.string.halo_dock_corners_compact),
                 LiteSettings.compactDockCorners) { LiteSettings.chooseCompactDockCorners(it); onLayout() }
-            choices(R.string.st_names, string(R.string.st_names_hint), listOf(false to R.string.st_names_focused, true to R.string.st_names_all),
-                LiteSettings.showAllNames) { LiteSettings.chooseShowAllNames(it); onLayout() }
+            choices(R.string.halo_dock_size, context.getString(R.string.halo_dock_size_hint),
+                listOf(0 to R.string.halo_dock_size_small, 1 to R.string.halo_dock_size_default, 2 to R.string.halo_dock_size_large),
+                LiteSettings.dockSize) { LiteSettings.chooseDockSize(it); onLayout() }
+            choices(R.string.st_names, string(R.string.st_names_hint), listOf(0 to R.string.st_names_focused, 1 to R.string.st_names_all, 2 to R.string.st_names_title),
+                LiteSettings.appNameStyle) { LiteSettings.chooseAppNameStyle(it); onLayout() }
             val hidden = Chip(context, if (hiddenCount == 0) string(R.string.st_hidden_none) else context.getString(R.string.st_hidden_count, hiddenCount), { false }, Glyph.ChevronRight)
                 .apply { action = onHidden }
             settingRow(R.string.st_hidden_apps, string(R.string.st_hidden_apps_hint), listOf(hidden))
@@ -905,11 +1006,12 @@ class Personalize(
             val kinds = listOf(
                 ScreensaverMode.Photos to R.string.ss_photos,
                 ScreensaverMode.Videos to R.string.ss_videos,
-                ScreensaverMode.Clock to R.string.ss_clock,
+                ScreensaverMode.OnlinePictures to R.string.lite_online_saver,
                 ScreensaverMode.FlipClock to R.string.ss_flip_clock,
             ).map { (m, label) -> Chip(context, string(label), { Wallpapers.screensaver == m }).apply { action = { Wallpapers.chooseScreensaver(m); refreshChips() } } }
             settingRow(R.string.ss_kind, when {
                 mode == ScreensaverMode.Videos -> string(R.string.ss_videos_hint)
+                mode == ScreensaverMode.OnlinePictures -> string(R.string.lite_online_saver_hint)
                 Wallpapers.screensaverFollows -> string(R.string.ss_follow_hint)
                 LiteSettings.backStartsScreensaver -> string(R.string.ss_back_hint)
                 else -> null
@@ -934,9 +1036,12 @@ class Personalize(
                     LiteSettings.flipClock24Hour) { LiteSettings.chooseFlipClock24Hour(it) }
                 choices(R.string.lite_seconds, null, listOf(true to R.string.st_on, false to R.string.st_off),
                     LiteSettings.flipClockSeconds) { LiteSettings.chooseFlipClockSeconds(it) }
+                if (LiteSettings.flipClockSeconds) choices(R.string.flip_seconds_style, null,
+                    listOf(0 to R.string.flip_seconds_numeric, 1 to R.string.flip_seconds_colon),
+                    LiteSettings.flipClockSecondsStyle) { LiteSettings.chooseFlipClockSecondsStyle(it) }
             }
             // The clock screensaver is its clock, and the others show none.
-            if (mode == ScreensaverMode.Photos) choices(R.string.ss_show_time, string(R.string.ss_show_time_hint),
+            if (mode == ScreensaverMode.Photos || mode == ScreensaverMode.OnlinePictures) choices(R.string.ss_show_time, string(R.string.ss_show_time_hint),
                 listOf(true to R.string.st_on, false to R.string.st_off), LiteSettings.screensaverClock) { LiteSettings.chooseScreensaverClock(it) }
             choices(R.string.ss_delay, null, LiteSettings.screensaverChoices.map { it to if (it == LiteSettings.NEVER) string(R.string.ss_never) else context.getString(R.string.ss_minutes, it) },
                 LiteSettings.screensaverMinutes) { LiteSettings.chooseScreensaverMinutes(it) }
@@ -947,29 +1052,56 @@ class Personalize(
             }
             4 -> {
         group {
-            choices(R.string.st_focus_style, string(if (LiteSettings.focusStyle == FocusStyle.HighContrast) R.string.st_focus_high_hint else R.string.st_focus_standard_hint),
-                listOf(FocusStyle.HighContrast to R.string.st_focus_high, FocusStyle.Standard to R.string.st_focus_standard),
+            choices(R.string.st_focus_style, string(when (LiteSettings.focusStyle) {
+                FocusStyle.HighContrast -> R.string.st_focus_high_hint
+                FocusStyle.Standard -> R.string.st_focus_standard_hint
+                FocusStyle.ClassicGlassSlide -> R.string.focus_classic_glass_slide_hint
+                else -> R.string.st_focus_standard_hint
+            }),
+                listOf(FocusStyle.HighContrast to R.string.st_focus_high, FocusStyle.Standard to R.string.st_focus_standard, FocusStyle.ClassicGlassSlide to R.string.focus_classic_glass_slide),
                 LiteSettings.focusStyle) { LiteSettings.chooseFocusStyle(it); onLayout() }
             choices(R.string.st_sounds, string(if (LiteSettings.uiSounds == UiSounds.Tv) R.string.st_sounds_tv_hint else R.string.st_sounds_hint),
-                listOf(UiSounds.Tv to R.string.st_sounds_tv, UiSounds.Aerial to R.string.st_sounds_aerial, UiSounds.Off to R.string.st_off),
+                listOf(UiSounds.Tv to R.string.st_sounds_tv, UiSounds.Aerial to R.string.st_sounds_aerial, UiSounds.Soft to R.string.st_sounds_soft, UiSounds.Off to R.string.st_off),
                 LiteSettings.uiSounds) { LiteSettings.chooseUiSounds(it); Sounds.prepare() }
         }
 
+            }
+            8 -> {
+                group {
+                    choices(R.string.halo_auto_clean_idle, string(R.string.lite_auto_clean_hint),
+                        listOf(true to R.string.st_on, false to R.string.st_off),
+                        LiteSettings.autoCleanIdle) { LiteSettings.chooseAutoCleanIdle(it) }
+                }
             }
             7 -> {
                 group {
                     choices(R.string.halo_desktop_text_color, null,
                         listOf(0 to R.string.halo_color_white, 1 to R.string.halo_color_gray, 2 to R.string.halo_color_black),
                         LiteSettings.desktopTextColor) { LiteSettings.chooseDesktopTextColor(it); onLayout() }
+                    choices(R.string.settings_icon_position, null,
+                        listOf(0 to R.string.settings_icon_left, 1 to R.string.settings_icon_right, 2 to R.string.settings_icon_upper_right),
+                        LiteSettings.settingsIconPosition) { LiteSettings.chooseSettingsIconPosition(it); onLayout() }
                     choices(R.string.settings_icon_visibility, string(R.string.settings_icon_fade_hint),
                         listOf(0 to R.string.settings_icon_always, 1 to R.string.settings_icon_fade, 2 to R.string.settings_icon_hidden),
                         LiteSettings.settingsIconVisibility) { LiteSettings.chooseSettingsIconVisibility(it); onLayout() }
                 }
             }
             6 -> {
-                listOf(R.string.halo_notice_body, R.string.halo_free_notice, R.string.bing_source_notice).forEach { text ->
-                    val body = ReadingCard(context, string(text))
-                    col.add(body, top = 10f); row(body)
+                val pairs = listOf(
+                    R.string.halo_notice_body to R.string.bing_source_notice,
+                    R.string.halo_free_notice to R.string.halo_project_links_body,
+                )
+                for ((left, right) in pairs) {
+                    val line = LinearLayout(context).apply { orientation = LinearLayout.HORIZONTAL }
+                    val cards = listOf(left, right).mapIndexed { index, id ->
+                        ReadingCard(context, string(id), padding = 9f).also { card ->
+                            line.addView(card, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                                if (index > 0) leftMargin = Ui.pxi(10f)
+                            })
+                        }
+                    }
+                    col.add(line, top = 8f)
+                    row(*cards.toTypedArray())
                 }
             }
             else -> {
@@ -1125,7 +1257,7 @@ class Personalize(
                     for (other in thumbs) other.invalidate()
                     onWallpaper(wp.id)
                 }
-                synchronized(faces) { faces[wp.id] }?.let { t.picture = it }
+                faces.get("${wp.id}:${Ui.pxi(168f)}:${Ui.pxi(94f)}")?.let { t.picture = it }
                 line.addView(t, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                     if (focusRow.isNotEmpty()) leftMargin = Ui.pxi(8f)
                 })
@@ -1154,19 +1286,26 @@ class Personalize(
     private fun renderThumbs(todo: List<Pair<Thumb, Wallpaper>>) {
         if (todo.isEmpty()) return
         val w = Ui.pxi(168f); val h = Ui.pxi(94f)
-        Thread {
+        val generation = thumbnailGeneration
+        thumbnailTask = thumbnailWorker.submit {
             for ((t, wp) in todo) {
+                if (generation != thumbnailGeneration) break
                 val pic = runCatching { Wallpapers.thumbnail(wp.id) }.getOrNull() ?: continue
+                if (generation != thumbnailGeneration) break
                 val face = Shapes.face(pic, w, h, Ui.px(12f), 0f)
-                synchronized(faces) { faces[wp.id] = face }
-                t.post { t.picture = face }
+                faces.put("${wp.id}:$w:$h", face)
+                // Post to the panel, not a detached child whose private queue may retain it.
+                post { if (generation == thumbnailGeneration) t.picture = face }
             }
-        }.start()
+        }
     }
 
     companion object {
-        /** Cards' pictures by wallpaper, kept while Lite runs. */
-        private val faces = HashMap<String, Bitmap>()
+        /** Byte-bounded cache; eviction never recycles a bitmap still displayed by a card. */
+        private val faces = WallpaperFaceCache(4 * 1024 * 1024)
+        private val thumbnailWorker = java.util.concurrent.Executors.newSingleThreadExecutor { task ->
+            Thread(task, "halo-lite-thumbnails").apply { isDaemon = true }
+        }
     }
 }
 

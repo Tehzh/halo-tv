@@ -9,7 +9,7 @@ import java.security.MessageDigest
 
 /** Read current signers, never signing history. Some TV parsers only populate the legacy field. */
 internal object ApkSigners {
-    const val RELEASE_CERT = "3ba29454f5977999ccf76bd129b1087d3eea25c2f0a8370441d4fab1ccaa9198"
+    const val RELEASE_CERT = app.orchard.tv.BuildConfig.HALO_CERT
     @Suppress("DEPRECATION")
     val flags: Int get() = PackageManager.GET_SIGNATURES or
         (if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else 0)

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lite_system_settings_unavailable">Жүйе параметрлерін ашу мүмкін емес. Қашықтан басқару пультіндегі параметрлер түймесін немесе теледидардың бастапқы жұмыс үстелін пайдаланыңыз.</string>
+    <string name="lite_system_network_unavailable">Желі параметрлерін ашу мүмкін емес. Wi-Fi параметрлерін бастапқы жұмыс үстелінен немесе пульттегі параметрлер мәзірінен ашыңыз.</string>
+    <string name="lite_system_uninstall_unavailable">Жүйелік жою мүмкіндігі қолжетімсіз немесе бұғатталған. Қолданбаны бастапқы жұмыс үстелінен немесе теледидардың қолданбалар менеджерінен жойыңыз.</string>
+    <string name="lite_system_app_info_hint">Жоюды осы жерден сұрап, теледидарда растаңыз. Кэшті тазалау және басқа әрекеттер үшін қолданба туралы жүйелік ақпаратты ашыңыз.</string>
+    <string name="lite_system_app_details">Қолданба туралы жүйелік ақпарат</string>
+    <string name="lite_system_app_details_unavailable">Қолданба туралы жүйелік ақпарат қолжетімсіз. Осы беттегі жою түймесін пайдаланыңыз.</string>
+</resources>

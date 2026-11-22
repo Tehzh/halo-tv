@@ -1,5 +1,6 @@
 package app.orchard.tv.announcements
 
+
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Handler
@@ -40,7 +41,8 @@ object Announcements {
         return notices.asSequence().filter { AnnouncementPolicy.applies(it, variant, version, code, now) }
     }
     fun contains(n: RemoteAnnouncement): Boolean = eligible().any { it.key == n.key }
-    fun latest(): RemoteAnnouncement? = eligible().firstOrNull()
+    /** Completed revisions are no longer actionable, including in Control Center. */
+    fun latest(): RemoteAnnouncement? = unread()
     fun unread(): RemoteAnnouncement? = eligible().firstOrNull { prefs?.contains("read:${it.key}") != true }
     fun popup(): RemoteAnnouncement? = eligible().firstOrNull {
         it.important && prefs?.contains("read:${it.key}") != true && it.key !in presented &&

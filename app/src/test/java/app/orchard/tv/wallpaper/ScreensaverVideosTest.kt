@@ -23,6 +23,27 @@ class ScreensaverVideosTest {
     private val context: Context = RuntimeEnvironment.getApplication()
     private val root get() = File(context.filesDir, "screensaver-videos")
 
+    @Test fun videoTrackAcceptsUploadWhenVendorMetadataReaderReturnsNothing() {
+        val file = File.createTempFile("video-track", ".mp4", context.cacheDir).apply { writeBytes(byteArrayOf(1, 2, 3)) }
+        org.robolectric.shadows.ShadowMediaExtractor.addTrack(
+            org.robolectric.shadows.util.DataSource.toDataSource(file.absolutePath),
+            android.media.MediaFormat.createVideoFormat("video/avc", 1920, 1080), byteArrayOf(1, 2, 3),
+        )
+        val video = ScreensaverVideos.store(context, file, "phone.mp4").video
+        assertNotNull(video)
+        assertEquals(3, video!!.file.length().toInt())
+    }
+
+    @Test fun audioTrackFallbackStillRefusesAudioOnlyFiles() {
+        val file = File.createTempFile("audio-track", ".mp4", context.cacheDir).apply { writeBytes(byteArrayOf(1, 2, 3)) }
+        org.robolectric.shadows.ShadowMediaExtractor.addTrack(
+            org.robolectric.shadows.util.DataSource.toDataSource(file.absolutePath),
+            android.media.MediaFormat.createAudioFormat("audio/mp4a-latm", 44100, 2), byteArrayOf(1, 2, 3),
+        )
+        assertNull(ScreensaverVideos.store(context, file, "audio.mp4").video)
+        assertTrue(file.exists())
+    }
+
     private fun upload(): File = File.createTempFile("video", ".mov", context.cacheDir).apply {
         writeText("uploaded bytes")
         ShadowMediaMetadataRetriever.addMetadata(absolutePath, MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO, "yes")
@@ -39,7 +60,7 @@ class ScreensaverVideosTest {
     fun uploadIsPublishedWithItsNameAndBytesButDoesNotSelectIt() {
         val original = upload()
         val bytes = original.readText()
-        val video = ScreensaverVideos.add(context, original, "../phone/scene.mov")
+        val video = ScreensaverVideos.store(context, original, "../phone/scene.mov").video
         assertNotNull(video)
         assertEquals("scene.mov", video!!.name)
         assertEquals(bytes, video.file.readText())
@@ -51,11 +72,11 @@ class ScreensaverVideosTest {
     @Test
     fun rejectsEmptyFilesAudioAndUnknownExtensionsWithoutPublishing() {
         val empty = File.createTempFile("empty", ".mp4", context.cacheDir)
-        assertNull(ScreensaverVideos.add(context, empty, "empty.mp4"))
+        assertNull(ScreensaverVideos.store(context, empty, "empty.mp4").video)
         val audio = upload()
         ShadowMediaMetadataRetriever.addMetadata(audio.absolutePath, MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO, "no")
-        assertNull(ScreensaverVideos.add(context, audio, "audio.mov"))
-        assertNull(ScreensaverVideos.add(context, upload(), "script.html"))
+        assertNull(ScreensaverVideos.store(context, audio, "audio.mov").video)
+        assertNull(ScreensaverVideos.store(context, upload(), "script.html").video)
         assertTrue(ScreensaverVideos.all(context).isEmpty())
     }
 
@@ -64,7 +85,7 @@ class ScreensaverVideosTest {
         val old = stored("a".repeat(32))
         val large = upload()
         RandomAccessFile(large, "rw").use { it.setLength(ScreensaverVideos.MAX_FILE_BYTES + 1) }
-        assertNull(ScreensaverVideos.add(context, large, "large.mov"))
+        assertNull(ScreensaverVideos.store(context, large, "large.mov").video)
         assertEquals(listOf(old.name), ScreensaverVideos.all(context).map { it.id })
     }
 
@@ -72,7 +93,7 @@ class ScreensaverVideosTest {
     fun aFullLibraryHasNoRoomAndDoesNotEvictExistingFilms() {
         repeat(64) { stored(it.toString().padStart(32, '0')) }
         assertEquals(0L, ScreensaverVideos.room(context))
-        assertNull(ScreensaverVideos.add(context, upload(), "one-more.mp4"))
+        assertNull(ScreensaverVideos.store(context, upload(), "one-more.mp4").video)
         assertEquals(64, ScreensaverVideos.all(context).size)
     }
 
@@ -94,11 +115,40 @@ class ScreensaverVideosTest {
     @Test
     fun brokenOrOversizedStreamsLeaveNothingBehind() {
         val short = "short".toByteArray().inputStream()
-        assertNull(ScreensaverVideos.receive(context, short, 100, "cut.mp4"))
+        assertEquals(ScreensaverVideos.UploadError.Interrupted, ScreensaverVideos.receive(context, short, 100, "cut.mp4").error)
         val unread = "never read".toByteArray().inputStream()
-        assertNull(ScreensaverVideos.receive(context, unread, ScreensaverVideos.MAX_FILE_BYTES + 1, "huge.mp4"))
+        assertEquals(ScreensaverVideos.UploadError.TooLarge, ScreensaverVideos.receive(context, unread, ScreensaverVideos.MAX_FILE_BYTES + 1, "huge.mp4").error)
         assertEquals(10, unread.available())
         assertTrue(ScreensaverVideos.all(context).isEmpty())
+        assertFalse(root.listFiles().orEmpty().any { it.name.startsWith("import-") })
+    }
+
+    @Test
+    fun shortNetworkReadAndInvalidCompleteFileReturnDifferentResults() {
+        val bad = byteArrayOf(1, 2, 3)
+        val incomplete = ScreensaverVideos.receive(context, bad.inputStream(), 100, "cut.mp4")
+        val invalid = ScreensaverVideos.receive(context, bad.inputStream(), bad.size.toLong(), "broken.mp4")
+        assertEquals(ScreensaverVideos.UploadError.Interrupted, incomplete.error)
+        assertEquals(ScreensaverVideos.UploadError.InvalidVideo, invalid.error)
+        assertTrue(root.listFiles().orEmpty().isEmpty())
+    }
+
+    @Test
+    fun streamedVideoReturnsItsCommittedIdAndKeepsItsBytes() {
+        val bytes = byteArrayOf(1, 2, 3)
+        val input = object : java.io.ByteArrayInputStream(bytes) {
+            override fun read(buffer: ByteArray, offset: Int, count: Int): Int {
+                val path = root.listFiles()!!.single { it.name.endsWith(".part") }.absolutePath
+                ShadowMediaMetadataRetriever.addMetadata(path, MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO, "yes")
+                ShadowMediaMetadataRetriever.addMetadata(path, MediaMetadataRetriever.METADATA_KEY_DURATION, "2000")
+                return super.read(buffer, offset, count)
+            }
+        }
+        val result = ScreensaverVideos.receive(context, input, bytes.size.toLong(), "new-video.mp4")
+        assertNull(result.error)
+        val saved = ScreensaverVideos.all(context).single()
+        assertEquals(saved.id, result.video?.id)
+        assertTrue(bytes.contentEquals(saved.file.readBytes()))
         assertFalse(root.listFiles().orEmpty().any { it.name.startsWith("import-") })
     }
 

@@ -130,6 +130,11 @@ fun folderEntry(folder: Folder, art: TileArt): AppEntry = AppEntry(
 
 object AppCatalog {
     private const val TAG = "AerialTiles"
+    // Published with each package scan, never looked up through PackageManager on the remote's
+    // select/up event. A package absent from this scan still uses the defensive live probe.
+    @Volatile private var launchRoles: Map<String, Pair<Boolean, Boolean>> = emptyMap()
+    fun settingsRole(pkg: String): Boolean? = launchRoles[pkg]?.first
+    fun homeRole(pkg: String): Boolean? = launchRoles[pkg]?.second
     /** Xiaomi's app store declares only this category, not CATEGORY_LAUNCHER (MiTV-MFTR0). */
     private const val CATEGORY_APPSTORE_LAUNCHER = "android.intent.category.APPSTORE_LAUNCHER"
 
@@ -147,6 +152,16 @@ object AppCatalog {
         // 宽带电视, GITV's live TV; MAIN only, no category, not on PatchWall either
         // (MiTV4-ANSM0, Android 6.0.1, issue #1378, found by the reporter).
         ComponentName("com.gitv.dvb.live", "com.gitv.dvb.live.activity.PlayActivity"),
+        // 应用商店 on older Xiaomi firmware: MAIN plus its own mitv.appstore.action.LAUNCHER, no
+        // category; MFTR0's declares APPSTORE_LAUNCHER and is found above (MiTV4C, Android 6.0.1,
+        // issue #1568, the reporter's pm dump).
+        ComponentName("com.xiaomi.mitv.appstore", "com.xiaomi.mitv.appstore.MainActivity"),
+        // Baofeng BAOFENG_TV AML_T962 (Android 5.1, Funshion firmware): its live TV player and its
+        // own inputs bar, both MAIN only with no category, started by explicit name from an app
+        // (issue #1378, the reporter's dumpsys and logcat). The TV registers no TvInputManager
+        // inputs, so the bar is the one way to its HDMI ports from Home.
+        ComponentName("com.baofengtv.tvplayer", "com.baofengtv.tvplayer.MainActivity"),
+        ComponentName("com.bftv.fui.biu", "com.bftv.fui.biu.views.activity.FRowActivity"),
     )
 
     /**
@@ -205,6 +220,11 @@ object AppCatalog {
      * counted; such apps are not in the library.
      */
     private val drawnByAerial = java.util.concurrent.ConcurrentHashMap<String, SystemTile>()
+
+    /** A firmware settings tile must use the same route as Control Center, not its MAIN launcher. */
+    fun isSettingsTile(key: String): Boolean = drawnByAerial[key] == SystemTile.Settings
+
+    fun isHomeTile(key: String): Boolean = drawnByAerial[key] == SystemTile.Home
 
     /** Whether [pkg]'s tile shows the icon library's picture (when it has one). */
     fun usesLibrary(pkg: String): Boolean =
@@ -320,6 +340,12 @@ object AppCatalog {
                 }
             }.awaitAll().filterNotNull()
         }.plus(shortcuts(context, pm)).also {
+            val homes = stockInfos.mapTo(HashSet()) { info -> info.packageName }
+            runCatching { pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME), 0) }
+                .getOrDefault(emptyList()).forEach { info -> homes.add(info.activityInfo.packageName) }
+            launchRoles = it.associate { entry -> entry.packageName to
+                ((app.orchard.tv.system.SystemProbe.isKnownSettingsPackage(entry.packageName) || SYSTEM_TILES[entry.packageName] == SystemTile.Settings || byCategory[entry.packageName] == SystemTile.Settings) to
+                    (entry.packageName in homes)) }
             val now = android.os.SystemClock.uptimeMillis()
             lastTiming = longArrayOf(started, queried, now)
             loaded = it
@@ -469,7 +495,7 @@ object AppCatalog {
         if (ownTile != null) drawnByAerial[pkg] = ownTile else drawnByAerial.remove(pkg)
         val inMemory = synchronized(cache) { cache[pkg] }?.takeIf { it.stamp == stamp && it.width == TileArtFactory.W }
         if (inMemory == null && later) {
-            TileDiskCache.readHeader(pkg, TileDiskCache.key(stamp))?.let { (label, tint) ->
+            TileDiskCache.readHeader(pkg, TileDiskCache.key(stamp))?.let { (_, tint) ->
                 return AppEntry(pkg, label, ComponentName(pkg, info.name), leanback, !system, placeholder(tint))
             }
         }

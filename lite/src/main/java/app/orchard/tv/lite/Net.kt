@@ -2,6 +2,10 @@ package app.orchard.tv.lite
 
 import android.os.Build
 import java.io.File
+import java.io.InputStream
+import java.io.OutputStream
+import java.io.ByteArrayOutputStream
+import java.io.InterruptedIOException
 import java.net.HttpURLConnection
 import java.net.InetAddress
 import java.net.Socket
@@ -56,28 +60,61 @@ object Net {
         if (this is HttpsURLConnection) tls?.let { sslSocketFactory = it }
     }
 
-    fun text(url: String): String {
-        val c = open(url)
-        try {
-            if (c.responseCode !in 200..299) error("HTTP ${c.responseCode}")
-            return c.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
-        } finally {
-            c.disconnect()
+    private const val TEXT_LIMIT = 4_000_000L
+    private const val IMAGE_LIMIT = 8_000_000L
+
+    /** Reads at most [limit] bytes; also stop a sheet worker after it is interrupted. */
+    internal fun copyBounded(input: InputStream, output: OutputStream, limit: Long): Long {
+        require(limit >= 0)
+        val buffer = ByteArray(16 * 1024)
+        var count = 0L
+        while (true) {
+            if (Thread.currentThread().isInterrupted) throw InterruptedIOException("download interrupted")
+            val n = input.read(buffer)
+            if (n < 0) break
+            if (n == 0) continue
+            count += n
+            require(count <= limit) { "download exceeds size limit" }
+            output.write(buffer, 0, n)
         }
+        return count
     }
 
-    /** Into a temporary file first, so a broken download never stands as the file. */
-    fun download(url: String, to: File) {
-        val tmp = File(to.path + ".part")
+    fun bytes(url: String, limit: Long): ByteArray {
         val c = open(url)
         try {
             if (c.responseCode !in 200..299) error("HTTP ${c.responseCode}")
-            c.inputStream.use { input -> java.io.FileOutputStream(tmp).use { input.copyTo(it) } }
-        } finally {
-            c.disconnect()
-        }
-        if (!tmp.renameTo(to)) { tmp.delete(); error("could not keep $to") }
+            val expected = c.contentLength.toLong()
+            require(expected <= limit) { "download exceeds size limit" }
+            return c.inputStream.use { input ->
+                val output = ByteArrayOutputStream()
+                val count = copyBounded(input, output, limit)
+                check(expected < 0 || count == expected) { "incomplete download" }
+                output.toByteArray()
+            }
+        } finally { c.disconnect() }
     }
+
+    fun text(url: String): String = bytes(url, TEXT_LIMIT).toString(Charsets.UTF_8)
+
+    /** Publish only a complete, bounded download; a failure leaves the previous file intact. */
+    fun download(url: String, to: File) {
+        val parent = requireNotNull(to.parentFile)
+        val tmp = File.createTempFile(to.name.padEnd(3, '_'), ".part", parent)
+        try {
+            val c = open(url)
+            try {
+                if (c.responseCode !in 200..299) error("HTTP ${c.responseCode}")
+                val expected = c.contentLength.toLong()
+                require(expected <= IMAGE_LIMIT) { "download exceeds size limit" }
+                val count = c.inputStream.use { input -> java.io.FileOutputStream(tmp).use { copyBounded(input, it, IMAGE_LIMIT) } }
+                check(expected < 0 || count == expected) { "incomplete download" }
+            } finally { c.disconnect() }
+            if (Thread.currentThread().isInterrupted) throw InterruptedIOException("download interrupted")
+            check(tmp.renameTo(to)) { "could not keep $to" }
+        } finally { tmp.delete() }
+    }
+
 }
 
 /** Turns on every protocol the system supports, TLS 1.2 included where it is off by default. */

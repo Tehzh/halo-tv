@@ -58,6 +58,15 @@ class ChanghongSettingsTest {
     }
 
     @Test
+    fun identifiedSettingsTilesUseControlCenterRouteEvenWithVendorLauncherEntry() {
+        installService()
+        val selected = SystemProbe.settingsTileIntent(context, "firmware.launcher.settings", settingsTile = true)
+        assertNotNull(selected)
+        assertTrue(SystemProbe.settingsIntent(context).filterEquals(selected))
+        assertNull(SystemProbe.settingsTileIntent(context, "firmware.launcher.home"))
+    }
+
+    @Test
     fun networkPrefersTheVendorPanelOnWifiAndEthernet() {
         installService()
         for (ethernet in listOf(false, true)) {

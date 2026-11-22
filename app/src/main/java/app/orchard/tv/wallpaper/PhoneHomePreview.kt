@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.view.PixelCopy
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.annotation.RequiresApi
 import java.io.ByteArrayOutputStream
 import java.lang.ref.WeakReference
@@ -23,6 +24,7 @@ internal object PhoneHomePreview {
     @Volatile private var cached: ByteArray? = null
     @Volatile private var cachedAt = 0L
     @Volatile private var cachedWallpaper = ""
+    private var cachedBackdrop = WeakReference<ImageBitmap>(null)
     private val gate = kotlinx.coroutines.sync.Mutex()
 
     fun bind(activity: Activity, canCapture: () -> Boolean) {
@@ -35,13 +37,15 @@ internal object PhoneHomePreview {
     suspend fun capture(): ByteArray? {
         if (Build.VERSION.SDK_INT < 26 || !gate.tryLock()) return null
         try {
-            if (cachedWallpaper == Wallpapers.selectedId && SystemClock.elapsedRealtime() - cachedAt < 5_000) return cached
+            val wallpaper = Wallpapers.selectedId
+            val backdrop = Wallpapers.backdrop
+            if (cachedWallpaper == wallpaper && cachedBackdrop.get() === backdrop && SystemClock.elapsedRealtime() - cachedAt < 5_000) return cached
             val image = withTimeoutOrNull(1_500) { withContext(Dispatchers.Main) { copyHome() } } ?: return null
             return withContext(Dispatchers.IO) {
                 try {
                     val out = ByteArrayOutputStream()
                     image.compress(Bitmap.CompressFormat.JPEG, 86, out)
-                    out.toByteArray().also { cached = it; cachedWallpaper = Wallpapers.selectedId; cachedAt = SystemClock.elapsedRealtime() }
+                    out.toByteArray().also { cached = it; cachedWallpaper = wallpaper; cachedBackdrop = WeakReference(backdrop); cachedAt = SystemClock.elapsedRealtime() }
                 } finally { image.recycle() }
             }
         } finally { gate.unlock() }

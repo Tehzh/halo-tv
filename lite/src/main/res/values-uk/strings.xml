@@ -16,4 +16,7 @@
     <string name="halo_lite_clock_weather">Годинник і погода</string>
     <string name="halo_lite_interaction">Керування</string>
     <string name="halo_lite_security">Безпека</string>
+    <string name="st_sounds_soft">М’який</string>
+    <string name="halo_auto_clean_idle">Очищення фонових додатків у простої</string>
+    <string name="lite_auto_clean_hint">Через 2 хвилини бездіяльності на головному екрані виконується спроба очищення фонових застосунків. Під час відтворення аудіо або використання VPN очищення пропускається; результат залежить від системи.</string>
 </resources>

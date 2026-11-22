@@ -27,6 +27,7 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
 
+
     <!-- largeHeap: on Android 4.x bitmaps live on the Java heap, which is 64-128 MB on these TVs. -->
     <application
         android:label="@string/app_name"
@@ -39,10 +40,15 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="24">
 
+        <meta-data android:name="app.halotv.update.variant" android:value="${haloUpdateVariant}" />
+
         <!-- TCL's install verifier wants this on a home app before it allows an update; see the full
              app's standard manifest (#983). -->
         <meta-data android:name="com.tcl.app.type" android:value="com.tcl.ui" />
 
+        <receiver android:name=".LiteUpdateReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
+        </receiver>
         <provider android:name=".LiteUpdateProvider"
             android:authorities="${applicationId}.updates"
             android:exported="false"
@@ -55,6 +61,14 @@
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
             <meta-data android:name="android.accessibilityservice" android:resource="@xml/lite_power_accessibility" />
+        </service>
+        <service android:name=".LiteHomeGuard"
+            android:label="@string/lite_guard_title"
+            android:enabled="@bool/lite_guard_supported"
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter><action android:name="android.accessibilityservice.AccessibilityService" /></intent-filter>
+            <meta-data android:name="android.accessibilityservice" android:resource="@xml/lite_home_guard" />
         </service>
         <activity
             android:name=".HomeActivity"

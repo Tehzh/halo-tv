@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,6 +69,13 @@ import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -169,6 +177,21 @@ fun AppTile(
     val focusManager = LocalFocusManager.current
 
     var focused by remember { mutableStateOf(false) }
+    val tileDensity = androidx.compose.ui.platform.LocalDensity.current.density
+    LaunchedEffect(app.art.back, focused, moving, width, height, compactCorners, tileDensity) {
+        if (!(focused || moving) || app.art.placeholder) return@LaunchedEffect
+        // Never rasterize a new bitmap from onDraw. While a focus face is being prepared,
+        // drawing scales the already prepared rest face for those first few animation frames.
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            val w = (width.value * tileDensity).roundToInt().coerceAtLeast(1)
+            val h = (height.value * tileDensity).roundToInt().coerceAtLeast(1)
+            val fw = focusedPx(width.value * tileDensity)
+            val fh = focusedPx(height.value * tileDensity)
+            TileFaces.face(app.art.back, fw, fh, compactCorners,
+                corner.value * tileDensity * fw / w, 0.5f * tileDensity * fw / w)
+        }
+        TileFaces.changed()
+    }
     // Once per tile: a focused one drawn from its artwork before its face was made (issue #654).
     val rawLogged = remember { booleanArrayOf(false) }
     var pressed by remember { mutableStateOf(false) }
@@ -401,6 +424,16 @@ fun AppTile(
                     )
                 }
                 .focusProperties { if (rowEnd) right = FocusRequester.Cancel }
+                // The tile's name for a screen reader (TalkBack, issue #1476), whether or not it is
+                // drawn under the tile; double tap opens the app, a long one opens its menu.
+                .semantics {
+                    contentDescription = app.label
+                    role = Role.Button
+                    if (enabled) {
+                        onClick { Sounds.select(); click(position.bounds()); true }
+                        onLongClick { Sounds.select(); longPress(position.bounds()); true }
+                    } else disabled()
+                }
                 .focusable(enabled),
         ) {
             Spacer(Modifier.fillMaxSize().drawWithCache {
@@ -421,8 +454,7 @@ fun AppTile(
                 // as it is, inside the layer's rounded clip: nearly the same picture, and the tiles
                 // show at once instead of waiting for the faces.
                 fun face(fw: Int, fh: Int): ImageBitmap? = TileFaces.ready(art.back, fw, fh, compactCorners)
-                    ?: if (TileFaces.background) null
-                    else TileFaces.face(art.back, fw, fh, compactCorners, corner.toPx() * fw / w, 0.5.dp.toPx() * fw / w)
+                    ?: TileFaces.ready(art.back, w, h, compactCorners)
                 val shape = BitmapShader(smoothMask(w, h, corner.toPx()), Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
                     .apply { setLocalMatrix(Matrix().apply { setScale(size.width / w, size.height / h) }) }
                 val rim = tileRim(w, h, corner.toPx(), 0.5.dp.toPx())
@@ -445,7 +477,7 @@ fun AppTile(
                     val lite = AerialSettings.lite
                     scale(size.width / pw, size.height / ph, pivot = Offset.Zero) {
                         val made = face(pw, ph)
-                        if (made != null) drawImage(made)
+                        if (made != null) drawImage(made, dstSize = IntSize(pw, ph), filterQuality = FilterQuality.Low)
                         else {
                             // Cut to the outline here too, not only by the layer: Redmi X50 (MiTV-NSOP0,
                             // Novatek, Android 9) showed the focused tile square-cornered as Back
@@ -472,10 +504,10 @@ fun AppTile(
                         // Light from above: a soft sheen across the top, brighter where the tile leans toward it.
                         glintMatrix.setTranslate(size.width * leanY.value / 7f * 0.25f, 0f)
                         glint.setLocalMatrix(glintMatrix)
-                        drawRect(glintBrush, alpha = lift * if (AerialSettings.focusStyle == FocusStyle.LiquidSlide) 0.7f else 1f, blendMode = BlendMode.Screen)
+                        drawRect(glintBrush, alpha = lift * if (AerialSettings.focusStyle.sliding) 0.7f else 1f, blendMode = BlendMode.Screen)
                     }
                     // A focused tile's rim catches a little more light.
-                    if (lift > 0.01f && AerialSettings.focusStyle != FocusStyle.LiquidSlide) drawImage(rim, dstSize = full, alpha = 0.08f * lift)
+                    if (lift > 0.01f && !AerialSettings.focusStyle.sliding) drawImage(rim, dstSize = full, alpha = 0.08f * lift)
                 }
             })
         }
@@ -575,6 +607,7 @@ object TileFaces {
 
     /** Bumped when [prepare] has made a batch; tiles read it while drawing. */
     var version by mutableIntStateOf(0); private set
+    internal fun changed() { version++ }
 
     /** Set while [prepare] is making faces: a tile then draws its artwork until its face is made. */
     @Volatile var background = false; private set
@@ -608,7 +641,7 @@ object TileFaces {
      * Sizes worked out exactly as AppTile's: a face of another size is simply made there.
      */
     suspend fun prepare(arts: List<TileArt>, screenW: Int, density: Float, focused: Boolean = false) = coroutineScope {
-        val tileW = restTileWidth((screenW / density).dp, AerialSettings.homeColumns).value * density
+        val tileW = restTileWidth((screenW / density).dp, AerialSettings.homeColumns, AerialSettings.dockSize).value * density
         val tileH = tileW * 9f / 16f
         val w = tileW.roundToInt()
         val h = tileH.roundToInt()
@@ -640,7 +673,7 @@ object TileFaces {
         }
     }
 
-    private const val BATCH = 5
+    private const val BATCH = 2
 }
 
 private fun tileFace(back: ImageBitmap, w: Int, h: Int, radius: Float, rimWidth: Float): ImageBitmap {
@@ -677,7 +710,7 @@ private fun tileRim(w: Int, h: Int, radius: Float, width: Float, alpha: Float = 
 }
 
 /** A tile's shadow, soft black under its continuous outline; [ext] px of it lie outside the tile on each side. */
-private class TileShadow(val image: ImageBitmap, val ext: Float)
+private class TileShadow(override val image: ImageBitmap, val ext: Float) : app.orchard.tv.ui.components.BakedImage
 
 private fun tileShadow(w: Int, h: Int, corner: Float, blur: Float): TileShadow = baked(listOf("shadow", w, h, corner, blur)) {
     val ext = ceil(blur * 1.5f)
@@ -696,7 +729,7 @@ private fun tileShadow(w: Int, h: Int, corner: Float, blur: Float): TileShadow =
 }
 
 /** Clean Your TV's translucent focus plate; [ext] px give its soft edge room outside the tile. */
-private class RingFrame(val image: ImageBitmap, val ext: Float)
+private class RingFrame(override val image: ImageBitmap, val ext: Float) : app.orchard.tv.ui.components.BakedImage
 
 private fun liquidFrame(w: Int, h: Int, corner: Float, gap: Float, width: Float, dp: Float): RingFrame =
     baked(listOf("clean-focus-glass", w, h, corner, gap, width, dp)) {

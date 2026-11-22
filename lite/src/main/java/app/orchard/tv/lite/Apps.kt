@@ -69,6 +69,9 @@ object AppCatalog {
         ComponentName("com.xiaomi.smarthome.tv", "com.xiaomi.smarthome.tv.ui.MainActivity"),
         ComponentName("com.sony.dtv.searchapp", "com.ktcp.aiagent.xwability.activity.VoipHomeActivity"), // #1074
         ComponentName("com.gitv.dvb.live", "com.gitv.dvb.live.activity.PlayActivity"), // 宽带电视, #1378
+        ComponentName("com.xiaomi.mitv.appstore", "com.xiaomi.mitv.appstore.MainActivity"), // 应用商店, MiTV4C, #1568
+        ComponentName("com.baofengtv.tvplayer", "com.baofengtv.tvplayer.MainActivity"), // Baofeng AML_T962 live TV, #1378
+        ComponentName("com.bftv.fui.biu", "com.bftv.fui.biu.views.activity.FRowActivity"), // Baofeng AML_T962 inputs bar, #1378
     )
 
     /** Firmware apps drawn as Aerial's own tiles, by package, as in the full app. */
@@ -136,7 +139,6 @@ object AppCatalog {
         }
         found.remove(context.packageName)
         // The full app is a Home too; it is never one of Lite's tiles.
-        found.remove("app.orchard.tv")
 
         val byCategory = HashMap<String, SystemTile>()
         for ((category, tile) in SYSTEM_CATEGORIES) {
@@ -196,6 +198,9 @@ object AppCatalog {
     /** Apps whose tile is Aerial's own, as in the full app's AppCatalog.drawnByAerial. */
     private val drawnByAerial = java.util.concurrent.ConcurrentHashMap<String, SystemTile>()
 
+    /** A firmware settings tile must use the same route as Control Center, not its MAIN launcher. */
+    fun isSettingsTile(key: String): Boolean = drawnByAerial[key] == SystemTile.Settings
+
     /** Whether [pkg]'s tile shows the icon library's picture (when it has one). */
     fun usesLibrary(pkg: String): Boolean =
         IconLibrary.uses(pkg) && (!drawnByAerial.containsKey(pkg) || IconLibrary.pick(pkg) == IconLibrary.Pick.Library)
@@ -217,14 +222,14 @@ object AppCatalog {
         val corner = HomeView.CORNER
         val key = "halo3|$stamp|$fw|$fh|$corner"
         val file = File(dir, "$pkg.png")
+        // The image cache survives language changes; app labels must follow current resources.
+        val label = currentAppLabel(pm, info, pkg)
         val cached = index.getString(pkg, null)
         if (cached != null && cached.startsWith("$key|") && file.exists()) {
             BitmapFactory.decodeFile(file.path)?.let {
-                val label = if (stockHome) homeLabel else cached.substring(key.length + 1)
-                return AppEntry(pkg, label, component, leanback, !system, it)
+                return AppEntry(pkg, if (stockHome) homeLabel else label, component, leanback, !system, it)
             }
         }
-        val label = runCatching { info.loadLabel(pm).toString().trim() }.getOrDefault("").ifEmpty { pkg }
         if (quick) {
             val icon = runCatching { info.loadIcon(pm) }.getOrNull() ?: pm.defaultActivityIcon
             val art = TileFactory.quick(icon)
@@ -317,3 +322,7 @@ object AppCatalog {
         e.apply()
     }
 }
+
+/** Labels are resolved from current resources independently of cached artwork. */
+internal fun currentAppLabel(pm: PackageManager, info: ActivityInfo, pkg: String): String =
+    runCatching { info.loadLabel(pm).toString().trim() }.getOrDefault("").ifEmpty { pkg }

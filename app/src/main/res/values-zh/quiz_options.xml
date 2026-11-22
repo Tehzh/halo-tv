@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="quiz_settings">答题设置</string>
+    <string name="quiz_stage">年龄或年级</string>
+    <string name="quiz_stage_any">不限</string>
+    <string name="quiz_stage_preschool">学前</string>
+    <string name="quiz_stage_12">一二年级</string>
+    <string name="quiz_stage_34">三四年级</string>
+    <string name="quiz_stage_56">五六年级</string>
+    <string name="quiz_subject">题目类型</string>
+    <string name="quiz_subject_all">综合</string>
+    <string name="quiz_subject_math">数学</string>
+    <string name="quiz_subject_english">英语</string>
+    <string name="quiz_subject_poetry">古诗</string>
+</resources>

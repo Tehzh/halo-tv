@@ -86,8 +86,9 @@ object BootOpen {
             SystemClock.elapsedRealtime() - at < ms
     }
 
-    fun noteOpened(context: Context) {
+    fun noteOpened(context: Context, openedTarget: Boolean = true) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit(commit = true) {
+            putBoolean("opened_target", openedTarget)
             putLong(OPENED_ELAPSED, SystemClock.elapsedRealtime()).putLong(OPENED_BOOT, bootStamp())
                 .putLong(OPENED_ASLEEP, asleep()).putString(OPENED_BOOT_ID, BOOT_ID)
         }
@@ -139,6 +140,9 @@ object BootOpen {
     /** Whether the target was opened in this boot within the last [ms]. */
     fun openedWithin(context: Context, ms: Long): Boolean {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        // Staying at Home after an update handles the boot target without opening it. It must
+        // not look to Home Guard like a target the stock launcher covered just now.
+        if (!prefs.getBoolean("opened_target", true)) return false
         val opened = prefs.getLong(OPENED_ELAPSED, -1L)
         return opened >= 0 && thisBoot(opened, prefs.getLong(OPENED_BOOT, 0L), prefs.getString(OPENED_BOOT_ID, null)) &&
             SystemClock.elapsedRealtime() - opened < ms

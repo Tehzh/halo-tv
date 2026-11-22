@@ -64,6 +64,7 @@ class AerialDream : DreamService(), LifecycleOwner, SavedStateRegistryOwner {
         isFullscreen = true
         // Home's wallpaper film holds the decoder the dream's film needs (TCL MT5879).
         LiveFilm.onHome?.letDecoderGo()
+        app.orchard.tv.ui.home.HomeVideo.onHome?.letDecoderGo()
         AerialSettings.init(this)
         Wallpapers.init(this)
         Wallpapers.fitScreen(this)

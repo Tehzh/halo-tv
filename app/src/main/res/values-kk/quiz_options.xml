@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="quiz_settings">Викторина баптаулары</string>
+    <string name="quiz_stage">Жас немесе сынып</string>
+    <string name="quiz_stage_any">Барлығы</string>
+    <string name="quiz_stage_preschool">Мектепке дейін</string>
+    <string name="quiz_stage_12">1–2 сынып</string>
+    <string name="quiz_stage_34">3–4 сынып</string>
+    <string name="quiz_stage_56">5–6 сынып</string>
+    <string name="quiz_subject">Сұрақ түрі</string>
+    <string name="quiz_subject_all">Аралас</string>
+    <string name="quiz_subject_math">Математика</string>
+    <string name="quiz_subject_english">Ағылшын</string>
+    <string name="quiz_subject_poetry">Өлең</string>
+</resources>

@@ -76,9 +76,13 @@ object OnlineRotation {
         }
     }
     /** Called only after an explicit user download succeeds. */
-    fun markBingApplied(id: String, category: String, date: String) {
+    fun markBingApplied(id: String, category: String?, date: String) {
         generation++; running?.cancel()
-        prefs.edit { putString("bing_target", id); putString("bing_category", category); putString("bing_last_date", date); putLong("bing_next", next(bingMinutes)) }
+        prefs.edit {
+            putString("bing_target", id)
+            if (category != null) putString("bing_category", category)
+            putString("bing_last_date", date); putLong("bing_next", next(bingMinutes))
+        }
     }
     fun isBingGenerationCurrent(expected: Int): Boolean = initialized && expected == generation && bingMinutes != 0
     fun markVideoApplied() { prefs.edit { putLong("video_next", next(videoMinutes)) } }
@@ -103,21 +107,25 @@ object OnlineRotation {
             val lastDate = prefs.getString("bing_last_date", "").orEmpty()
             bingStatus = BingRotationStatus.Loading
             running = scope.launch {
-                val result = withContext(Dispatchers.IO) {
-                    runCatching { fetchNext(category, lastDate) }
-                        .onFailure { Log.w("OnlineRotation", "unable to obtain a random image", it) }.getOrNull()
-                }
-                if (expectedGeneration != generation || bingMinutes == 0 || Wallpapers.selectedId != target) {
-                    if (expectedGeneration == generation) bingStatus = BingRotationStatus.Idle
-                    return@launch
-                }
-                if (result != null && Wallpapers.storeBingRotation(result.first, result.second, target, expectedGeneration)) {
-                    prefs.edit { putString("bing_target", Wallpapers.BING_ROTATION); putString("bing_last_date", result.third); putLong("bing_next", next(bingMinutes)) }
-                    bingStatus = BingRotationStatus.Started
-                } else if (expectedGeneration == generation && bingMinutes != 0 && Wallpapers.selectedId == target) {
-                    bingStatus = BingRotationStatus.Failed
-                    prefs.edit { putLong("bing_next", System.currentTimeMillis() + 5 * 60_000L) }
-                }
+                val request = Wallpapers.beginBingRequest(explicit = false)
+                    ?: run { bingStatus = BingRotationStatus.Idle; return@launch }
+                try {
+                    val result = withContext(Dispatchers.IO) {
+                        runCatching { fetchNext(category, lastDate) }
+                            .onFailure { Log.w("OnlineRotation", "unable to obtain a random image", it) }.getOrNull()
+                    }
+                    if (expectedGeneration != generation || bingMinutes == 0 || Wallpapers.selectedId != target) {
+                        if (expectedGeneration == generation) bingStatus = BingRotationStatus.Idle
+                        return@launch
+                    }
+                    if (result != null && Wallpapers.storeBingRotation(result.first, result.second, request, expectedGeneration)) {
+                        prefs.edit { putString("bing_target", Wallpapers.BING_ROTATION); putString("bing_last_date", result.third); putLong("bing_next", next(bingMinutes)) }
+                        bingStatus = BingRotationStatus.Started
+                    } else if (expectedGeneration == generation && bingMinutes != 0 && Wallpapers.selectedId == target) {
+                        bingStatus = BingRotationStatus.Failed
+                        prefs.edit { putLong("bing_next", System.currentTimeMillis() + 5 * 60_000L) }
+                    }
+                } finally { Wallpapers.finishBingRequest(request) }
             }
         }
         val dueVideo = prefs.getLong("video_next", 0)

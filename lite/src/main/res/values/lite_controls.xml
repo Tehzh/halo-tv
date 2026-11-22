@@ -17,4 +17,14 @@
     <string name="lite_contact_xhs">Xiaohongshu</string>
     <string name="lite_contact_enlarge">Select a code and press OK to enlarge.</string>
     <string name="lite_contact_scan">Scan to contact</string>
+    <string name="lite_online_saver">Online pictures</string>
+    <string name="lite_online_saver_hint">Plays cached online pictures. Built-in pictures are used until the first online images are available.</string>
+    <string name="lite_guard_title">Halo TV Lite Home Guard</string>
+    <string name="lite_guard_description">Returns to Halo TV Lite when Home is pressed. During startup it may recover from the system desktop. It does not read screen content.</string>
+    <string name="lite_guard_open">Turn Home Guard on or off</string>
+    <string name="lite_guard_hint">In Accessibility, turn Halo TV Lite Home Guard on or off. If the service stays disconnected after a reboot, check the TV app settings for auto-start.</string>
+    <string name="lite_guard_unsupported">Home Guard · requires Android 5.0 or later</string>
+    <string name="lite_guard_off">Home Guard · off</string>
+    <string name="lite_guard_waiting">Home Guard · enabled, service disconnected</string>
+    <string name="lite_guard_connected">Home Guard · service connected</string>
 </resources>

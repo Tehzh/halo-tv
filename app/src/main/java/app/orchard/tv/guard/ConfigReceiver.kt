@@ -92,7 +92,12 @@ class ConfigReceiver : BroadcastReceiver() {
                 if (!HisenseSources.open(context, source.intent)) context.startActivity(source.intent)
                 "open_source: ${source.label} -> ${source.intent.component?.flattenToShortString() ?: source.intent.data}" +
                     (source.xiaomiInput?.let { " input=$it" } ?: "")
-            }.getOrElse { "open_source: ${it.javaClass.simpleName} ${it.message}" }
+            }.getOrElse {
+                if (it is android.content.ActivityNotFoundException && source.intent.data?.host == "android.media.tv" &&
+                    SystemProbe.openInputPicker(context)
+                ) "open_source: ${source.label} -> the TV's input picker (nothing answers ${source.intent.data})"
+                else "open_source: ${it.javaClass.simpleName} ${it.message}"
+            }
             return
         }
         if (intent.getBooleanExtra("clear_pin", false)) {
@@ -131,11 +136,11 @@ class ConfigReceiver : BroadcastReceiver() {
             AerialSettings.init(context)
             AerialSettings.chooseHomeColumns(intent.getIntExtra("home_columns", 5))
         }
-        // ... --ez diag true / --ez mode_switch false / --ez soft_layer true   (see DiagLog;
-        //                                 the last two apply the next time Home starts)
+        // ... --ez diag true / --ez soft_layer true   (see DiagLog;
+        //                                 soft_layer applies the next time Home starts)
         if (intent.hasExtra("diag")) DiagLog.setEnabled(context, intent.getBooleanExtra("diag", false))
         // ... --ez saver_fade_offscreen true   (issue #654, see DiagLog.saverFadeOffscreen)
-        for (key in listOf("mode_switch", "soft_layer", "saver_fade_offscreen")) {
+        for (key in listOf("soft_layer", "saver_fade_offscreen")) {
             if (intent.hasExtra(key)) DiagLog.setOption(context, key, intent.getBooleanExtra(key, false))
         }
         // ... --ez uhd_canvas true|false / --es uhd_canvas auto   (Home at the panel's resolution,
@@ -203,6 +208,9 @@ class ConfigReceiver : BroadcastReceiver() {
             edit.commit()
             HomeGuardService.refreshCecHome()
         }
+        // The manifest restricts this receiver to WRITE_SECURE_SETTINGS senders (ADB).
+        // A repair command is explicit user intent; ordinary launches never change an opt-out.
+        if (intent.hasExtra("halo_guard_recovery")) GuardRecoveryPolicy.setEnabled(context, intent.getBooleanExtra("halo_guard_recovery", false))
         GuardSetup.ensureEnabled(context)
         resultData = "keep_adb=${GuardSetup.keepAdb(context)} guard_off_in_standby=${GuardSetup.offInStandby(context)}"
     }

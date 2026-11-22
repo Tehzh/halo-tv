@@ -7,4 +7,10 @@
     <string name="halo_ann_later">明天再提醒</string>
     <string name="halo_ann_stop">不再提醒</string>
     <string name="halo_ann_ack">我知道了</string>
+    <string name="halo_ann_fullscreen">全屏阅读</string>
+    <string name="halo_ann_compact">收起阅读</string>
+    <string name="halo_ann_read_hint">↑↓ 翻页阅读 · → 操作按钮 · 可逐屏截图</string>
+    <string name="halo_ann_progress">阅读进度：%1$d%%</string>
+    <string name="halo_update_compatible">兼容方式安装</string>
+    <string name="halo_update_compatible_hint">已下载但安装界面未出现？使用系统安装器重试，无需重新下载。仍需在电视上确认安装。</string>
 </resources>

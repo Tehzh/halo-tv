@@ -20,6 +20,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
+import java.io.IOException
+import java.net.SocketTimeoutException
 import javax.net.ssl.SSLException
 import kotlin.math.roundToInt
 
@@ -29,19 +31,20 @@ enum class WeatherKind { Clear, PartlyCloudy, Cloudy, Fog, Rain, Snow, Thunder }
 data class WeatherNow(val celsius: Int, val kind: WeatherKind, val day: Boolean, val high: Int? = null, val low: Int? = null)
 
 /**
- * The weather beside the home clock, from Open-Meteo: no key, reachable from China. The place is
+ * The weather beside the home clock, from Open-Meteo: with no API key. The place is
  * the one the owner names on the phone page, or else a guess from the network's public address.
  * The guess is often wrong behind a proxy (a whole home behind one shows another country), which
  * is why the phone page shows it and lets the owner correct it.
  *
- * Fetched when Home comes to the front, at most once an hour; nothing runs while the TV is idle.
+ * While Home is in front, refresh hourly and retry transient failures sooner.
  * Compose state, written on the main thread only.
  */
 object Weather {
     private const val TAG = "AerialWeather"
     private const val PREFS = "weather"
     private const val REFRESH_MS = 60 * 60 * 1000L
-    private const val RETRY_MS = 10 * 60 * 1000L
+    /** After a failed reading; only checked when Home comes to the front (issue #1576). */
+    private const val RETRY_MS = 3 * 60 * 1000L
     private const val RELOCATE_MS = 24 * 60 * 60 * 1000L
     /** A reading older than this is not shown at all. */
     private const val STALE_MS = 24 * 60 * 60 * 1000L
@@ -62,6 +65,13 @@ object Weather {
     private var started = false
     private var lastAttempt = 0L
     private var job: Job? = null
+    private val locationLock = Any()
+    private var locationRevision = 0L
+    private var cityRequest = 0L
+    private fun revision(): Long = synchronized(locationLock) { locationRevision }
+    private fun locationWrite(expected: Long, edit: SharedPreferences.Editor.() -> Unit) = synchronized(locationLock) {
+        if (locationRevision == expected) prefs.edit(action = edit)
+    }
 
     fun init(context: Context) {
         if (started) return
@@ -91,15 +101,32 @@ object Weather {
         if (lastAttempt == 0L || since >= REFRESH_MS || (failed && (networkCameUp || since >= RETRY_MS))) refresh()
     }
 
+    private var lastResult = "none"
+
+    /** Diagnostic state without a place name or coordinates. */
+    fun diagnostics(): String {
+        if (!started) return "not started in this process"
+        val fetched = prefs.getLong("fetched_at", 0L)
+        val readAgo = if (fetched == 0L) "never" else "${(System.currentTimeMillis() - fetched) / 60_000} min ago"
+        val attemptedAgo = if (lastAttempt == 0L) "never" else "${(SystemClock.elapsedRealtime() - lastAttempt).coerceAtLeast(0L) / 60_000} min ago"
+        return "shown=${now != null} chosen=$chosen located=${!prefs.getFloat("lat", Float.NaN).isNaN()}; " +
+            "read $readAgo; attempt $attemptedAgo, result=$lastResult, inFlight=${job?.isActive == true}"
+    }
+
     private fun refresh() {
         lastAttempt = SystemClock.elapsedRealtime().coerceAtLeast(1L)
+        lastResult = "pending"
         job?.cancel()
+        val expected = revision()
         job = scope.launch {
+            var why: String? = null
             val reading = withContext(Dispatchers.IO) {
-                runCatching { fetch() }.onFailure { Log.w(TAG, "weather unavailable", it) }.getOrNull()
+                runCatching { fetch(expected) }.onFailure { Log.w(TAG, "weather unavailable: ${reasonOf(it)}"); why = reasonOf(it) }.getOrNull()
             }
+            if (revision() != expected) return@launch
             prefs.getString("place", null)?.let { place = it }
             failed = reading == null
+            lastResult = if (reading != null) "success" else "failed ($why)"
             if (reading != null) {
                 now = reading
                 prefs.edit {
@@ -114,19 +141,28 @@ object Weather {
         }
     }
 
+    /**
+     * Why a reading failed, for the diagnostics: the HTTP status or the exception's kind, never its
+     * message, which can hold the URL and so the coordinates. Two 1.97 reports showed only
+     * "failed" for hours while our TVs read the weather (issues #1538 #1548).
+     */
+    private fun reasonOf(e: Throwable): String = if (e is HttpStatus || e is ForecastRequest.Status) e.message.orEmpty() else e.javaClass.simpleName
+
+    private class HttpStatus(code: Int) : java.io.IOException("HTTP $code")
+
     /** Off the main thread. */
-    private fun fetch(): WeatherNow {
+    private fun fetch(expected: Long): WeatherNow {
         var lat = prefs.getFloat("lat", Float.NaN)
         var lon = prefs.getFloat("lon", Float.NaN)
         if ((!lat.isFinite() || !lon.isFinite()) && prefs.getBoolean("chosen", false)) {
             prefs.getString("place", null)?.let { Cities.find(app, it) }?.let {
                 lat = it.lat.toFloat(); lon = it.lon.toFloat()
-                prefs.edit { putFloat("lat", lat); putFloat("lon", lon) }
+                locationWrite(expected) { putFloat("lat", lat); putFloat("lon", lon) }
             }
         }
         val guessedLongAgo = System.currentTimeMillis() - prefs.getLong("located_at", 0) > RELOCATE_MS
         if (prefs.getBoolean("chosen", false) && !lat.isNaN() && !prefs.getBoolean("checked_against_cities", false)) {
-            correctChosenPlace(lat, lon)?.let { lat = it.lat.toFloat(); lon = it.lon.toFloat() }
+            correctChosenPlace(lat, lon, expected)?.let { lat = it.lat.toFloat(); lon = it.lon.toFloat() }
         }
         if (!prefs.getBoolean("chosen", false) && (!lat.isFinite() || !lon.isFinite() || lat !in -90f..90f || lon !in -180f..180f || guessedLongAgo)) {
             val guess = locate()
@@ -142,7 +178,7 @@ object Weather {
                         (Cities.near(app, it, lat.toDouble(), lon.toDouble(), km = 80.0, ascii = true)
                             ?: Cities.mainNear(app, lat.toDouble(), lon.toDouble(), km = 20.0))?.name
                     }
-                prefs.edit {
+                locationWrite(expected) {
                     putFloat("lat", lat); putFloat("lon", lon)
                     putString("place", zh ?: city)
                     putLong("located_at", System.currentTimeMillis())
@@ -150,7 +186,7 @@ object Weather {
             }
         }
         require(lat.isFinite() && lat in -90f..90f && lon.isFinite() && lon in -180f..180f) { "Choose a weather city in HaloTV settings" }
-        val json = JSONObject(get("https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto"))
+        val json = ForecastRequest.load(lat, lon)
         val current = json.getJSONObject("current")
         val daily = json.optJSONObject("daily")
         fun today(key: String) = daily?.optJSONArray(key)?.optDouble(0)?.takeIf { !it.isNaN() }?.roundToInt()
@@ -205,11 +241,11 @@ object Weather {
      * Jiangsu. If a listed city of that name is not where the chosen point is, the city is meant.
      * Checked once.
      */
-    private fun correctChosenPlace(lat: Float, lon: Float): Cities.City? {
+    private fun correctChosenPlace(lat: Float, lon: Float, expected: Long): Cities.City? {
         val name = prefs.getString("place", null)
         val city = name?.let { runCatching { Cities.find(app, it) }.getOrNull() }
             ?.takeIf { Cities.near(app, it.name, lat.toDouble(), lon.toDouble(), km = 30.0) == null }
-        prefs.edit {
+        locationWrite(expected) {
             putBoolean("checked_against_cities", true)
             if (city != null) {
                 Log.i(TAG, "chosen place $name moved to the city of that name")
@@ -225,6 +261,8 @@ object Weather {
      * False when there is no such place.
      */
     suspend fun choose(name: String): Boolean {
+        if (name.isBlank() || name.length > 96) return false
+        val expected = synchronized(locationLock) { ++cityRequest }
         val hit = withContext(Dispatchers.IO) {
             runCatching { Cities.find(app, name) }.onFailure { Log.w(TAG, "could not read the city list", it) }.getOrNull()
                 ?.let { Triple(it.lat, it.lon, it.name) }
@@ -241,22 +279,28 @@ object Weather {
                     best?.let { Triple(it.getDouble("latitude"), it.getDouble("longitude"), it.optString("name").ifBlank { name.trim() }) }
                 }.onFailure { Log.w(TAG, "could not look up $name", it) }.getOrNull()
         } ?: return false
-        prefs.edit {
-            putFloat("lat", hit.first.toFloat())
-            putFloat("lon", hit.second.toFloat())
-            putString("place", hit.third)
-            putBoolean("chosen", true)
-            putBoolean("checked_against_cities", true)
+        return withContext(Dispatchers.Main) {
+            synchronized(locationLock) {
+                if (cityRequest != expected) return@withContext false
+                locationRevision++
+                prefs.edit {
+                    putFloat("lat", hit.first.toFloat()); putFloat("lon", hit.second.toFloat())
+                    putString("place", hit.third); putBoolean("chosen", true)
+                    putBoolean("checked_against_cities", true); remove("fetched_at")
+                }
+                chosen = true; place = hit.third; now = null
+            }
+            refresh()
+            true
         }
-        chosen = true
-        place = prefs.getString("place", null)
-        refresh()
-        return true
     }
 
     /** Back to guessing the place from the network. */
     fun useNetworkLocation() {
-        prefs.edit { putBoolean("chosen", false); remove("lat"); remove("lon"); remove("located_at") }
+        synchronized(locationLock) {
+            locationRevision++; cityRequest++
+            prefs.edit { putBoolean("chosen", false); remove("lat"); remove("lon"); remove("located_at") }
+        }
         chosen = false
         refresh()
     }
@@ -274,11 +318,15 @@ object Weather {
 
     /**
      * Android before 7.1 does not trust the Let's Encrypt root these hosts use; they answer the
-     * same over plain HTTP (allowed for them in network_security_config.xml).
+     * same over plain HTTP (allowed for them in network_security_config.xml). A handshake that
+     * never answers goes the same way: MiTV-MFTR0 on 1.98 timed out in the TLS handshake to
+     * open-meteo for hours, while a PC on the same network read it in a second (issue #1576, also
+     * #1555 #1487 #1538).
      */
     private fun get(url: String): String = try {
         read(url)
-    } catch (e: SSLException) {
+    } catch (e: IOException) {
+        if (e !is SSLException && e !is SocketTimeoutException) throw e
         read(url.replaceFirst("https://", "http://"))
     }
 
@@ -287,6 +335,8 @@ object Weather {
         c.connectTimeout = 8_000
         c.readTimeout = 10_000
         return try {
+            val code = c.responseCode
+            if (code !in 200..299) throw HttpStatus(code)
             c.inputStream.use { it.readBytes().decodeToString() }
         } finally {
             c.disconnect()

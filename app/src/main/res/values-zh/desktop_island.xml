@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="island_title">桌面灵动岛</string>
+    <string name="island_enabled">开启桌面灵动岛</string>
+    <string name="island_cost">开启桌面灵动岛可能增加内存占用。关闭后不会运行此功能，也不会影响 HaloTV 的其他功能。旧设备或低配置电视不建议开启。</string>
+    <string name="island_playback_hint">开启灵动岛后，请关闭动态壁纸的声音。要显示音乐，请在音乐 App 内开启后台播放权限。</string>
+    <string name="island_music">后台播放的音乐</string>
+    <string name="island_source">音乐来源 App</string>
+    <string name="island_no_source">未选择</string>
+    <string name="island_empty_sources">没有可选择的应用。</string>
+    <string name="island_access">通知使用权</string>
+    <string name="island_access_on">已授权</string>
+    <string name="island_access_off">未授权</string>
+    <string name="island_access_hint">要显示音乐，请在通知使用权中允许「Halo TV 桌面守护」，并选择音乐应用。仅显示所选应用正在播放的内容，应用不支持系统媒体会话时不会显示。</string>
+    <string name="island_access_manual">请到电视系统设置的「特殊应用权限」查找「通知使用权」，并允许「Halo TV 桌面守护」。电视没有此设置时，音乐胶囊不会显示。</string>
+    <string name="island_transfers">手机素材传输</string>
+    <string name="island_updates">更新下载</string>
+    <string name="island_receiving_photos">正在接收照片</string>
+    <string name="island_received_photos">查看接收的照片</string>
+    <string name="island_receiving_video">正在接收视频</string>
+    <string name="island_received_video">查看接收的视频</string>
+    <string name="island_downloading">正在下载更新</string>
+    <string name="island_update_ready">查看已下载的更新</string>
+    <string name="island_percent">%1$d%%</string>
+    <string name="island_position">灵动岛位置</string>
+    <string name="island_position_center">居中</string>
+    <string name="island_position_right">右上</string>
+    <string name="island_position_left">左下</string>
+</resources>

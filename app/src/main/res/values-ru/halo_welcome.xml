@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="welcome_light_hello">Привет</string>
+    <string name="welcome_light_title">Добро пожаловать в HaloTV</string>
+    <string name="welcome_light_subtitle">Новый взгляд на ваш телевизор.</string>
+    <string name="welcome_light_start">Открыть рабочий стол</string>
+    <string name="welcome_light_remote">Нажмите OK на пульте, чтобы начать</string>
+    <string name="welcome_light_credit">На основе Aerial · Спасибо автору и всем участникам проекта</string>
+</resources>

@@ -46,7 +46,7 @@ class AnnouncementBodyTest {
 
     @Test fun sheetKeepsFocusOnTheBodyUntilItsLastPage() {
         val notice = RemoteAnnouncement("reading", 1, "长标题".repeat(33), "长公告需要用遥控器逐页阅读。".repeat(350))
-        val sheet = AnnouncementSheet(context, notice, {}, {})
+        val sheet = AnnouncementSheet(context, notice, {})
         sheet.measure(View.MeasureSpec.makeMeasureSpec(960, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(540, View.MeasureSpec.EXACTLY))
         sheet.layout(0, 0, 960, 540)
@@ -65,5 +65,49 @@ class AnnouncementBodyTest {
             assertTrue(++steps < 300)
         }
         assertEquals(body.maxOffset, body.offset)
+    }
+
+    @Test fun readingAreaUsesAvailableHeightAndReportsTheLastPage() {
+        val body = AnnouncementBody(context, "完整的安装和守护说明。".repeat(400))
+        var progress = -1
+        body.onProgress = { progress = it }
+        body.measure(View.MeasureSpec.makeMeasureSpec(720, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(300, View.MeasureSpec.EXACTLY))
+        body.layout(0, 0, 720, 300)
+        assertEquals(300, body.height)
+        assertEquals(0, progress)
+        while (body.page(1)) { }
+        assertEquals(100, progress)
+        body.page(-1)
+        assertTrue(progress < 100)
+    }
+
+    @Test fun fullscreenButtonWorksWithoutBrowserAndPreservesReadingPosition() {
+        val sheet = AnnouncementSheet(context,
+            RemoteAnnouncement("local", 1, "阅读公告", "完整的 AI 指令。\n".repeat(150),
+                detailsUrl = "https://halo-tv.pages.dev/help/update-and-setup.html"), {})
+        fun layout() {
+            sheet.measure(View.MeasureSpec.makeMeasureSpec(960, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(540, View.MeasureSpec.EXACTLY))
+            sheet.layout(0, 0, 960, 540)
+        }
+        fun key(code: Int) {
+            sheet.onKey(KeyEvent(KeyEvent.ACTION_DOWN, code))
+            sheet.onKey(KeyEvent(KeyEvent.ACTION_UP, code))
+        }
+        layout()
+        val body = sheet.focused as AnnouncementBody
+        key(KeyEvent.KEYCODE_DPAD_DOWN)
+        assertTrue(body.offset > 0)
+        key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        assertTrue(sheet.focused is MenuRow)
+        key(KeyEvent.KEYCODE_DPAD_CENTER)
+        layout()
+        assertSame(body, sheet.focused)
+        assertTrue(body.offset > 0)
+        key(KeyEvent.KEYCODE_DPAD_RIGHT)
+        assertEquals(context.getString(R.string.halo_ann_compact), (sheet.focused as MenuRow).text)
+        key(KeyEvent.KEYCODE_DPAD_UP)
+        assertSame(body, sheet.focused)
     }
 }

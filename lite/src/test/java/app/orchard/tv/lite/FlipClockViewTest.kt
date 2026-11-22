@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.view.View
 import org.junit.Test
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
@@ -14,6 +16,25 @@ import org.robolectric.annotation.GraphicsMode
 @Config(sdk = [28])
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class FlipClockViewTest {
+    @Test fun colonBlinksWithoutMovingTheDigitsAndCanBeDisabled() {
+        val clock = FlipClockView(RuntimeEnvironment.getApplication())
+        clock.layout(0, 0, 960, 540)
+        val bitmap = Bitmap.createBitmap(960, 540, Bitmap.Config.ARGB_8888)
+        fun pixels(): Int {
+            clock.draw(Canvas(bitmap))
+            return (470..490).sumOf { x -> (180..320).count { y -> android.graphics.Color.red(bitmap.getPixel(x, y)) > 200 } }
+        }
+        try {
+            clock.setContents("1215", "Date", "30", 1)
+            assertTrue(pixels() > 0)
+            clock.setContents("1215", "Date", "31", 1)
+            assertEquals(0, pixels())
+            clock.setContents("1215", "Date", null, 1)
+            assertEquals(0, pixels())
+            clock.setContents("1215", "Date", "30", 0)
+            assertEquals(0, pixels())
+        } finally { bitmap.recycle() }
+    }
     @Test fun shortAndNormalCanvasesRenderWithoutAnInvalidFontRange() {
         val clock = FlipClockView(RuntimeEnvironment.getApplication())
         clock.setContents("0915", "日期 · 农历 · 天气", "30")

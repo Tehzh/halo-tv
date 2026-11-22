@@ -77,10 +77,12 @@ private fun LocalFilms(
         // As AerialSaver does: Home's wallpaper film starts again as Home resumes for a moment
         // under the dream, and would hold the decoder this film needs (TCL MT5879).
         LiveFilm.onHome?.letDecoderGo()
+        app.orchard.tv.ui.home.HomeVideo.onHome?.letDecoderGo()
         ExoPlayer.Builder(context).setLoadControl(
             DefaultLoadControl.Builder().setTargetBufferBytes(12 * 1024 * 1024)
                 .setBufferDurationsMs(5_000, 15_000, 500, 1_000).build(),
         ).build().apply {
+            setAudioAttributes(androidx.media3.common.AudioAttributes.DEFAULT, false)
             volume = 0f
             trackSelectionParameters = trackSelectionParameters.buildUpon().setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, true).build()
             repeatMode = Player.REPEAT_MODE_ALL

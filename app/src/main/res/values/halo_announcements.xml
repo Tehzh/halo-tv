@@ -7,4 +7,10 @@
     <string name="halo_ann_later">Remind me tomorrow</string>
     <string name="halo_ann_stop">Do not remind again</string>
     <string name="halo_ann_ack">Got it</string>
+    <string name="halo_ann_fullscreen">Full-screen reading</string>
+    <string name="halo_ann_compact">Compact view</string>
+    <string name="halo_ann_read_hint">↑↓ Page through text · → Actions · Capture each screen</string>
+    <string name="halo_ann_progress">Reading: %1$d%%</string>
+    <string name="halo_update_compatible">Install with system installer</string>
+    <string name="halo_update_compatible_hint">Downloaded but no installer appeared? Retry with the system installer without downloading again. Confirm installation on the TV.</string>
 </resources>

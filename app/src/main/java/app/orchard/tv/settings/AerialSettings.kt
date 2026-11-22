@@ -13,6 +13,7 @@ import android.provider.Settings
 import app.orchard.tv.apps.IconLibrary
 import app.orchard.tv.guard.GuardSetup
 import app.orchard.tv.system.DeviceClass
+import app.orchard.tv.wallpaper.AerialFormats
 import app.orchard.tv.wallpaper.AerialQuality
 import java.security.MessageDigest
 
@@ -24,7 +25,9 @@ import java.security.MessageDigest
  * grows, and owners lost track of it. The personal style uses the Clean Your TV translucent focus plate.
  */
 enum class FocusStyle(val key: String) {
-    Standard("standard"), HighContrast("high_contrast"), LiquidSlide("liquid_slide");
+    Standard("standard"), HighContrast("high_contrast"), LiquidSlide("liquid_slide"), ClassicGlassSlide("classic_glass_slide");
+
+    val sliding: Boolean get() = this == LiquidSlide || this == ClassicGlassSlide
 
     companion object {
         fun of(key: String?) = entries.firstOrNull { it.key == key } ?: HighContrast
@@ -57,15 +60,6 @@ enum class Effects(val key: String) {
     }
 }
 
-/** The refresh rate Aerial requests for its own home window. */
-enum class HomeRefreshRate(val key: String, val hz: Int?) {
-    Auto("auto", null), Hz30("30", 30), Hz60("60", 60), Hz120("120", 120);
-
-    companion object {
-        fun of(key: String?) = entries.firstOrNull { it.key == key } ?: Auto
-    }
-}
-
 /**
  * 24- or 12-hour time. System follows the TV's own setting, and 24 hours where the TV has none: an
  * unset setting means the locale's habit, and zh_CN's is 12-hour, which TV clocks here never show
@@ -85,7 +79,7 @@ object AerialSettings {
     private var started = false
     private lateinit var app: Context
 
-    private var chosenFocusStyle by mutableStateOf(FocusStyle.LiquidSlide)
+    private var chosenFocusStyle by mutableStateOf(FocusStyle.ClassicGlassSlide)
 
     /** The style chosen; always the white frame in Elders mode (Restricted), where it is easiest to see (#969). */
     val focusStyle: FocusStyle get() = if (Restricted.active && Restricted.kind == RestrictedKind.Elders) FocusStyle.HighContrast else chosenFocusStyle
@@ -160,6 +154,7 @@ object AerialSettings {
     /** The Liquid Glass plate under the top row; some prefer the apps straight on the wallpaper (#151). */
     var homePlate by mutableStateOf(true); private set
     var compactDockCorners by mutableStateOf(false); private set
+    var dockSize by mutableStateOf(DockSize.DEFAULT); private set
     var plateStyle by mutableStateOf(1); private set
 
     /** Individual visibility controls for the desktop clock. */
@@ -189,6 +184,13 @@ object AerialSettings {
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putBoolean("flip_clock_24_hour", value) }
     }
     var flipClockSeconds by mutableStateOf(false); private set
+    /** Numeric seconds (0), or a blinking colon between hours and minutes (1). */
+    var flipClockSecondsStyle by mutableIntStateOf(0); private set
+    fun chooseFlipClockSecondsStyle(value: Int) {
+        if (value !in 0..1) return
+        flipClockSecondsStyle = value
+        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putInt("flip_clock_seconds_style", value) }
+    }
     fun chooseClock24Hour(value: Boolean) {
         chooseClockHours(if (value) ClockHours.H24 else ClockHours.H12)
     }
@@ -240,10 +242,12 @@ object AerialSettings {
     var screensaverClock by mutableStateOf(true); private set
 
     /** Every app's name under its tile, not only the focused one's (issue #28), the top row's on the glass plate too. */
-    private var chosenAllNames by mutableStateOf(false)
+    private var chosenNameStyle by mutableStateOf(0)
 
     /** As chosen; always every name in Elders mode (Restricted). */
-    val showAllNames: Boolean get() = chosenAllNames || (Restricted.active && Restricted.kind == RestrictedKind.Elders)
+    val appNameStyle: Int get() = if ((Restricted.active && Restricted.kind == RestrictedKind.Elders)) 1 else chosenNameStyle
+    val showAllNames: Boolean get() = appNameStyle == 1
+    val largeAppTitle: Boolean get() = appNameStyle == 2
 
     /** Back on Home's top row starts the screensaver, as on tvOS; off for homes where it gets pressed by accident (issue #94). */
     var backStartsScreensaver by mutableStateOf(true); private set
@@ -286,7 +290,6 @@ object AerialSettings {
     var effects by mutableStateOf(Effects.Auto); private set
 
     /** Refresh rate requested by the Aerial window; Auto only switches to OS-declared seamless modes. */
-    var homeRefreshRate by mutableStateOf(HomeRefreshRate.Auto); private set
 
     /** This TV counts as low-end for [Effects.Auto]; see DeviceClass. */
     var lowEnd = false; private set
@@ -303,7 +306,7 @@ object AerialSettings {
         started = true
         app = context.applicationContext
         val prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        chosenFocusStyle = FocusStyle.of(prefs.getString("focus_style", FocusStyle.LiquidSlide.key))
+        chosenFocusStyle = FocusStyle.of(prefs.getString("focus_style", FocusStyle.ClassicGlassSlide.key))
         pinnedSources = prefs.getStringSet("pinned_sources", null)?.toSet() ?: emptySet()
         hiddenSources = prefs.getStringSet("hidden_sources", null)?.toSet() ?: emptySet()
         cecSwitch = prefs.getBoolean("cec_switch", false)
@@ -322,6 +325,7 @@ object AerialSettings {
         flipClock24Hour = prefs.getBoolean("flip_clock_24_hour", clock24Hour)
         if (!prefs.contains("flip_clock_24_hour")) prefs.edit { putBoolean("flip_clock_24_hour", flipClock24Hour) }
         flipClockSeconds = prefs.getBoolean("flip_clock_seconds", false)
+        flipClockSecondsStyle = prefs.getInt("flip_clock_seconds_style", 0).coerceIn(0, 1)
         clockRight = prefs.getBoolean("clock_right", false)
         largeClock = prefs.getBoolean("large_clock", true)
         clockPosition = prefs.getInt("clock_position", if (clockRight) 1 else 0).coerceIn(0, 3)
@@ -329,35 +333,32 @@ object AerialSettings {
         largeClock = true
         clockTextColor = prefs.getInt("clock_text_color", 0).coerceIn(0, 2)
         settingsIconPosition = prefs.getInt("settings_icon_position", 1).coerceIn(0, 2)
-        settingsIconVisibility = prefs.getInt("settings_icon_visibility", if (prefs.getBoolean("settings_icon_auto_fade", false)) 1 else 0).coerceIn(0, 2)
+        settingsIconVisibility = prefs.getInt("settings_icon_visibility", if (prefs.getBoolean("settings_icon_auto_fade", true)) 1 else 0).coerceIn(0, 2)
         clockHours = if (prefs.contains("clock_hours")) ClockHours.of(prefs.getString("clock_hours", null))
             else if (clock24Hour) ClockHours.H24 else ClockHours.H12
         homeLocked = prefs.getBoolean("home_locked", false)
         photoMinutes = prefs.getInt("photo_minutes", DAY_MINUTES).takeIf { it in PHOTO_MINUTES } ?: DAY_MINUTES
         homePlate = prefs.getBoolean("home_plate", true)
         compactDockCorners = prefs.getBoolean("compact_dock_corners", false)
+        dockSize = DockSize.normalize(prefs.getInt("dock_size", DockSize.DEFAULT))
         plateStyle = prefs.getInt("plate_style", if (prefs.contains("home_plate")) { if (homePlate) 0 else 2 } else 1).coerceIn(0, 2)
         homePlate = plateStyle != 2
-        chosenAllNames = prefs.getBoolean("show_all_names", false)
+        chosenNameStyle = prefs.getInt("app_name_style", if (prefs.getBoolean("show_all_names", false)) 1 else 0).takeIf { it in 0..2 } ?: 0
         wallpaperAlwaysMoves = prefs.getBoolean("wallpaper_always_moves", true)
         showWeather = prefs.getBoolean("show_weather", true)
-        showLunarDate = prefs.getBoolean("show_lunar_date", false)
+        showLunarDate = prefs.getBoolean("show_lunar_date", true)
         showDeviceCapacity = prefs.getBoolean("show_device_capacity", true)
         screensaverClock = prefs.getBoolean("screensaver_clock", true)
         // Before 1.28 this was on or off; on meant whichever sounds Aerial played.
-        uiSounds = UiSounds.of(prefs.getString("ui_sounds_kind", null)) ?: when {
-            !prefs.getBoolean("ui_sounds", true) -> UiSounds.Off
-            prefs.contains("ui_sounds") && Settings.System.getInt(app.contentResolver, Settings.System.SOUND_EFFECTS_ENABLED, 1) == 1 -> UiSounds.Tv
-            else -> UiSounds.Aerial
-        }
+        uiSounds = UiSounds.of(prefs.getString("ui_sounds_kind", null))
+            ?: if (prefs.contains("ui_sounds") && !prefs.getBoolean("ui_sounds", true)) UiSounds.Off else UiSounds.Soft
         backStartsScreensaver = prefs.getBoolean("back_starts_screensaver", true)
-        autoCleanIdle = prefs.getBoolean("auto_clean_idle", false)
+        autoCleanIdle = prefs.getBoolean("auto_clean_idle", true)
         screensaverMinutes = prefs.getInt("screensaver_minutes", DEFAULT_SCREENSAVER_MINUTES)
         aerialQuality = AerialQuality.of(prefs.getString("aerial_quality", null))
         videoWallpaperMuted = prefs.getBoolean("video_wallpaper_muted", true)
         videoWallpaperFit = prefs.getBoolean("video_wallpaper_fit", false)
         effects = Effects.of(prefs.getString("effects", null))
-        homeRefreshRate = HomeRefreshRate.of(prefs.getString("home_refresh_rate", null))
         lowEnd = DeviceClass.lowEnd(app)
     }
 
@@ -430,6 +431,12 @@ object AerialSettings {
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putBoolean("compact_dock_corners", compact) }
     }
 
+    fun chooseDockSize(value: Int) {
+        if (!DockSize.valid(value)) return
+        dockSize = value
+        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putInt("dock_size", value) }
+    }
+
     fun choosePlateStyle(style: Int) {
         plateStyle = style.coerceIn(0, 2)
         chooseHomePlate(plateStyle != 2)
@@ -498,9 +505,14 @@ object AerialSettings {
         }
     }
 
-    fun chooseShowAllNames(on: Boolean) {
-        chosenAllNames = on
-        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putBoolean("show_all_names", on) }
+    fun chooseShowAllNames(on: Boolean) = chooseAppNameStyle(if (on) 1 else 0)
+
+    fun chooseAppNameStyle(style: Int) {
+        if (style !in 0..2) return
+        chosenNameStyle = style
+        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
+            putInt("app_name_style", style); putBoolean("show_all_names", style == 1)
+        }
     }
 
     fun chooseVideoWallpaperMuted(on: Boolean) {
@@ -544,6 +556,7 @@ object AerialSettings {
     }
 
     fun chooseAerialQuality(quality: AerialQuality) {
+        AerialFormats.resetLegacyTrial()
         aerialQuality = quality
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putString("aerial_quality", quality.key) }
     }
@@ -578,11 +591,6 @@ object AerialSettings {
     fun chooseEffects(choice: Effects) {
         effects = choice
         app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putString("effects", choice.key) }
-    }
-
-    fun chooseHomeRefreshRate(choice: HomeRefreshRate) {
-        homeRefreshRate = choice
-        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit { putString("home_refresh_rate", choice.key) }
     }
 
     fun chooseFocusStyle(style: FocusStyle) {

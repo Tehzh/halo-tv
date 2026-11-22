@@ -9,15 +9,14 @@ import javax.net.ssl.SSLException
 import kotlin.math.roundToInt
 
 /**
- * The weather beside the clock, as the full app's weather/Weather.kt: Open-Meteo (no key, reachable
- * from China) for a place guessed from the network's address (ipinfo.io), named in Chinese from the
- * city list when the TV speaks Chinese. Lite has no phone page, so the place is always the guess.
- * Fetched when Home comes to the front, at most once an hour; nothing runs while the TV is idle.
+ * The weather beside the clock, as the full app's weather/Weather.kt: Open-Meteo (no API key) for a place guessed from the network's address (ipinfo.io), named in Chinese from the
+ * city list when the TV speaks Chinese. The owner can also choose the city from the phone page.
+ * While Home is in front, refresh hourly and retry transient failures sooner.
  */
 object Weather {
     private const val TAG = "AerialLite"
     private const val REFRESH_MS = 60 * 60 * 1000L
-    private const val RETRY_MS = 10 * 60 * 1000L
+    private const val RETRY_MS = 3 * 60 * 1000L
     private const val RELOCATE_MS = 24 * 60 * 60 * 1000L
     private const val STALE_MS = 24 * 60 * 60 * 1000L
     private const val NONE = Int.MIN_VALUE
@@ -34,7 +33,10 @@ object Weather {
     private lateinit var app: Context
     private var lastAttempt = 0L
     private var failed = false
-    @Volatile private var fetching = false
+    private var fetching = false
+    private val locationLock = Any()
+    private var locationRevision = 0L
+    private var cityRequest = 0L
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
@@ -54,29 +56,46 @@ object Weather {
     /** Fetches on [run] (a background executor) when due; [done] on the main thread when it changed. */
     fun refreshIfStale(run: (Runnable) -> Unit, force: Boolean = false, networkUp: Boolean = false, done: () -> Unit) {
         if (!::prefs.isInitialized) return
-        if (fetching) return
-        val since = android.os.SystemClock.elapsedRealtime() - lastAttempt
-        if (!force && lastAttempt != 0L && since < REFRESH_MS && !(failed && (since >= RETRY_MS || networkUp))) return
-        lastAttempt = android.os.SystemClock.elapsedRealtime().coerceAtLeast(1L)
-        fetching = true
-        run(Runnable {
-            val reading = runCatching { fetch() }.onFailure { Log.w(TAG, "weather unavailable", it) }.getOrNull()
-            fetching = false
-            failed = reading == null
-            if (reading != null) {
-                now = reading
-                place = prefs.getString("place", null)
-                prefs.edit()
-                    .putLong("fetched_at", System.currentTimeMillis())
-                    .putInt("celsius", reading.celsius).putString("kind", reading.kind.name).putBoolean("day", reading.day)
-                    .putInt("high", reading.high ?: NONE).putInt("low", reading.low ?: NONE)
-                    .apply()
-                done()
-            }
-        })
+        val expected = synchronized(locationLock) {
+            if (fetching) return
+            val since = android.os.SystemClock.elapsedRealtime() - lastAttempt
+            if (!force && lastAttempt != 0L && since < REFRESH_MS && !(failed && (since >= RETRY_MS || networkUp))) return
+            lastAttempt = android.os.SystemClock.elapsedRealtime().coerceAtLeast(1L)
+            fetching = true
+            locationRevision
+        }
+        try {
+            run(Runnable {
+                val reading = runCatching { fetch(expected) }.onFailure {
+                    val reason = if (it is ForecastRequest.Status) it.message else it.javaClass.simpleName
+                    Log.w(TAG, "weather unavailable: $reason")
+                }.getOrNull()
+                val retry = synchronized(locationLock) {
+                    fetching = false
+                    if (locationRevision != expected) true
+                    else {
+                        failed = reading == null
+                        if (reading != null) {
+                            now = reading
+                            place = prefs.getString("place", null)
+                            prefs.edit()
+                                .putLong("fetched_at", System.currentTimeMillis())
+                                .putInt("celsius", reading.celsius).putString("kind", reading.kind.name).putBoolean("day", reading.day)
+                                .putInt("high", reading.high ?: NONE).putInt("low", reading.low ?: NONE)
+                                .apply()
+                        }
+                        false
+                    }
+                }
+                if (retry) refreshIfStale(run, force = true, done = done)
+                else if (reading != null) done()
+            })
+        } catch (_: java.util.concurrent.RejectedExecutionException) {
+            synchronized(locationLock) { fetching = false; failed = true }
+        }
     }
 
-    private fun fetch(): Now {
+    private fun fetch(expected: Long): Now {
         var lat = prefs.getFloat("lat", Float.NaN)
         var lon = prefs.getFloat("lon", Float.NaN)
         if (!prefs.getBoolean("chosen", false) && (!lat.isFinite() || !lon.isFinite() || lat !in -90f..90f || lon !in -180f..180f || System.currentTimeMillis() - prefs.getLong("located_at", 0) > RELOCATE_MS)) {
@@ -94,8 +113,10 @@ object Weather {
                             ?: Cities.mainNear(app, lat.toDouble(), lon.toDouble(), km = 20.0))?.name
                     }.getOrNull()
                 }
-            prefs.edit().putFloat("lat", lat).putFloat("lon", lon).putString("place", zh ?: city)
-                .putLong("located_at", System.currentTimeMillis()).apply()
+            synchronized(locationLock) {
+                if (locationRevision == expected) prefs.edit().putFloat("lat", lat).putFloat("lon", lon).putString("place", zh ?: city)
+                    .putLong("located_at", System.currentTimeMillis()).apply()
+            }
             }
         }
         if (!lat.isFinite() || !lon.isFinite()) {
@@ -103,7 +124,7 @@ object Weather {
             if (city != null) { lat = city.lat.toFloat(); lon = city.lon.toFloat() }
         }
         require(lat.isFinite() && lat in -90f..90f && lon.isFinite() && lon in -180f..180f) { "Choose a weather city" }
-        val json = JSONObject(get("https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&forecast_days=1&timezone=auto"))
+        val json = ForecastRequest.load(lat, lon)
         val current = json.getJSONObject("current")
         val daily = json.optJSONObject("daily")
         fun today(key: String) = daily?.optJSONArray(key)?.optDouble(0)?.takeIf { !it.isNaN() }?.roundToInt()
@@ -117,6 +138,8 @@ object Weather {
      * place. Off the main thread; fetch again after it.
      */
     fun choose(name: String): Boolean {
+        if (name.isBlank() || name.length > 96) return false
+        val expected = synchronized(locationLock) { ++cityRequest }
         val hit = runCatching { Cities.find(app, name) }.getOrNull()?.let { Triple(it.lat, it.lon, it.name) }
             ?: runCatching {
                 val q = java.net.URLEncoder.encode(name.trim(), "UTF-8")
@@ -127,17 +150,25 @@ object Weather {
                 best?.let { Triple(it.getDouble("latitude"), it.getDouble("longitude"), it.optString("name").ifBlank { name.trim() }) }
             }.onFailure { Log.w(TAG, "could not look up $name", it) }.getOrNull()
             ?: return false
+        synchronized(locationLock) {
+        if (cityRequest != expected) return false
+        locationRevision++
         prefs.edit().putFloat("lat", hit.first.toFloat()).putFloat("lon", hit.second.toFloat())
-            .putString("place", hit.third).putBoolean("chosen", true).commit()
+            .putString("place", hit.third).putBoolean("chosen", true).remove("fetched_at").commit()
         chosen = true
         place = hit.third
+        now = null
+        }
         return true
     }
 
     /** Back to guessing the place from the network. */
     fun useNetworkLocation() {
-        prefs.edit().putBoolean("chosen", false).remove("lat").remove("lon").remove("located_at").commit()
-        chosen = false
+        synchronized(locationLock) {
+            locationRevision++; cityRequest++
+            prefs.edit().putBoolean("chosen", false).remove("lat").remove("lon").remove("located_at").commit()
+            chosen = false
+        }
     }
 
     /** WMO weather interpretation codes, as Open-Meteo reports them. */
@@ -176,9 +207,11 @@ object Weather {
         return null
     }
 
+    /** Plain HTTP after a TLS failure or a handshake that never answers, as the full app (#1576). */
     private fun get(url: String): String = try {
         Net.text(url)
-    } catch (e: SSLException) {
+    } catch (e: java.io.IOException) {
+        if (e !is SSLException && e !is java.net.SocketTimeoutException) throw e
         Net.text(url.replaceFirst("https://", "http://"))
     }
 
